@@ -1,0 +1,15 @@
+{
+  "documents": {
+    "page_title": "Documentos",
+    "success_message": "Documentos obtenidos correctamente",
+    "error_message": "Los documentos no pudieron ser obtenidos"
+  },
+  "create_document": {
+    "page_title": "Crear documento",
+    "name_label": "Nombre",
+    "name_required": "El nombre es requerido",
+    "create_action": "Crear documento",
+    "success_message": "Documento creado correctamente",
+    "error_message": "El documento no pudo ser creado"
+  }
+}

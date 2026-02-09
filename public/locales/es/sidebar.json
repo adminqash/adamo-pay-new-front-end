@@ -1,0 +1,11 @@
+{
+  "menu": {
+    "home": "Inicio",
+    "documents": "Documentos",
+    "create_document": "Crear documento"
+  },
+  "footer": {
+    "profile": "Perfil",
+    "logout": "Cerrar sesión"
+  }
+}

@@ -1,0 +1,8 @@
+@import "overlayscrollbars/overlayscrollbars.css";
+
+@import "@adamosuiteservices/ui/styles.css";
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "@adamosuiteservices/ui/tailwind-theme.css";

@@ -1,0 +1,96 @@
+# ===================================
+# Dependencies
+# ===================================
+# npm/yarn/pnpm package directories
+node_modules/
+
+# ===================================
+# Build Outputs
+# ===================================
+# Vite production build output
+dist/
+# Vite SSR build output
+dist-ssr/
+
+# ============================================
+# Environment Variables
+# ============================================
+# Environment files with credentials and secrets
+.env
+.env.*
+
+# Allow example file (without real credentials)
+!.env.example
+
+# ===================================
+# Logs
+# ===================================
+# Application and package manager logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===================================
+# Generated Documentation
+# ===================================
+# TypeDoc auto-generated API documentation
+docs/
+
+# ===================================
+# Testing & Coverage
+# ===================================
+# Test coverage reports
+coverage/
+.nyc_output/
+*.lcov
+
+# ===================================
+# IDE & Editor Files
+# ===================================
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+# JetBrains IDEs (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+# Visual Studio
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+# Vim
+*.sw?
+*.swp
+*.swo
+
+# ===================================
+# Operating System Files
+# ===================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+# Linux
+*~
+
+# ===================================
+# Temporary Files
+# ===================================
+# Various temporary files and caches
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
