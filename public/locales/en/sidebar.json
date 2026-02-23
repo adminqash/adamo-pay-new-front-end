@@ -2,7 +2,12 @@
   "menu": {
     "home": "Home",
     "documents": "Documents",
-    "create_document": "Create document"
+    "create_document": "Create document",
+    "transactions": "Transactions",
+    "batches": "Batches",
+    "accounts": "Accounts",
+    "beneficiaries": "Beneficiaries",
+    "metrics": "Metrics"
   },
   "footer": {
     "profile": "Profile",

@@ -1,0 +1,129 @@
+{
+  "beneficiaries": {
+    "page_title": "Beneficiarios",
+    "count": "711 Beneficiarios",
+    "add_button": "Añadir beneficiario",
+    "export_button": "Exportar datos",
+    "search_placeholder": "Buscar por nombre/ número de ID/ número de cuenta o estado",
+    "tabs": {
+      "all": "Todos los beneficiarios",
+      "with_news": "Con novedades",
+      "without_news": "Sin novedades"
+    },
+    "status": {
+      "with_news": "Con novedades",
+      "without_news": "Sin novedades"
+    },
+    "table": {
+      "beneficiary": "BENEFICIARIO",
+      "id_number": "Nº DE ID",
+      "main_account": "CUENTA PRINCIPAL",
+      "status": "ESTADO"
+    },
+    "detail": {
+      "page_title": "Detalles del beneficiario",
+      "badge_with_news": "Con novedades",
+      "alert_title": "El usuario tiene pagos pendientes",
+      "alert_description": "Revisa y correge las novedades del usuario para que los pagos puedan enviarse.",
+      "info_title": "Información del beneficiario",
+      "edit_button": "Editar",
+      "full_name_label": "Nombre completo",
+      "id_type_label": "Tipo y número de identificación",
+      "account_type_label": "Tipo y número de cuenta",
+      "manage_accounts_link": "Gestionar cuentas bancarias",
+      "total_paid_label": "Total pagado",
+      "quick_payment_button": "Enviar pago rápido",
+      "cards_title": "Tarjetas prepagas",
+      "cards_tab_physical": "Físicas",
+      "cards_tab_virtual": "Virtuales",
+      "create_card_button": "Crear nueva tarjeta",
+      "card_number_label": "Número de tarjeta",
+      "card_type_physical": "Física",
+      "card_type_virtual": "Virtual",
+      "card_status_reported": "Denunciada",
+      "card_status_active": "Activa",
+      "card_status_blocked": "Bloqueada",
+      "card_status_expired": "Expirada",
+      "card_status_frozen": "Congelada",
+      "transactions_title": "{{count}} Transacciones",
+      "transactions_export_button": "Exportar datos",
+      "transactions_search_placeholder": "Buscar por fecha/ nombre/ monto/ ID del lote o estado",
+      "transactions_table": {
+        "date": "FECHA",
+        "amount": "MONTO",
+        "reference": "REFERENCIA",
+        "status": "ESTADO"
+      },
+      "transactions_status": {
+        "pending": "Pendiente",
+        "completed": "Completado",
+        "failed": "Fallido"
+      },
+      "transactions_pagination": {
+        "next": "Siguiente",
+        "previous": "Anterior"
+      }
+    },
+    "bank_accounts": {
+      "page_title": "Cuentas bancarias",
+      "description": "Administra las cuentas bancarias de este beneficiario.",
+      "title": "{{count}} Cuentas bancarias",
+      "add_button": "Añadir cuenta bancaria",
+      "export_button": "Exportar datos",
+      "table": {
+        "bank": "BANCO",
+        "account_type": "TIPO DE CUENTA",
+        "account_number": "Nº DE CUENTA",
+        "label": "ETIQUETA"
+      },
+      "primary_label": "Principal",
+      "menu": {
+        "edit": "Editar cuenta bancaria",
+        "set_primary": "Seleccionar como principal",
+        "delete": "Eliminar cuenta bancaria"
+      },
+      "dialog": {
+        "title": "Añadir cuenta bancaria",
+        "description": "Ingresa la información bancaria del beneficiario:",
+        "document_type": "Tipo de documento",
+        "document_number": "Número de documento",
+        "first_name": "Nombre/s",
+        "last_name": "Apellido/s",
+        "account_type": "Tipo de cuenta",
+        "account_type_placeholder": "Selecciona tipo de cuenta",
+        "account_types": {
+          "savings": "Ahorros",
+          "checking": "Corriente"
+        },
+        "bank": "Banco",
+        "bank_placeholder": "Selecciona banco",
+        "account_number": "Número de cuenta",
+        "account_number_placeholder": "Ingresa número de cuenta",
+        "set_as_primary": "Definir como cuenta principal",
+        "cancel": "Cancelar",
+        "submit": "Añadir cuenta bancaria"
+      }
+    },
+    "dialog": {
+      "title": "Añadir beneficiario",
+      "description": "Ingresa la información personal y bancaria del beneficiario:",
+      "document_type": "Tipo de documento",
+      "document_type_placeholder": "Seleccionar tipo de documento",
+      "document_number": "Número de documento",
+      "document_number_placeholder": "Ingresar número de documento",
+      "first_name": "Nombre/s",
+      "first_name_placeholder": "Ingresar nombre/s",
+      "last_name": "Apellido/s",
+      "last_name_placeholder": "Ingresar apellido/s",
+      "account_type": "Tipo de cuenta",
+      "account_type_placeholder": "Seleccionar tipo de cuenta",
+      "bank": "Banco",
+      "bank_placeholder": "Seleccionar banco",
+      "account_number": "Número de cuenta",
+      "account_number_placeholder": "Ingresar número de cuenta",
+      "main_account": "Definir como cuenta principal",
+      "cancel": "Cancelar",
+      "submit": "Añadir beneficiario"
+    }
+  }
+}

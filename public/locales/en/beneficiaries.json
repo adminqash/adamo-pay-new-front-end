@@ -1,0 +1,129 @@
+{
+  "beneficiaries": {
+    "page_title": "Beneficiaries",
+    "count": "711 Beneficiaries",
+    "add_button": "Add beneficiary",
+    "export_button": "Export data",
+    "search_placeholder": "Search by name/ ID number/ account number or status",
+    "tabs": {
+      "all": "All beneficiaries",
+      "with_news": "With updates",
+      "without_news": "No updates"
+    },
+    "status": {
+      "with_news": "With updates",
+      "without_news": "No updates"
+    },
+    "table": {
+      "beneficiary": "BENEFICIARY",
+      "id_number": "ID NUMBER",
+      "main_account": "MAIN ACCOUNT",
+      "status": "STATUS"
+    },
+    "detail": {
+      "page_title": "Beneficiary details",
+      "badge_with_news": "With updates",
+      "alert_title": "User has pending payments",
+      "alert_description": "Review and correct the user updates so that payments can be sent.",
+      "info_title": "Beneficiary information",
+      "edit_button": "Edit",
+      "full_name_label": "Full name",
+      "id_type_label": "ID type and number",
+      "account_type_label": "Account type and number",
+      "manage_accounts_link": "Manage bank accounts",
+      "total_paid_label": "Total paid",
+      "quick_payment_button": "Send quick payment",
+      "cards_title": "Prepaid cards",
+      "cards_tab_physical": "Physical",
+      "cards_tab_virtual": "Virtual",
+      "create_card_button": "Create new card",
+      "card_number_label": "Card Number",
+      "card_type_physical": "Physical",
+      "card_type_virtual": "Virtual",
+      "card_status_reported": "Reported",
+      "card_status_active": "Active",
+      "card_status_blocked": "Blocked",
+      "card_status_expired": "Expired",
+      "card_status_frozen": "Frozen",
+      "transactions_title": "{{count}} Transactions",
+      "transactions_export_button": "Export data",
+      "transactions_search_placeholder": "Search by date/ name/ amount/ batch ID or status",
+      "transactions_table": {
+        "date": "DATE",
+        "amount": "AMOUNT",
+        "reference": "REFERENCE",
+        "status": "STATUS"
+      },
+      "transactions_status": {
+        "pending": "Pending",
+        "completed": "Completed",
+        "failed": "Failed"
+      },
+      "transactions_pagination": {
+        "next": "Next",
+        "previous": "Previous"
+      }
+    },
+    "bank_accounts": {
+      "page_title": "Bank accounts",
+      "description": "Manage the bank accounts for this beneficiary.",
+      "title": "{{count}} Bank accounts",
+      "add_button": "Add bank account",
+      "export_button": "Export data",
+      "table": {
+        "bank": "BANK",
+        "account_type": "ACCOUNT TYPE",
+        "account_number": "ACCOUNT NUMBER",
+        "label": "LABEL"
+      },
+      "primary_label": "Primary",
+      "menu": {
+        "edit": "Edit bank account",
+        "set_primary": "Set as primary",
+        "delete": "Delete bank account"
+      },
+      "dialog": {
+        "title": "Add bank account",
+        "description": "Enter the beneficiary's banking information:",
+        "document_type": "Document type",
+        "document_number": "Document number",
+        "first_name": "First name(s)",
+        "last_name": "Last name(s)",
+        "account_type": "Account type",
+        "account_type_placeholder": "Select account type",
+        "account_types": {
+          "savings": "Savings",
+          "checking": "Checking"
+        },
+        "bank": "Bank",
+        "bank_placeholder": "Select bank",
+        "account_number": "Account number",
+        "account_number_placeholder": "Enter account number",
+        "set_as_primary": "Set as primary account",
+        "cancel": "Cancel",
+        "submit": "Add bank account"
+      }
+    },
+    "dialog": {
+      "title": "Add beneficiary",
+      "description": "Enter the personal and banking information of the beneficiary:",
+      "document_type": "Type of document",
+      "document_type_placeholder": "Select document type",
+      "document_number": "Document number",
+      "document_number_placeholder": "Enter document number",
+      "first_name": "First name(s)",
+      "first_name_placeholder": "Enter first name(s)",
+      "last_name": "Last name(s)",
+      "last_name_placeholder": "Enter last name(s)",
+      "account_type": "Account type",
+      "account_type_placeholder": "Select account type",
+      "bank": "Bank",
+      "bank_placeholder": "Select bank",
+      "account_number": "Account number",
+      "account_number_placeholder": "Enter account number",
+      "main_account": "Set as main account",
+      "cancel": "Cancel",
+      "submit": "Add beneficiary"
+    }
+  }
+}

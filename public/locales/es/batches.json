@@ -1,0 +1,117 @@
+{
+  "batches": {
+    "page_title": "Lotes",
+    "header": {
+      "count": "{{count}} Lotes",
+      "new_batch": "Nuevo lote",
+      "export_data": "Exportar datos",
+      "search_placeholder": "Buscar por fecha/ nombre/ monto/ ID del lote o estado"
+    },
+    "filters": {
+      "date": "Fecha",
+      "status": "Estado",
+      "all": "Todas",
+      "all_status": "Todos",
+      "today": "Hoy",
+      "week": "Esta semana",
+      "month": "Este mes",
+      "reset": "Restablecer filtros"
+    },
+    "table": {
+      "date": "FECHA",
+      "batch_name": "NOMBRE DEL LOTE",
+      "transactions": "TRANSACCIONES",
+      "amount": "MONTO",
+      "batch_id": "ID DEL LOTE",
+      "status": "ESTADO"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "processing": "Procesando",
+      "completed": "Completado"
+    },
+    "detail": {
+      "title": "Detalle del lote",
+      "description": "Información completa del lote de pagos",
+      "status_label": "Estado:",
+      "date": "Fecha",
+      "batch_name": "Nombre del lote",
+      "transactions": "Transacciones",
+      "total_amount": "Monto total",
+      "batch_id": "ID del lote",
+      "internal_id": "ID interno",
+      "batch_date": "Fecha de lote",
+      "alert_title": "Hay pagos pendientes en este lote",
+      "alert_description": "Revisá y corregí las novedades de los pagos para que puedan enviarse.",
+      "review_later": "Revisar novedades después",
+      "view_timeline": "Ver timeline de lote",
+      "export_data": "Exportar datos",
+      "search_placeholder": "Buscar por fecha/ nombre/ monto/ ID del lote o estado",
+      "transactions_count": "{{count}} Transacciones"
+    },
+    "transaction_detail": {
+      "payment_status": "Estado del pago:",
+      "beneficiary": {
+        "title": "Beneficiario",
+        "edit": "Editar",
+        "full_name": "Nombre completo",
+        "id_type": "Tipo y número de identificación",
+        "no_issues": "Sin novedades"
+      },
+      "payment_info": {
+        "title": "Información del pago",
+        "edit": "Editar",
+        "amount": "Monto",
+        "account_type": "Tipo y número de cuenta",
+        "account_mismatch": "La cuenta no corresponde al beneficiario"
+      },
+      "payment_reference": {
+        "title": "Referencia de pago",
+        "edit": "Editar",
+        "reference_number": "Número de referencia",
+        "not_found": "No se ha encontrado número de referencia"
+      },
+      "restrictive_list": {
+        "title": "Lista restrictiva",
+        "list_name": "Nombre de la lista",
+        "view_in_risk": "Ver en Adamo Risk"
+      },
+      "edit_dialog": {
+        "title": "Editar información del beneficiario",
+        "first_name": "Nombre/s",
+        "last_name": "Apellido/s",
+        "document_type": "Tipo de documento",
+        "document_number": "Número de documento",
+        "cancel": "Cancelar",
+        "save": "Guardar cambios"
+      },
+      "payment_edit_dialog": {
+        "title": "Editar información de pago",
+        "payment_amount": "Monto a pagar (COP)",
+        "account_type": "Tipo de cuenta",
+        "bank": "Banco",
+        "account_number": "Número de cuenta",
+        "select_saved_account": "Seleccionar una cuenta bancaria agendada",
+        "cancel": "Cancelar",
+        "save": "Guardar cambios"
+      },
+      "reference_edit_dialog": {
+        "title": "Editar número de referencia de pago",
+        "reference_number": "Número de referencia",
+        "placeholder": "Ingresa un número",
+        "cancel": "Cancelar",
+        "save": "Guardar cambios"
+      },
+      "actions": {
+        "reject": "Rechazar pago",
+        "approve": "Aprobar y enviar",
+        "review_later": "Revisar después"
+      },
+      "status": {
+        "pending": "Pendiente",
+        "approved": "Aprobado",
+        "rejected": "Rechazado"
+      }
+    }
+  }
+}

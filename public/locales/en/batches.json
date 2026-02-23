@@ -1,0 +1,117 @@
+{
+  "batches": {
+    "page_title": "Batches",
+    "header": {
+      "count": "{{count}} Batches",
+      "new_batch": "New batch",
+      "export_data": "Export data",
+      "search_placeholder": "Search by date/ name/ amount/ batch ID or status"
+    },
+    "filters": {
+      "date": "Date",
+      "status": "Status",
+      "all": "All",
+      "all_status": "All",
+      "today": "Today",
+      "week": "This week",
+      "month": "This month",
+      "reset": "Reset filters"
+    },
+    "table": {
+      "date": "DATE",
+      "batch_name": "BATCH NAME",
+      "transactions": "TRANSACTIONS",
+      "amount": "AMOUNT",
+      "batch_id": "BATCH ID",
+      "status": "STATUS"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed"
+    },
+    "detail": {
+      "title": "Batch details",
+      "description": "Complete information about the payment batch",
+      "status_label": "Status:",
+      "date": "Date",
+      "batch_name": "Batch name",
+      "transactions": "Transactions",
+      "total_amount": "Total amount",
+      "batch_id": "Batch ID",
+      "internal_id": "Internal ID",
+      "batch_date": "Batch date",
+      "alert_title": "There are pending payments in this batch",
+      "alert_description": "Review and correct payment news so they can be sent.",
+      "review_later": "Review news later",
+      "view_timeline": "View batch timeline",
+      "export_data": "Export data",
+      "search_placeholder": "Search by date/ name/ amount/ batch ID or status",
+      "transactions_count": "{{count}} Transactions"
+    },
+    "transaction_detail": {
+      "payment_status": "Payment status:",
+      "beneficiary": {
+        "title": "Beneficiary",
+        "edit": "Edit",
+        "full_name": "Full name",
+        "id_type": "ID type and number",
+        "no_issues": "No issues"
+      },
+      "payment_info": {
+        "title": "Payment information",
+        "edit": "Edit",
+        "amount": "Amount",
+        "account_type": "Account type and number",
+        "account_mismatch": "Account does not match beneficiary"
+      },
+      "payment_reference": {
+        "title": "Payment reference",
+        "edit": "Edit",
+        "reference_number": "Reference number",
+        "not_found": "Reference number not found"
+      },
+      "restrictive_list": {
+        "title": "Restrictive list",
+        "list_name": "List name",
+        "view_in_risk": "View in Adamo Risk"
+      },
+      "edit_dialog": {
+        "title": "Edit beneficiary information",
+        "first_name": "First name",
+        "last_name": "Last name",
+        "document_type": "Document type",
+        "document_number": "Document number",
+        "cancel": "Cancel",
+        "save": "Save changes"
+      },
+      "payment_edit_dialog": {
+        "title": "Edit payment information",
+        "payment_amount": "Payment amount (COP)",
+        "account_type": "Account type",
+        "bank": "Bank",
+        "account_number": "Account number",
+        "select_saved_account": "Select a saved bank account",
+        "cancel": "Cancel",
+        "save": "Save changes"
+      },
+      "reference_edit_dialog": {
+        "title": "Edit payment reference number",
+        "reference_number": "Reference number",
+        "placeholder": "Enter a number",
+        "cancel": "Cancel",
+        "save": "Save changes"
+      },
+      "actions": {
+        "reject": "Reject payment",
+        "approve": "Approve and send",
+        "review_later": "Review later"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    }
+  }
+}

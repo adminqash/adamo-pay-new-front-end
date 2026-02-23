@@ -1,0 +1,46 @@
+{
+  "home": {
+    "page_title": "Home",
+    "wallet_card": {
+      "title": "Total available balance",
+      "currency": "COP",
+      "manage_accounts": "Manage accounts"
+    },
+    "send_payment_card": {
+      "title": "Send a payment",
+      "description": "Select or add a beneficiary and make a payment immediately.",
+      "button": "Make payment"
+    },
+    "batch_upload": {
+      "title": "Upload batch payments",
+      "view_all": "View all batches",
+      "drag_drop": "Drag here your Excel file with multiple payments and we will process it for you or",
+      "select_file": "Select from your device",
+      "requirements": "Allowed files: .xlsx or .numbers. Maximum size 50 MB."
+    },
+    "transactions": {
+      "title": "Transactions",
+      "view_all": "View all transactions",
+      "pending": {
+        "title": "Pending transactions",
+        "button": "View transactions"
+      },
+      "returned": {
+        "title": "Returned transactions",
+        "button": "View transactions"
+      },
+      "rejected": {
+        "title": "Rejected transactions",
+        "button": "View transactions"
+      },
+      "validated": {
+        "title": "Validated transactions",
+        "button": "View transactions"
+      },
+      "paid": {
+        "title": "Paid transactions",
+        "button": "View transactions"
+      }
+    }
+  }
+}

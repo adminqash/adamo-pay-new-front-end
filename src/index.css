@@ -6,3 +6,13 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @import "@adamosuiteservices/ui/tailwind-theme.css";
+
+/* Hide scrollbar for credit cards carousel */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

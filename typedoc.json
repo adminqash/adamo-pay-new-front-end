@@ -19,7 +19,7 @@
   "name": "SPA Frontend Documentation",
   "includeVersion": true,
   "disableSources": false,
-  "sourceLinkTemplate": "https://github.com/your-org/spa-frontend/blob/{gitRevision}/{path}#L{line}",
+  "sourceLinkTemplate": "https://github.com/your-org/adamo-pay-font-end/blob/{gitRevision}/{path}#L{line}",
   "sort": ["source-order", "required-first", "kind"],
   "kindSortOrder": [
     "Project",

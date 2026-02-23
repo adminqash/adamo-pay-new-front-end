@@ -33,26 +33,38 @@ export function MainSidebar() {
   const menu: SidebarMenuItem[] = [
     { id: "home",
       label: t("sidebar:menu.home"),
-      icon: <Icon symbol="home" />,
+      icon: <Icon symbol="home" weight={200} />,
       path: "/",
     },
     {
-      id: "documents",
-      label: t("sidebar:menu.documents"),
-      icon: <Icon symbol="article" />,
-      path: "#",
-      menu: [
-        {
-          id: "document_list",
-          label: t("sidebar:menu.documents"),
-          path: "/documents",
-        },
-        {
-          id: "create_document",
-          label: t("sidebar:menu.create_document"),
-          path: "/documents/create",
-        },
-      ],
+      id: "transactions",
+      label: t("sidebar:menu.transactions"),
+      icon: <Icon symbol="swap_horiz" weight={200} />,
+      path: "/transactions",
+    },
+    {
+      id: "batches",
+      label: t("sidebar:menu.batches"),
+      icon: <Icon symbol="folder_copy" weight={200} />,
+      path: "/batches",
+    },
+    {
+      id: "accounts",
+      label: t("sidebar:menu.accounts"),
+      icon: <Icon symbol="account_balance_wallet" weight={200} />,
+      path: "/accounts",
+    },
+    {
+      id: "beneficiaries",
+      label: t("sidebar:menu.beneficiaries"),
+      icon: <Icon symbol="account_circle" weight={200} />,
+      path: "/beneficiaries",
+    },
+    {
+      id: "metrics",
+      label: t("sidebar:menu.metrics"),
+      icon: <Icon symbol="query_stats" weight={200} />,
+      path: "/metrics",
     },
   ];
 
@@ -138,7 +150,7 @@ export function MainSidebar() {
           <div data-slot="sidebar-top-bar-portal"></div>
           <TemporalLanguageSelector />
           <Button variant="secondary">
-            <Icon symbol="notifications" />
+            <Icon symbol="notifications" weight={200} />
           </Button>
         </SidebarTopBar>
         <Outlet />
