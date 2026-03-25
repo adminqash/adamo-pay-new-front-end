@@ -1,0 +1,23 @@
+{
+  "page_title": "Reportes",
+  "header": {
+    "count": "{{count}} reportes generados",
+    "search_placeholder": "Buscar por fecha/ nombre o tipo de reporte"
+  },
+  "table": {
+    "date": "Fecha",
+    "report_name": "Nombre del reporte",
+    "report_type": "Tipo de reporte",
+    "actions": "Acciones",
+    "download": "Descargar"
+  },
+  "delete_dialog": {
+    "title": "Eliminar reporte",
+    "description": "¿Estás seguro que deseas eliminar el reporte \"{{name}}\"?",
+    "cancel": "Cancelar",
+    "confirm": "Eliminar reporte"
+  },
+  "messages": {
+    "delete_success": "Reporte eliminado exitosamente"
+  }
+}

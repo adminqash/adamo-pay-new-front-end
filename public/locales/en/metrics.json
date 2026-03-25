@@ -1,6 +1,203 @@
 {
   "metrics": {
     "page_title": "Metrics",
-    "description": "View and analyze platform metrics and statistics."
+    "description": "View and analyze platform metrics and statistics.",
+    "filter_label": "Filter metrics by",
+    "export_data": "Export data",
+    "export_dialog": {
+      "title": "Export data",
+      "description": "Select filters and format for the exported file",
+      "filters": {
+        "date_placeholder": "Date",
+        "type_placeholder": "Type",
+        "all": "All",
+        "today": "Today",
+        "week": "Last 7 days",
+        "month": "Last 30 days",
+        "custom": "Custom",
+        "last_7_days": "Last 7 days",
+        "last_30_days": "Last 30 days",
+        "last_90_days": "Last 90 days",
+        "all_types": "All types",
+        "transactions": "Transactions",
+        "batches": "Batches",
+        "beneficiaries": "Beneficiaries",
+        "accounts": "Accounts"
+      },
+      "file_type_label": "File type:",
+      "csv_excel": "CSV / Excel",
+      "pdf": "PDF",
+      "cancel": "Cancel",
+      "export": "Export"
+    },
+    "date_picker": {
+      "cancel": "Cancel",
+      "apply": "Apply"
+    },
+    "filters": {
+      "today": "Today",
+      "this_week": "This week",
+      "this_month": "This month",
+      "custom": "Custom",
+      "custom_range_button": "Custom range"
+    },
+    "cards": {
+      "total_volume": "Total processed volume",
+      "total_transactions": "Total transactions",
+      "average_ticket": "Average ticket",
+      "average_funding": "Average funding",
+      "previous_period": "previous period"
+    },
+    "tabs": {
+      "transactions": "Transactions",
+      "batches": "Batches",
+      "beneficiaries": "Beneficiaries",
+      "accounts": "Accounts"
+    },
+    "chart": {
+      "title": "Payment frequency and transaction statistics",
+      "total_payments": "total payments"
+    },
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "transaction_status": {
+      "title": "Transactions by status",
+      "total_transactions": "Total transactions",
+      "payments": "payments",
+      "status": {
+        "completed": "Completed",
+        "validated": "Validated",
+        "returned": "Returned",
+        "rejected": "Rejected",
+        "pending": "Pending"
+      }
+    },
+    "rejection_reasons": {
+      "title": "Rejection reasons",
+      "cases_detected": "cases detected",
+      "reasons": {
+        "invalid_account": "Invalid account",
+        "daily_limit_exceeded": "Daily limit exceeded",
+        "account_mismatch": "Bank account does not match user",
+        "incorrect_id": "Incorrect ID number",
+        "other": "Other reasons"
+      }
+    },
+    "top_banks": {
+      "title": "Top 5 banks with lowest response time",
+      "transactions": "transactions",
+      "minutes": "minutes"
+    },
+    "aml_compliance": {
+      "title": "AML compliance",
+      "total_validations": "Total validations",
+      "status": {
+        "no_issues": "No issues",
+        "with_issues": "With issues"
+      }
+    },
+    "batch_status": {
+      "title": "Batches by status",
+      "total_batches": "Total batches",
+      "batches": "batches",
+      "status": {
+        "completed": "Completed",
+        "sent": "Sent",
+        "processing": "Processing"
+      }
+    },
+    "batch_rejection": {
+      "title": "Average % of rejected payments per batch",
+      "total_batches": "Total batches",
+      "payments": "payments",
+      "status": {
+        "rejected": "Rejected",
+        "others": "Others"
+      }
+    },
+    "batch_stats": {
+      "title": "Transactions per batch",
+      "average": "Average",
+      "maximum": "Maximum",
+      "minimum": "Minimum",
+      "transactions": "Transactions"
+    },
+    "beneficiary_stats": {
+      "new_beneficiaries": "New beneficiaries",
+      "previous_period": "previous period"
+    },
+    "beneficiaries_by_amount": {
+      "title": "Beneficiaries with highest volume by amount"
+    },
+    "beneficiaries_by_transactions": {
+      "title": "Beneficiaries with highest volume by transactions",
+      "transactions": "transactions"
+    },
+    "recurring_failures": {
+      "title": "Beneficiaries with recurring failures",
+      "rank": "Rank",
+      "beneficiary": "Beneficiary",
+      "returns": "Returns",
+      "rejections": "Rejections"
+    },
+    "account_status": {
+      "title": "Number of transactions",
+      "total_transactions": "Total transactions",
+      "transactions": "transactions",
+      "accounts_list": {
+        "main": "Main account",
+        "payroll": "Payroll account",
+        "savings": "Savings account"
+      }
+    },
+    "account_type": {
+      "title": "Transaction amount",
+      "total_amount": "Total amount",
+      "accounts_list": {
+        "main": "Main account",
+        "payroll": "Payroll account",
+        "savings": "Savings account"
+      }
+    },
+    "account_transaction_count": {
+      "title": "Number of transactions",
+      "total_transactions": "Total transactions",
+      "transactions": "transactions",
+      "accounts_list": {
+        "main": "Main account",
+        "payroll": "Payroll account",
+        "savings": "Savings account"
+      }
+    },
+    "account_transaction_amount": {
+      "title": "Transaction amount",
+      "total_amount": "Total amount",
+      "accounts_list": {
+        "main": "Main account",
+        "payroll": "Payroll account",
+        "savings": "Savings account"
+      }
+    },
+    "account_transactions_table": {
+      "title": "Most recurring beneficiaries",
+      "rank": "Rank",
+      "beneficiary": "Beneficiary",
+      "transactions": "Transactions",
+      "amount": "Amount"
+    },
+    "recurring_beneficiaries_table": {
+      "title": "Most recurring beneficiaries",
+      "rank": "Rank",
+      "beneficiary": "Beneficiary",
+      "transactions": "Transactions",
+      "amount": "Amount"
+    }
   }
 }

@@ -10,6 +10,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
 import { useBatchDetail } from "../hooks/use-batch-detail";
 import { useTransactions } from "@/features/transactions/application/hooks/use-transactions";
@@ -28,6 +29,19 @@ import {
   TableRow,
 } from "@adamosuiteservices/ui/table";
 import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogFooter,
+  DialogClose,
+} from "@adamosuiteservices/ui/dialog";
+import { Checkbox } from "@adamosuiteservices/ui/checkbox";
+import { Label } from "@adamosuiteservices/ui/label";
+import { Combobox } from "@adamosuiteservices/ui/combobox";
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -36,6 +50,7 @@ import {
   PaginationNext,
 } from "@adamosuiteservices/ui/pagination";
 import type { TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
+import { useState } from "react";
 
 /**
  * batch detail page
@@ -43,13 +58,19 @@ import type { TransactionStatus } from "@/features/transactions/application/enti
  * displays detailed information about a specific batch
  */
 export const BatchDetailPage = () => {
-  const { t } = useTranslation("batches");
+  const { t } = useTranslation(["batches", "transactions"]);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { batch } = useBatchDetail(id || "1");
   const { transactions } = useTransactions();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
+
+  // export dialog state
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportStatusFilter, setExportStatusFilter] = useState<string[]>(["all"]);
+  const [exportFormatCSV, setExportFormatCSV] = useState(false);
+  const [exportFormatPDF, setExportFormatPDF] = useState(false);
 
   /**
    * format currency amount
@@ -69,6 +90,8 @@ export const BatchDetailPage = () => {
     switch (status) {
       case "paid":
         return "success-medium";
+      case "validated":
+        return "default-medium";
       case "returned":
         return "warning-medium";
       case "rejected":
@@ -94,21 +117,26 @@ export const BatchDetailPage = () => {
     <>
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
+          <BreadcrumbList className="flex-nowrap">
+            <BreadcrumbItem className="hidden md:block">
               <BreadcrumbLink asChild>
                 <Link to="/batches">{t("batches.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
+            <BreadcrumbItem className="md:hidden">
+              <button onClick={() => navigate("/batches")} className="flex h-9 w-9 items-center justify-center">
+                <BreadcrumbEllipsis />
+              </button>
+            </BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{t("batches.detail.title")}</BreadcrumbPage>
+            <BreadcrumbItem className="min-w-0">
+              <BreadcrumbPage className="truncate">{t("batches.detail.title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>,
         sidebarTopBarPortal,
       )}
-      <PageContainer className="bg-[#f8f8f9]">
+      <PageContainer className="bg-neutrals-25">
         <Card className="p-6 border-[#e2e3e5] flex flex-col gap-6">
           {/* batch name + status */}
           <div className="flex items-center gap-6">
@@ -118,14 +146,14 @@ export const BatchDetailPage = () => {
               </div>
               <p className="text-sm font-bold text-[#41454c]">{batch.name}</p>
             </div>
-            <Badge variant="default-medium" className="bg-[#e5f3fa]">
+            <Badge variant="default-medium" className="h-8 px-2 bg-[#e5f3fa] text-sm leading-5">
               Enviado
             </Badge>
           </div>
 
           {/* warning alert */}
-          <Alert variant="warning">
-            <Icon symbol="warning" />
+          <Alert variant="warning" className="border-0">
+            <Icon symbol="error" />
             <AlertTitle>{t("batches.detail.alert_title")}</AlertTitle>
             <AlertDescription>
               {t("batches.detail.alert_description")}
@@ -191,9 +219,87 @@ export const BatchDetailPage = () => {
               </p>
             </div>
             <div className="flex gap-4 items-center">
-              <Button variant="secondary">
-                {t("batches.detail.export_data")}
-              </Button>
+              <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="secondary">
+                    {t("batches.detail.export_data")}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[640px]">
+                  <DialogHeader>
+                    <DialogTitle>{t("batches.export_dialog.title")}</DialogTitle>
+                    <p className="text-sm text-neutrals-700 mt-2">{t("batches.export_dialog.description")}</p>
+                  </DialogHeader>
+                  <DialogBody className="flex flex-col gap-8">
+                    {/* filters */}
+                    <div className="flex flex-col gap-4">
+                      {/* status filter */}
+                      <div className="w-full">
+                        <Combobox
+                          multiple
+                          exclusiveOption="all"
+                          alwaysShowPlaceholder
+                          valuePosition="right"
+                            icon="search_activity"
+                          options={[
+                            { value: "all", label: t("batches.filters.all_status") },
+                            { value: "pending", label: t("transactions:transactions.status.pending") },
+                            { value: "paid", label: t("transactions:transactions.status.paid") },
+                            { value: "returned", label: t("transactions:transactions.status.returned") },
+                            { value: "rejected", label: t("transactions:transactions.status.rejected") },
+                          ]}
+                          value={exportStatusFilter}
+                          onValueChange={(value) => setExportStatusFilter(value as string[])}
+                          labels={{
+                            placeholder: t("batches.filters.status"),
+                          }}
+                          classNames={{
+                            trigger: "h-10 w-full",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* file type checkboxes */}
+                    <div className="flex items-center gap-8">
+                      <p className="text-sm text-neutrals-700">{t("batches.export_dialog.file_type_label")}</p>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="detail-csv"
+                          checked={exportFormatCSV}
+                          onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
+                        />
+                        <Label htmlFor="detail-csv" className="text-sm text-neutrals-700 cursor-pointer">
+                          {t("batches.export_dialog.csv_excel")}
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="detail-pdf"
+                          checked={exportFormatPDF}
+                          onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
+                        />
+                        <Label htmlFor="detail-pdf" className="text-sm text-neutrals-700 cursor-pointer">
+                          {t("batches.export_dialog.pdf")}
+                        </Label>
+                      </div>
+                    </div>
+                  </DialogBody>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="secondary">
+                        {t("batches.export_dialog.cancel")}
+                      </Button>
+                    </DialogClose>
+                    <Button 
+                      variant="default" 
+                      disabled={!exportFormatCSV && !exportFormatPDF}
+                    >
+                      {t("batches.export_dialog.export")}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="basis-full lg:basis-0 lg:flex-1 lg:min-w-[500px]">
               <div className="relative">
@@ -214,22 +320,22 @@ export const BatchDetailPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
-                  FECHA
+                  {t("batches.detail.table.date")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
-                  BENEFICIARIO
+                  {t("batches.detail.table.beneficiary")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
-                  Nº DE ID
+                  {t("batches.detail.table.id_number")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
-                  MONTO
+                  {t("batches.detail.table.amount")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
-                  REFERENCIA
+                  {t("batches.detail.table.reference")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
-                  ESTADO
+                  {t("batches.detail.table.status")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -256,8 +362,15 @@ export const BatchDetailPage = () => {
                     {transaction.reference}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(transaction.status)}>
-                      Pendiente
+                    <Badge 
+                      variant={getStatusVariant(transaction.status)} 
+                      className={`h-8 px-2 text-sm leading-5 ${
+                        transaction.status === 'pending' ? 'bg-neutrals-50' : 
+                        transaction.status === 'validated' ? 'bg-[#E5F3FA] text-neutrals-700' : 
+                        ''
+                      }`}
+                    >
+                      {t(`transactions:transactions.status.${transaction.status}`)}
                     </Badge>
                   </TableCell>
                 </TableRow>

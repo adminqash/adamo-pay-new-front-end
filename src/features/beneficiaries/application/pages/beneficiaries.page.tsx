@@ -2,6 +2,7 @@ import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container"
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
 import { Checkbox } from "@adamosuiteservices/ui/checkbox";
+import { Combobox } from "@adamosuiteservices/ui/combobox";
 import {
   Dialog,
   DialogTrigger,
@@ -11,6 +12,7 @@ import {
   DialogDescription,
   DialogBody,
   DialogFooter,
+  DialogClose,
 } from "@adamosuiteservices/ui/dialog";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
@@ -25,6 +27,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@adamosuiteservices/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@adamosuiteservices/ui/table";
 import { Badge } from "@adamosuiteservices/ui/badge";
+import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import { createPortal } from "react-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -47,6 +50,12 @@ export function BeneficiariesPage() {
     isMainAccount: false,
   });
 
+  // export dialog state
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportStatusFilter, setExportStatusFilter] = useState<string[]>(["all"]);
+  const [exportFormatCSV, setExportFormatCSV] = useState(false);
+  const [exportFormatPDF, setExportFormatPDF] = useState(false);
+
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   const handleRowClick = (beneficiaryId: string) => {
@@ -54,23 +63,55 @@ export function BeneficiariesPage() {
   };
 
   // datos de ejemplo - reemplazar con hook real
-  const beneficiaries = [
-    { id: "1", name: "Sofía Mariela Mendoza", idNumber: "Débito", account: "$22.350.000,00", status: "warning" },
-    { id: "2", name: "Diego Torres", idNumber: "Débito", account: "$18.750.000,00", status: "success" },
-    { id: "3", name: "Camila Rojas", idNumber: "Débito", account: "$27.900.000,00", status: "success" },
-    { id: "4", name: "Emma Watson", idNumber: "Crédito", account: "$15.500.000,00", status: "warning" },
-    { id: "5", name: "Javier López Gimenez", idNumber: "Crédito", account: "$20.000.000,00", status: "warning" },
-    { id: "6", name: "Valentina Pérez", idNumber: "Crédito", account: "$23.750.000,00", status: "warning" },
-    { id: "7", name: "Martín González", idNumber: "Débito", account: "$19.300.000,00", status: "success" },
-    { id: "8", name: "Isabella Fernández", idNumber: "Débito", account: "$25.500.000,00", status: "warning" },
-    { id: "9", name: "Lucas Martínez", idNumber: "Crédito", account: "$30.000.000,00", status: "success" },
-    { id: "10", name: "Sofía Ramírez", idNumber: "Débito", account: "$28.150.000,00", status: "success" },
-    { id: "11", name: "Mateo Silva", idNumber: "Débito", account: "$16.800.000,00", status: "warning" },
-    { id: "12", name: "Emma Díaz", idNumber: "Débito", account: "$22.900.000,00", status: "success" },
-    { id: "13", name: "Santiago Morales", idNumber: "Débito", account: "$21.250.000,00", status: "success" },
-    { id: "14", name: "Mia Castro", idNumber: "Crédito", account: "$24.900.000,00", status: "warning" },
-    { id: "15", name: "Benjamín Herrera", idNumber: "Débito", account: "$29.000.000,00", status: "success" },
-  ];
+  const [beneficiaries, setBeneficiaries] = useState([
+    { id: "1", name: "Sofía Mariela Mendoza", idNumber: "129.330.220", account: "$22.350.000,00", status: "warning" },
+    { id: "2", name: "Diego Torres", idNumber: "138.456.789", account: "$18.750.000,00", status: "success" },
+    { id: "3", name: "Camila Rojas", idNumber: "145.678.912", account: "$27.900.000,00", status: "success" },
+    { id: "4", name: "Emma Watson", idNumber: "152.789.123", account: "$15.500.000,00", status: "warning" },
+    { id: "5", name: "Javier López Gimenez", idNumber: "163.890.234", account: "$20.000.000,00", status: "warning" },
+    { id: "6", name: "Valentina Pérez", idNumber: "174.901.345", account: "$23.750.000,00", status: "warning" },
+    { id: "7", name: "Martín González", idNumber: "185.012.456", account: "$19.300.000,00", status: "success" },
+    { id: "8", name: "Isabella Fernández", idNumber: "196.123.567", account: "$25.500.000,00", status: "warning" },
+    { id: "9", name: "Lucas Martínez", idNumber: "207.234.678", account: "$30.000.000,00", status: "success" },
+    { id: "10", name: "Sofía Ramírez", idNumber: "218.345.789", account: "$28.150.000,00", status: "success" },
+    { id: "11", name: "Mateo Silva", idNumber: "229.456.890", account: "$16.800.000,00", status: "warning" },
+    { id: "12", name: "Emma Díaz", idNumber: "230.567.901", account: "$22.900.000,00", status: "success" },
+    { id: "13", name: "Santiago Morales", idNumber: "241.678.012", account: "$21.250.000,00", status: "success" },
+    { id: "14", name: "Mia Castro", idNumber: "252.789.123", account: "$24.900.000,00", status: "warning" },
+    { id: "15", name: "Benjamín Herrera", idNumber: "263.890.234", account: "$29.000.000,00", status: "success" },
+  ]);
+
+  /**
+   * handle add beneficiary
+   */
+  const handleAddBeneficiary = () => {
+    const newBeneficiary = {
+      id: String(beneficiaries.length + 1),
+      name: `${formData.firstName} ${formData.lastName}`,
+      idNumber: formData.documentNumber,
+      account: "$0,00",
+      status: "success" as const,
+    };
+
+    setBeneficiaries([...beneficiaries, newBeneficiary]);
+    
+    ToastManager.show({
+      message: t("beneficiaries.detail.messages.beneficiary_created"),
+      variant: "success",
+    });
+
+    setIsDialogOpen(false);
+    setFormData({
+      documentType: "",
+      documentNumber: "",
+      firstName: "",
+      lastName: "",
+      accountType: "",
+      bank: "",
+      accountNumber: "",
+      isMainAccount: false,
+    });
+  };
 
   return (
     <>
@@ -88,18 +129,18 @@ export function BeneficiariesPage() {
                 <Button variant="secondary" size="icon">
                   <Icon symbol="refresh" weight={200} />
                 </Button>
-                <p className="text-sm font-semibold text-neutrals-700">
+                <p className="text-sm font-semibold text-foreground">
                   {t("beneficiaries.count")}
                 </p>
               </div>
               <div className="flex gap-4 items-center">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-pay-500 hover:bg-pay-600 text-neutrals-50">
+                    <Button variant="default">
                       {t("beneficiaries.add_button")}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-[640px]">
                     <DialogHeader>
                       <DialogTitle>{t("beneficiaries.dialog.title")}</DialogTitle>
                       <DialogDescription>{t("beneficiaries.dialog.description")}</DialogDescription>
@@ -107,7 +148,7 @@ export function BeneficiariesPage() {
                     <DialogBody>
                       <div className="flex flex-wrap gap-4">
                         <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                          <Label className="text-xs text-neutrals-600">{t("beneficiaries.dialog.document_type")}</Label>
+                          <Label>{t("beneficiaries.dialog.document_type")}</Label>
                           <Select
                             value={formData.documentType}
                             onValueChange={(value) => setFormData({ ...formData, documentType: value })}
@@ -116,15 +157,15 @@ export function BeneficiariesPage() {
                               <SelectValue placeholder={t("beneficiaries.dialog.document_type_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="dni">DNI</SelectItem>
-                              <SelectItem value="cuit">CUIT</SelectItem>
-                              <SelectItem value="cuil">CUIL</SelectItem>
-                              <SelectItem value="passport">Pasaporte</SelectItem>
+                              <SelectItem value="dni">{t("beneficiaries.dialog.document_types.dni")}</SelectItem>
+                              <SelectItem value="cuit">{t("beneficiaries.dialog.document_types.cuit")}</SelectItem>
+                              <SelectItem value="cuil">{t("beneficiaries.dialog.document_types.cuil")}</SelectItem>
+                              <SelectItem value="passport">{t("beneficiaries.dialog.document_types.passport")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                          <Label className="text-xs text-neutrals-600">{t("beneficiaries.dialog.document_number")}</Label>
+                          <Label>{t("beneficiaries.dialog.document_number")}</Label>
                           <Input
                             placeholder={t("beneficiaries.dialog.document_number_placeholder")}
                             value={formData.documentNumber}
@@ -132,7 +173,7 @@ export function BeneficiariesPage() {
                           />
                         </div>
                         <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                          <Label className="text-xs text-neutrals-600">{t("beneficiaries.dialog.first_name")}</Label>
+                          <Label>{t("beneficiaries.dialog.first_name")}</Label>
                           <Input
                             placeholder={t("beneficiaries.dialog.first_name_placeholder")}
                             value={formData.firstName}
@@ -140,7 +181,7 @@ export function BeneficiariesPage() {
                           />
                         </div>
                         <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                          <Label className="text-xs text-neutrals-600">{t("beneficiaries.dialog.last_name")}</Label>
+                          <Label>{t("beneficiaries.dialog.last_name")}</Label>
                           <Input
                             placeholder={t("beneficiaries.dialog.last_name_placeholder")}
                             value={formData.lastName}
@@ -148,7 +189,7 @@ export function BeneficiariesPage() {
                           />
                         </div>
                         <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                          <Label className="text-xs text-neutrals-600">{t("beneficiaries.dialog.account_type")}</Label>
+                          <Label>{t("beneficiaries.dialog.account_type")}</Label>
                           <Select
                             value={formData.accountType}
                             onValueChange={(value) => setFormData({ ...formData, accountType: value })}
@@ -157,13 +198,13 @@ export function BeneficiariesPage() {
                               <SelectValue placeholder={t("beneficiaries.dialog.account_type_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="savings">Caja de ahorro</SelectItem>
-                              <SelectItem value="checking">Cuenta corriente</SelectItem>
+                              <SelectItem value="savings">{t("beneficiaries.dialog.account_types.savings")}</SelectItem>
+                              <SelectItem value="checking">{t("beneficiaries.dialog.account_types.checking")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                          <Label className="text-xs text-neutrals-600">{t("beneficiaries.dialog.bank")}</Label>
+                          <Label>{t("beneficiaries.dialog.bank")}</Label>
                           <Select
                             value={formData.bank}
                             onValueChange={(value) => setFormData({ ...formData, bank: value })}
@@ -181,7 +222,7 @@ export function BeneficiariesPage() {
                           </Select>
                         </div>
                         <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                          <Label className="text-xs text-neutrals-600">{t("beneficiaries.dialog.account_number")}</Label>
+                          <Label>{t("beneficiaries.dialog.account_number")}</Label>
                           <Input
                             placeholder={t("beneficiaries.dialog.account_number_placeholder")}
                             value={formData.accountNumber}
@@ -220,7 +261,7 @@ export function BeneficiariesPage() {
                         {t("beneficiaries.dialog.cancel")}
                       </Button>
                       <Button
-                        className="bg-pay-500 hover:bg-pay-600 text-neutrals-50"
+                        variant="default"
                         disabled={
                           !formData.documentType ||
                           !formData.documentNumber ||
@@ -230,33 +271,96 @@ export function BeneficiariesPage() {
                           !formData.bank ||
                           !formData.accountNumber
                         }
-                        onClick={() => {
-                          // TODO: Handle form submission
-                          setIsDialogOpen(false);
-                          setFormData({
-                            documentType: "",
-                            documentNumber: "",
-                            firstName: "",
-                            lastName: "",
-                            accountType: "",
-                            bank: "",
-                            accountNumber: "",
-                            isMainAccount: false,
-                          });
-                        }}
+                        onClick={handleAddBeneficiary}
                       >
                         {t("beneficiaries.dialog.submit")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Button variant="secondary">
-                  {t("beneficiaries.export_button")}
-                </Button>
+                <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="secondary">
+                      {t("beneficiaries.export_button")}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[640px]">
+                    <DialogHeader>
+                      <DialogTitle>{t("beneficiaries.export_dialog.title")}</DialogTitle>
+                      <p className="text-sm text-foreground mt-2">{t("beneficiaries.export_dialog.description")}</p>
+                    </DialogHeader>
+                    <DialogBody className="flex flex-col gap-8">
+                      {/* filters */}
+                      <div className="flex flex-col gap-4">
+                        {/* status filter */}
+                        <div className="w-full">
+                          <Combobox
+                            multiple
+                            exclusiveOption="all"
+                            alwaysShowPlaceholder
+                            valuePosition="right"
+                              icon="search_activity"
+                            options={[
+                              { value: "all", label: t("beneficiaries.tabs.all") },
+                              { value: "with_news", label: t("beneficiaries.status.with_news") },
+                              { value: "without_news", label: t("beneficiaries.status.without_news") },
+                            ]}
+                            value={exportStatusFilter}
+                            onValueChange={(value) => setExportStatusFilter(value as string[])}
+                            labels={{
+                              placeholder: t("beneficiaries.export_dialog.status_filter"),
+                            }}
+                            classNames={{
+                              trigger: "h-10 w-full",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* file type checkboxes */}
+                      <div className="flex items-center gap-8">
+                        <p className="text-sm text-foreground">{t("beneficiaries.export_dialog.file_type_label")}</p>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="beneficiaries-csv"
+                            checked={exportFormatCSV}
+                            onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
+                          />
+                          <Label htmlFor="beneficiaries-csv" className="text-sm cursor-pointer">
+                            {t("beneficiaries.export_dialog.csv_excel")}
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="beneficiaries-pdf"
+                            checked={exportFormatPDF}
+                            onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
+                          />
+                          <Label htmlFor="beneficiaries-pdf" className="text-sm cursor-pointer">
+                            {t("beneficiaries.export_dialog.pdf")}
+                          </Label>
+                        </div>
+                      </div>
+                    </DialogBody>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="secondary">
+                          {t("beneficiaries.export_dialog.cancel")}
+                        </Button>
+                      </DialogClose>
+                      <Button 
+                        variant="default" 
+                        disabled={!exportFormatCSV && !exportFormatPDF}
+                      >
+                        {t("beneficiaries.export_dialog.export")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="basis-full lg:basis-0 lg:flex-1 lg:min-w-[500px]">
                 <div className="relative">
-                  <Icon symbol="search" className="absolute left-2 top-1/2 -translate-y-1/2 text-neutrals-400" />
+                  <Icon symbol="search" className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder={t("beneficiaries.search_placeholder")}
                     className="pl-10"
@@ -278,11 +382,11 @@ export function BeneficiariesPage() {
           {/* table */}
           <Table className="rounded-2xl">
             <TableHeader>
-              <TableRow className="bg-neutrals-25">
-                <TableHead className="text-xs font-semibold text-neutrals-700">{t("beneficiaries.table.beneficiary")}</TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700">{t("beneficiaries.table.id_number")}</TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700">{t("beneficiaries.table.main_account")}</TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700">{t("beneficiaries.table.status")}</TableHead>
+              <TableRow className="bg-muted">
+                <TableHead className="text-xs font-semibold text-foreground">{t("beneficiaries.table.beneficiary")}</TableHead>
+                <TableHead className="text-xs font-semibold text-foreground">{t("beneficiaries.table.id_number")}</TableHead>
+                <TableHead className="text-xs font-semibold text-foreground">{t("beneficiaries.table.main_account")}</TableHead>
+                <TableHead className="text-xs font-semibold text-foreground">{t("beneficiaries.table.status")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -290,13 +394,16 @@ export function BeneficiariesPage() {
                 <TableRow 
                   key={beneficiary.id}
                   onClick={() => handleRowClick(beneficiary.id)}
-                  className="cursor-pointer hover:bg-neutrals-25"
+                  className="cursor-pointer hover:bg-subtle"
                 >
-                  <TableCell className="text-sm text-neutrals-700">{beneficiary.name}</TableCell>
-                  <TableCell className="text-sm text-neutrals-700">{beneficiary.idNumber}</TableCell>
-                  <TableCell className="text-sm text-neutrals-700">{beneficiary.account}</TableCell>
-                  <TableCell className="text-sm text-neutrals-700">
-                    <Badge variant={beneficiary.status === "warning" ? "warning-medium" : "success-medium"}>
+                  <TableCell className="text-sm text-foreground">{beneficiary.name}</TableCell>
+                  <TableCell className="text-sm text-foreground">{beneficiary.idNumber}</TableCell>
+                  <TableCell className="text-sm text-foreground">{beneficiary.account}</TableCell>
+                  <TableCell className="text-sm text-foreground">
+                    <Badge 
+                      variant={beneficiary.status === "warning" ? "warning-medium" : "success-medium"}
+                      className="h-8 px-2 text-sm leading-5"
+                    >
                       {beneficiary.status === "warning" ? t("beneficiaries.status.with_news") : t("beneficiaries.status.without_news")}
                     </Badge>
                   </TableCell>

@@ -6,6 +6,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
@@ -13,20 +14,353 @@ import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext } from "@adamosuiteservices/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@adamosuiteservices/ui/table";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+  DialogClose,
+} from "@adamosuiteservices/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@adamosuiteservices/ui/dropdown-menu";
+import { Checkbox } from "@adamosuiteservices/ui/checkbox";
+import { Label } from "@adamosuiteservices/ui/label";
+import { Combobox } from "@adamosuiteservices/ui/combobox";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
+import { 
+  AmountInputContainer,
+  AmountInputFlag,
+  AmountInput,
+  AmountInputAction,
+} from "@adamosuiteservices/ui/amount-input";
+import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/popover";
+import { Calendar } from "@adamosuiteservices/ui/calendar";
+import type { DateRange } from "react-day-picker";
+import { format, subDays, startOfDay } from "date-fns";
+import { es, enUS } from "date-fns/locale";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useParams, useNavigate } from "react-router";
+import { useState, useRef, useState as useStateReact } from "react";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 
+/**
+ * custom date range picker component
+ * keeps preset ranges (7/30/90 days) independent from custom selection
+ */
+const DateRangePicker = ({
+  dateRange,
+  onDateRangeChange,
+  labels,
+  className,
+  currentLanguage,
+}: {
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
+  labels: {
+    last7Days: string;
+    last30Days: string;
+    last90Days: string;
+    custom: string;
+    placeholder: string;
+    cancel: string;
+    apply: string;
+  };
+  className?: string;
+  currentLanguage: string;
+}) => {
+  const comboboxRef = useRef<HTMLElement | null>(null);
+  const [selectedOption, setSelectedOption] = useStateReact<string>(() => {
+    // calculate initial option based on dateRange
+    if (!dateRange.from || !dateRange.to) return "";
+    const today = startOfDay(new Date());
+    if (dateRange.from.getTime() === subDays(today, 7).getTime() && dateRange.to.getTime() === today.getTime()) {
+      return "7_days";
+    }
+    if (dateRange.from.getTime() === subDays(today, 30).getTime() && dateRange.to.getTime() === today.getTime()) {
+      return "30_days";
+    }
+    if (dateRange.from.getTime() === subDays(today, 90).getTime() && dateRange.to.getTime() === today.getTime()) {
+      return "90_days";
+    }
+    return "custom";
+  });
+  const [isCalendarOpen, setIsCalendarOpen] = useStateReact(false);
+  const [tempDateRange, setTempDateRange] = useStateReact<DateRange>({ from: undefined, to: undefined });
+
+  // get locale based on current language
+  const locale = currentLanguage === "es" ? es : enUS;
+
+  const handleComboboxChange = (value: string | string[]) => {
+    const selectedValue = Array.isArray(value) ? value[0] : value;
+    if (selectedValue === "custom") {
+      // open calendar with empty selection
+      setSelectedOption("custom");
+      setTempDateRange({ from: undefined, to: undefined });
+      setIsCalendarOpen(true);
+      return;
+    }
+
+    // handle preset selection
+    setSelectedOption(selectedValue);
+    const today = startOfDay(new Date());
+    const daysMap = { "7_days": 7, "30_days": 30, "90_days": 90 };
+    const days = daysMap[selectedValue as keyof typeof daysMap];
+    if (days) {
+      onDateRangeChange({ from: subDays(today, days), to: today });
+    }
+  };
+
+  const handleApply = () => {
+    if (tempDateRange.from && tempDateRange.to) {
+      onDateRangeChange(tempDateRange);
+      setIsCalendarOpen(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsCalendarOpen(false);
+  };
+
+  // get display text for combobox
+  const getDisplayText = () => {
+    if (selectedOption === "custom" && dateRange.from && dateRange.to) {
+      return format(dateRange.from, "dd/MM/yyyy") + " - " + format(dateRange.to, "dd/MM/yyyy");
+    }
+    return "";
+  };
+
+  return (
+    <>
+      <Combobox
+        ref={(node) => {
+          comboboxRef.current = node;
+        }}
+        alwaysShowPlaceholder
+        selectedFeedback="check"
+        icon="calendar_today"
+        options={[
+          { label: labels.last7Days, value: "7_days" },
+          { label: labels.last30Days, value: "30_days" },
+          { label: labels.last90Days, value: "90_days" },
+          { label: labels.custom, value: "custom" },
+        ]}
+        labels={{ placeholder: labels.placeholder }}
+        value={selectedOption}
+        onValueChange={handleComboboxChange}
+        classNames={{ trigger: className }}
+        renders={{
+          displayValue: ({ text, value }) => {
+            if (value === "custom" && dateRange.from && dateRange.to) {
+              return getDisplayText();
+            }
+            return text;
+          },
+        }}
+      />
+      <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <PopoverAnchor virtualRef={comboboxRef as React.RefObject<HTMLElement>} />
+        <PopoverContent align="start">
+          <Calendar
+            required
+            mode="range"
+            selected={tempDateRange}
+            onSelect={setTempDateRange}
+            captionLayout="dropdown"
+            locale={locale}
+            formatters={{
+              formatMonthDropdown: (date) => {
+                const monthName = date.toLocaleString(currentLanguage === "es" ? "es-ES" : "en-US", { month: "long" });
+                return monthName.charAt(0).toUpperCase() + monthName.slice(1);
+              },
+            }}
+            classNames={{ root: "adm:p-0!" }}
+          />
+          <div className="adm:mt-2 adm:flex adm:justify-end adm:gap-2">
+            <Button variant="link" onClick={handleCancel}>
+              {labels.cancel}
+            </Button>
+            <Button variant="link" onClick={handleApply} disabled={!tempDateRange.from || !tempDateRange.to}>
+              {labels.apply}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </>
+  );
+};
+
 export function AccountMovementsPage() {
-  const { t } = useTranslation("accounts");
+  const { t, i18n } = useTranslation("accounts");
+  const { accountId } = useParams<{ accountId: string }>();
+  const navigate = useNavigate();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
-  // datos de ejemplo - reemplazar con hook real
-  const account = {
-    name: "Cuenta de nómina",
-    balance: "$190.034.500,59",
+  // edit name dialog state
+  const [isEditNameDialogOpen, setIsEditNameDialogOpen] = useState(false);
+  const [newAccountName, setNewAccountName] = useState("");
+  const [isOtpDialogOpen, setIsOtpDialogOpen] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpAction, setOtpAction] = useState<"edit" | "delete">("edit");
+
+  // delete account dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // transfer dialog state
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [transferAmount, setTransferAmount] = useState("");
+  const [transferToAccountId, setTransferToAccountId] = useState<string | null>(null);
+
+  // export dialog state
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportDateRange, setExportDateRange] = useState<DateRange>({
+    from: undefined,
+    to: undefined,
+  });
+  const [exportTypeFilter, setExportTypeFilter] = useState("all");
+  const [exportFormatCSV, setExportFormatCSV] = useState(false);
+  const [exportFormatPDF, setExportFormatPDF] = useState(false);
+
+  /**
+   * handle open edit name dialog
+   */
+  const handleOpenEditNameDialog = () => {
+    setNewAccountName(account.name);
+    setIsEditNameDialogOpen(true);
+  };
+
+  /**
+   * handle save new name - opens OTP dialog
+   */
+  const handleSaveNewName = () => {
+    setIsEditNameDialogOpen(false);
+    setOtpAction("edit");
+    setIsOtpDialogOpen(true);
+  };
+
+  /**
+   * handle open delete dialog
+   */
+  const handleOpenDeleteDialog = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  /**
+   * handle open transfer dialog
+   */
+  const handleOpenTransferDialog = () => {
+    setIsTransferDialogOpen(true);
+  };
+
+  /**
+   * handle transfer confirm
+   */
+  const handleTransferConfirm = () => {
+    console.log("Transfer from:", accountId);
+    console.log("Transfer to:", transferToAccountId);
+    console.log("Amount:", transferAmount);
+
+    setIsTransferDialogOpen(false);
+    
+    ToastManager.show({
+      message: t("accounts.messages.transfer_success"),
+      variant: "success",
+    });
+
+    // reset transfer form
+    setTransferToAccountId(null);
+    setTransferAmount("");
+  };
+
+  /**
+   * handle confirm delete - opens OTP dialog
+   */
+  const handleConfirmDelete = () => {
+    setIsDeleteDialogOpen(false);
+    setOtpAction("delete");
+    setIsOtpDialogOpen(true);
+  };
+
+  /**
+   * handle OTP submit - confirms name change or account deletion
+   */
+  const handleOtpSubmit = () => {
+    console.log("OTP submitted:", otpCode);
+    
+    if (otpAction === "edit") {
+      console.log("New account name:", newAccountName);
+
+      // Update account name in state
+      setAccountsData((prevData) => ({
+        ...prevData,
+        [accountId || "1"]: {
+          ...prevData[accountId || "1"],
+          name: newAccountName,
+        },
+      }));
+
+      ToastManager.show({
+        message: t("accounts.messages.name_updated"),
+        variant: "success",
+      });
+    } else if (otpAction === "delete") {
+      console.log("Deleting account:", accountId);
+
+      ToastManager.show({
+        message: t("accounts.messages.account_deleted"),
+        variant: "success",
+      });
+
+      // Navigate back to accounts page
+      setTimeout(() => {
+        navigate("/accounts");
+      }, 500);
+    }
+
+    setIsOtpDialogOpen(false);
+    setOtpCode("");
+  };
+
+  /**
+   * handle OTP cancel
+   */
+  const handleOtpCancel = () => {
+    setIsOtpDialogOpen(false);
+    setOtpCode("");
+  };
+
+  // datos de ejemplo - reemplazar con hook real que obtenga la cuenta por id
+  const [accountsData, setAccountsData] = useState<Record<string, { name: string; balance: string; currency: string }>>({
+    "1": {
+      name: "Cuenta principal",
+      balance: "$90.784.510,46",
+      currency: "COP",
+    },
+    "2": {
+      name: "Cuenta de nómina",
+      balance: "$61.002.031,71",
+      currency: "COP",
+    },
+    "3": {
+      name: "Cuenta de ahorros",
+      balance: "$39.002.031,71",
+      currency: "COP",
+    },
+  });
+
+  const account = accountsData[accountId || "1"] || {
+    name: "Cuenta desconocida",
+    balance: "$0,00",
     currency: "COP",
   };
 
@@ -52,15 +386,20 @@ export function AccountMovementsPage() {
     <>
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
+          <BreadcrumbList className="flex-nowrap">
+            <BreadcrumbItem className="hidden md:block">
               <BreadcrumbLink asChild>
                 <Link to="/accounts">{t("accounts.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
+            <BreadcrumbItem className="md:hidden">
+              <button onClick={() => navigate("/accounts")} className="flex h-9 w-9 items-center justify-center">
+                <BreadcrumbEllipsis />
+              </button>
+            </BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{t("movements.page_title")}</BreadcrumbPage>
+            <BreadcrumbItem className="min-w-0">
+              <BreadcrumbPage className="truncate">{t("movements.page_title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>,
@@ -71,26 +410,50 @@ export function AccountMovementsPage() {
           {/* account header card */}
           <Card className="bg-gradient-to-r from-[#e5f3fa] to-white border-0 p-6">
             <div className="flex flex-col gap-4">
-              <div className="text-sm text-neutrals-700 font-bold leading-5">
+              <div className="text-sm text-foreground font-bold leading-5">
                 {account.name}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="inline-flex items-center gap-3 bg-white rounded-full px-4 py-4 h-14">
-                  <span className="text-sm font-bold text-neutrals-700">
+                  <span className="text-sm font-bold text-foreground">
                     {account.balance}
                   </span>
-                  <span className="text-sm text-neutrals-700">
+                  <span className="text-sm text-foreground">
                     {account.currency}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-8">
-                  <Button variant="default">
+                  <Button 
+                    variant="default"
+                    onClick={handleOpenTransferDialog}
+                  >
                     <Icon symbol="swap_horiz" />
                     Transferir
                   </Button>
-                  <Button variant="default" size="icon">
-                    <Icon symbol="more_vert" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        className="border-none bg-transparent p-0 hover:bg-transparent focus:outline-none focus-visible:outline-none active:bg-transparent"
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                      >
+                        <Icon symbol="more_vert" weight={200} className="text-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        {t("accounts.dropdown_menu.add_balance")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={handleOpenTransferDialog}>
+                        {t("accounts.dropdown_menu.transfer")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={handleOpenEditNameDialog}>
+                        {t("accounts.dropdown_menu.edit_name")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem variant="destructive" onSelect={handleOpenDeleteDialog}>
+                        {t("accounts.dropdown_menu.delete")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
@@ -101,20 +464,114 @@ export function AccountMovementsPage() {
             {/* header with search */}
             <div className="flex flex-wrap gap-6 items-center">
               <div className="flex-1 min-w-[220px]">
-                <p className="text-sm font-semibold text-neutrals-700">
-                  143 Movimientos
+                <p className="text-sm font-semibold text-foreground">
+                  {t("movements.header.count", { count: 143 })}
                 </p>
               </div>
               <div className="flex gap-4 items-center">
-                <Button variant="secondary">
-                  Exportar datos
-                </Button>
+                <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="secondary">
+                      {t("movements.header.export_data")}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[640px]">
+                    <DialogHeader>
+                      <DialogTitle>{t("movements.export_dialog.title")}</DialogTitle>
+                      <p className="text-sm text-foreground mt-2">{t("movements.export_dialog.description")}</p>
+                    </DialogHeader>
+                    <DialogBody className="flex flex-col gap-8">
+                      {/* filters */}
+                      <div className="flex gap-4">
+                        {/* date filter */}
+                        <div className="flex-1">
+                          <DateRangePicker
+                            dateRange={exportDateRange}
+                            onDateRangeChange={setExportDateRange}
+                            labels={{
+                              last7Days: t("movements.filters.last_7_days"),
+                              last30Days: t("movements.filters.last_30_days"),
+                              last90Days: t("movements.filters.last_90_days"),
+                              custom: t("movements.filters.custom"),
+                              placeholder: t("movements.export_dialog.date_filter"),
+                              cancel: t("movements.filters.cancel"),
+                              apply: t("movements.filters.apply"),
+                            }}
+                            className="h-10 w-full"
+                            currentLanguage={i18n.language}
+                          />
+                        </div>
+
+                        {/* type filter */}
+                        <div className="flex-1">
+                          <Combobox
+                            alwaysShowPlaceholder
+                            valuePosition="right"
+                            selectedFeedback="check"
+                            icon="format_list_bulleted"
+                            options={[
+                              { value: "all", label: t("movements.export_dialog.type_all") },
+                              { value: "debit", label: t("movements.type.debit") },
+                              { value: "credit", label: t("movements.type.credit") },
+                            ]}
+                            value={exportTypeFilter}
+                            onValueChange={(value) => setExportTypeFilter(value as string)}
+                            labels={{
+                              placeholder: t("movements.export_dialog.type_filter"),
+                            }}
+                            classNames={{
+                              trigger: "h-10 w-full",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* file type checkboxes */}
+                      <div className="flex items-center gap-8">
+                        <p className="text-sm text-foreground">{t("movements.export_dialog.file_type_label")}</p>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="movements-csv"
+                            checked={exportFormatCSV}
+                            onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
+                          />
+                          <Label htmlFor="movements-csv" className="text-sm text-foreground cursor-pointer">
+                            {t("movements.export_dialog.csv_excel")}
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="movements-pdf"
+                            checked={exportFormatPDF}
+                            onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
+                          />
+                          <Label htmlFor="movements-pdf" className="text-sm text-foreground cursor-pointer">
+                            {t("movements.export_dialog.pdf")}
+                          </Label>
+                        </div>
+                      </div>
+                    </DialogBody>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="secondary">
+                          {t("movements.export_dialog.cancel")}
+                        </Button>
+                      </DialogClose>
+                      <Button 
+                        variant="default" 
+                        disabled={!exportFormatCSV && !exportFormatPDF}
+                      >
+                        {t("movements.export_dialog.export")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="basis-full lg:basis-0 lg:flex-1 lg:min-w-[500px]">
                 <div className="relative">
-                  <Icon symbol="search" className="absolute left-2 top-1/2 -translate-y-1/2 text-neutrals-400" />
+                  <Icon symbol="search" className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por fecha/ tipo de movimiento o monto"
+                    placeholder={t("movements.header.search_placeholder")}
                     className="pl-10"
                   />
                 </div>
@@ -124,18 +581,18 @@ export function AccountMovementsPage() {
             {/* table */}
             <Table className="rounded-2xl">
               <TableHeader>
-                  <TableRow className="bg-neutrals-25">
-                    <TableHead className="text-xs font-semibold text-neutrals-700">FECHA</TableHead>
-                    <TableHead className="text-xs font-semibold text-neutrals-700">TIPO DE MOVIMIENTO</TableHead>
-                    <TableHead className="text-xs font-semibold text-neutrals-700">MONTO</TableHead>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-xs font-semibold text-foreground">FECHA</TableHead>
+                    <TableHead className="text-xs font-semibold text-foreground">TIPO DE MOVIMIENTO</TableHead>
+                    <TableHead className="text-xs font-semibold text-foreground">MONTO</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {movements.map((movement, index) => (
                     <TableRow key={index}>
-                      <TableCell className="text-sm text-neutrals-700">{movement.date}</TableCell>
-                      <TableCell className="text-sm text-neutrals-700">{movement.type}</TableCell>
-                      <TableCell className="text-sm text-neutrals-700">{movement.amount}</TableCell>
+                      <TableCell className="text-sm text-foreground">{movement.date}</TableCell>
+                      <TableCell className="text-sm text-foreground">{movement.type}</TableCell>
+                      <TableCell className="text-sm text-foreground">{movement.amount}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -180,6 +637,197 @@ export function AccountMovementsPage() {
           </Card>
         </Card>
       </PageContainer>
+
+      {/* Edit Name Dialog */}
+      <Dialog open={isEditNameDialogOpen} onOpenChange={setIsEditNameDialogOpen}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>{t("accounts.edit_name_dialog.title")}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="account-name" className="text-sm text-foreground">
+                {t("accounts.edit_name_dialog.label")}
+              </Label>
+              <Input
+                id="account-name"
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                placeholder={t("accounts.edit_name_dialog.placeholder")}
+              />
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="secondary">
+                {t("accounts.edit_name_dialog.cancel")}
+              </Button>
+            </DialogClose>
+            <Button
+              variant="default"
+              onClick={handleSaveNewName}
+              disabled={!newAccountName.trim() || newAccountName === account.name}
+            >
+              {t("accounts.edit_name_dialog.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* OTP Confirmation Dialog */}
+      <Dialog open={isOtpDialogOpen} onOpenChange={setIsOtpDialogOpen}>
+        <DialogContent className="max-w-[610px] gap-12">
+          <DialogHeader className="gap-2">
+            <DialogTitle>
+              {otpAction === "edit" ? t("accounts.otp_dialog.title") : t("accounts.otp_dialog.delete_title")}
+            </DialogTitle>
+            <p className="text-sm text-foreground">
+              {otpAction === "edit" ? t("accounts.otp_dialog.description") : t("accounts.otp_dialog.delete_description")}
+            </p>
+          </DialogHeader>
+          
+          <InputOTP
+            maxLength={6}
+            value={otpCode}
+            onChange={setOtpCode}
+          >
+            <InputOTPGroup className="w-full gap-2">
+              <InputOTPSlot index={0} className="flex-1 h-10" />
+              <InputOTPSlot index={1} className="flex-1 h-10" />
+              <InputOTPSlot index={2} className="flex-1 h-10" />
+              <InputOTPSlot index={3} className="flex-1 h-10" />
+              <InputOTPSlot index={4} className="flex-1 h-10" />
+              <InputOTPSlot index={5} className="flex-1 h-10" />
+            </InputOTPGroup>
+          </InputOTP>
+
+          <DialogFooter className="gap-6">
+            <Button
+              variant="secondary"
+              onClick={handleOtpCancel}
+            >
+              {t("accounts.otp_dialog.cancel")}
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleOtpSubmit}
+              disabled={otpCode.length !== 6}
+            >
+              {t("accounts.otp_dialog.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[640px] gap-12">
+          <DialogHeader>
+            <DialogTitle>{t("accounts.delete_dialog.title")}</DialogTitle>
+            <p className="text-sm text-foreground">
+              {t("accounts.delete_dialog.warning_message")}
+            </p>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="secondary">
+                {t("accounts.delete_dialog.cancel")}
+              </Button>
+            </DialogClose>
+            <Button
+              variant="destructive-medium"
+              onClick={handleConfirmDelete}
+            >
+              {t("accounts.delete_dialog.continue")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Dialog */}
+      <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>
+              {t("accounts.transfer_dialog.title", { 
+                accountName: account.name || "" 
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("accounts.transfer_dialog.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody className="flex flex-col gap-6">
+            {/* amount */}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="transfer-amount" className="text-xs text-foreground">
+                {t("accounts.transfer_dialog.amount")}
+              </Label>
+              <AmountInputContainer className="gap-2">
+                <AmountInputFlag locale="es-CO" currencySymbol="" />
+                <AmountInput
+                  id="transfer-amount"
+                  value={transferAmount}
+                  onValueChange={(value) => setTransferAmount(value !== undefined ? String(value) : "")}
+                  locale="es-CO"
+                  placeholder="0.00"
+                  minimumFractionDigits={2}
+                  maximumFractionDigits={2}
+                />
+                <AmountInputAction
+                  onClick={() => {
+                    // Extract numeric value from balance (e.g., "$90.784.510,46" -> "90784510.46")
+                    const numericBalance = account.balance.replace(/[^0-9,]/g, '').replace('.', '').replace(',', '.');
+                    setTransferAmount(numericBalance);
+                  }}
+                >
+                  {t("accounts.transfer_dialog.use_all")}
+                </AmountInputAction>
+              </AmountInputContainer>
+              <p className="text-xs text-foreground">
+                {t("accounts.transfer_dialog.available_balance")}: {account.balance}
+              </p>
+            </div>
+
+            {/* to account */}
+            <Combobox
+              alwaysShowPlaceholder
+              valuePosition="right"
+              selectedFeedback="check"
+              icon="swap_horiz"
+              value={transferToAccountId || ""}
+              onValueChange={(value) => setTransferToAccountId(value as string)}
+              labels={{
+                placeholder: t("accounts.transfer_dialog.to_account"),
+              }}
+              options={Object.entries(accountsData)
+                .filter(([id]) => id !== accountId)
+                .map(([id, acc]) => ({
+                  value: id,
+                  label: acc.name,
+                  supportiveText: `${acc.balance} ${acc.currency}`,
+                }))}
+              classNames={{
+                trigger: "h-10 w-full",
+              }}
+            />
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="secondary">
+                {t("accounts.transfer_dialog.cancel")}
+              </Button>
+            </DialogClose>
+            <Button
+              variant="default"
+              onClick={handleTransferConfirm}
+              disabled={!transferToAccountId || !transferAmount || parseFloat(transferAmount) <= 0}
+            >
+              {t("accounts.transfer_dialog.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

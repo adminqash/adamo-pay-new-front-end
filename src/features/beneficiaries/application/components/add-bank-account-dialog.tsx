@@ -17,7 +17,7 @@ import {
 } from "@adamosuiteservices/ui/select";
 import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AddBankAccountDialogProps {
   open: boolean;
@@ -28,12 +28,19 @@ interface AddBankAccountDialogProps {
     firstName: string;
     lastName: string;
   };
+  onConfirm?: (data: {
+    accountType: string;
+    bank: string;
+    accountNumber: string;
+    isPrimary: boolean;
+  }) => void;
 }
 
 export function AddBankAccountDialog({
   open,
   onOpenChange,
   beneficiaryData,
+  onConfirm,
 }: AddBankAccountDialogProps) {
   const { t } = useTranslation("beneficiaries");
   const [accountType, setAccountType] = useState("");
@@ -41,15 +48,26 @@ export function AddBankAccountDialog({
   const [accountNumber, setAccountNumber] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
 
+  // Reset form fields when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setAccountType("");
+      setBank("");
+      setAccountNumber("");
+      setIsPrimary(false);
+    }
+  }, [open]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Add bank account:", {
-      accountType,
-      bank,
-      accountNumber,
-      isPrimary,
-    });
-    // TODO: Submit to API
+    if (onConfirm) {
+      onConfirm({
+        accountType,
+        bank,
+        accountNumber,
+        isPrimary,
+      });
+    }
     onOpenChange(false);
   };
 
@@ -75,7 +93,7 @@ export function AddBankAccountDialog({
               </Label>
               <Input
                 id="document-type"
-                value={beneficiaryData?.documentType || ""}
+                value={beneficiaryData?.documentType ? t(`beneficiaries.detail.edit_dialog.id_types.${beneficiaryData.documentType}`) : ""}
                 disabled
                 className="h-10 bg-neutral-50 border-neutral-200 text-neutral-400"
               />

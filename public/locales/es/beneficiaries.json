@@ -10,6 +10,16 @@
       "with_news": "Con novedades",
       "without_news": "Sin novedades"
     },
+    "export_dialog": {
+      "title": "Exportar datos",
+      "description": "Seleccioná los filtros y el formato para exportar los datos de beneficiarios.",
+      "status_filter": "Estado",
+      "file_type_label": "Tipo de archivo",
+      "csv_excel": "CSV / Excel",
+      "pdf": "PDF",
+      "cancel": "Cancelar",
+      "export": "Exportar"
+    },
     "status": {
       "with_news": "Con novedades",
       "without_news": "Sin novedades"
@@ -27,6 +37,23 @@
       "alert_description": "Revisa y correge las novedades del usuario para que los pagos puedan enviarse.",
       "info_title": "Información del beneficiario",
       "edit_button": "Editar",
+      "edit_dialog": {
+        "title": "Editar información del beneficiario",
+        "description": "Actualiza los datos del beneficiario:",
+        "full_name_label": "Nombre completo",
+        "full_name_placeholder": "Ingresa el nombre completo",
+        "id_type_label": "Tipo de identificación",
+        "id_types": {
+          "cc": "Cédula de ciudadanía",
+          "ce": "Cédula de extranjería",
+          "passport": "Pasaporte",
+          "nit": "NIT"
+        },
+        "id_number_label": "Número de identificación",
+        "id_number_placeholder": "Ingresa el número",
+        "cancel": "Cancelar",
+        "submit": "Guardar cambios"
+      },
       "full_name_label": "Nombre completo",
       "id_type_label": "Tipo y número de identificación",
       "account_type_label": "Tipo y número de cuenta",
@@ -37,6 +64,57 @@
       "cards_tab_physical": "Físicas",
       "cards_tab_virtual": "Virtuales",
       "create_card_button": "Crear nueva tarjeta",
+      "cards_empty_message": "Aún no hay tarjetas para mostrar.",
+      "cards_empty_action": "Crea una nueva tarjeta ahora",
+      "create_card_dialog": {
+        "title": "Crear nueva tarjeta",
+        "description": "Selecciona el tipo de tarjeta y completa la información para crear una nueva tarjeta:",
+        "card_type_physical": "Tarjeta física",
+        "card_type_virtual": "Tarjeta virtual",
+        "card_alias_label": "Alias de la tarjeta",
+        "card_alias_placeholder": "Ingresa un alias",
+        "monthly_amount_label": "Monto mensual asignado (COP)",
+        "monthly_amount_placeholder": "0,00",
+        "delivery_address_label": "Dirección de entrega",
+        "delivery_address_placeholder": "Ingresa la dirección",
+        "city_label": "Ciudad",
+        "city_placeholder": "Ingresa la ciudad",
+        "country_label": "País",
+        "country_placeholder": "Selecciona",
+        "state_label": "Estado o departamento",
+        "state_placeholder": "Selecciona",
+        "postal_code_label": "Código postal",
+        "postal_code_placeholder": "Ingresa el código",
+        "cancel": "Cancelar",
+        "submit": "Crear tarjeta"
+      },
+      "otp_dialog": {
+        "create_card_title": "Ingresar doble factor de autenticación (2FA)",
+        "create_card_description": "Para crear la tarjeta, por favor introduce el doble factor de autenticación.",
+        "edit_beneficiary_title": "Ingresar doble factor de autenticación (2FA)",
+        "edit_beneficiary_description": "Para guardar los cambios, por favor introduce el doble factor de autenticación.",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar"
+      },
+      "export_dialog": {
+        "title": "Exportar datos",
+        "description": "Seleccioná los filtros y el formato para exportar los datos de transacciones.",
+        "date_filter": "Fecha",
+        "date_all": "Todas las fechas",
+        "date_today": "Hoy",
+        "date_week": "Esta semana",
+        "date_month": "Este mes",
+        "date_custom": "Personalizado",
+        "status_filter": "Estado",
+        "status_all": "Todos los estados",
+        "file_type_label": "Tipo de archivo",
+        "csv_excel": "CSV / Excel",
+        "pdf": "PDF",
+        "cancel": "Cancelar",
+        "cancel_date": "Cancelar",
+        "apply_date": "Aplicar",
+        "export": "Exportar"
+      },
       "card_number_label": "Número de tarjeta",
       "card_type_physical": "Física",
       "card_type_virtual": "Virtual",
@@ -45,6 +123,50 @@
       "card_status_blocked": "Bloqueada",
       "card_status_expired": "Expirada",
       "card_status_frozen": "Congelada",
+      "card_menu_view_movements": "Ver movimientos",
+      "card_menu_recharge_balance": "Recargar saldo",
+      "card_menu_freeze_card": "Congelar tarjeta",
+      "card_menu_unfreeze_card": "Descongelar tarjeta",
+      "card_menu_report_replacement": "Denuncia y reposición",
+      "card_menu_delete_card": "Eliminar tarjeta",
+      "freeze_card_dialog": {
+        "title": "Congelar tarjeta",
+        "description": "Estas por congelar la tarjeta terminada en {{cardNumber}}. Al hacerlo:",
+        "restriction_1": "Algunas operaciones quedarán restringidas.",
+        "restriction_2": "No se podrán realizar compras ni pagos con la tarjeta.",
+        "restriction_3": "No se podrán hacer retiros en cajeros.",
+        "cancel": "Cancelar",
+        "confirm": "Continuar"
+      },
+      "unfreeze_card_dialog": {
+        "title": "Descongelar tarjeta",
+        "description": "Estas por descongelar la tarjeta terminada en {{cardNumber}}. Al hacerlo se podrá:",
+        "benefit_1": "Volver a realizar operaciones.",
+        "benefit_2": "Realizar compras y pagos con la tarjeta.",
+        "benefit_3": "Hacer retiros en cajeros.",
+        "cancel": "Cancelar",
+        "confirm": "Continuar"
+      },
+      "messages": {
+        "beneficiary_created": "Beneficiario creado exitosamente",
+        "card_frozen": "Tarjeta congelada exitosamente",
+        "card_unfrozen": "Tarjeta descongelada exitosamente",
+        "card_reported": "Tarjeta reportada exitosamente"
+      },
+      "report_replacement_dialog": {
+        "title": "Denuncia y reposición",
+        "description": "Vas a denunciar la tarjeta terminada en {{cardNumber}}. Esta acción será aplicada inmediatamente. La tarjeta será bloqueada de forma permanente.",
+        "reason_label": "Motivo de la denuncia",
+        "reason_placeholder": "Selecciona",
+        "reasons": {
+          "lost": "Tarjeta perdida",
+          "stolen": "Tarjeta robada",
+          "damaged": "Tarjeta dañada",
+          "other": "Otro motivo"
+        },
+        "cancel": "Cancelar",
+        "confirm": "Continuar"
+      },
       "transactions_title": "{{count}} Transacciones",
       "transactions_export_button": "Exportar datos",
       "transactions_search_placeholder": "Buscar por fecha/ nombre/ monto/ ID del lote o estado",
@@ -64,6 +186,48 @@
         "previous": "Anterior"
       }
     },
+    "credit_card_movements": {
+      "page_title": "Movimientos de tarjeta",
+      "empty_message": "Esta página mostrará los movimientos de la tarjeta seleccionada.",
+      "balance_label": "Saldo",
+      "recharge_button": "Recargar",
+      "movements_count": "{{count}} Transacciones",
+      "export_button": "Exportar datos",
+      "search_placeholder": "Buscar por fecha/ monto o tipo de movimiento",
+      "table": {
+        "date": "FECHA",
+        "amount": "MONTO",
+        "type": "TIPO DE MOVIMIENTO"
+      },
+      "movement_types": {
+        "debit": "Débito",
+        "credit": "Crédito"
+      },
+      "pagination": {
+        "next": "Siguiente"
+      },
+      "recharge_dialog": {
+        "title": "Recargar saldo",
+        "description": "Ingresa el monto y selecciona la cuenta de origen para recargar la tarjeta {{cardNumber}}:",
+        "amount_label": "Monto a recargar (COP)",
+        "amount_placeholder": "0,00",
+        "source_account_label": "Cuenta de origen",
+        "source_account_placeholder": "Selecciona",
+        "use_all": "Usar todo",
+        "available_balance": "Saldo disponible",
+        "cancel": "Cancelar",
+        "submit": "Recargar saldo"
+      },
+      "export_dialog": {
+        "title": "Exportar datos",
+        "description": "Selecciona el formato en el que deseas exportar los movimientos de la tarjeta.",
+        "file_type_label": "Tipo de archivo",
+        "csv_excel": "CSV / Excel",
+        "pdf": "PDF",
+        "cancel": "Cancelar",
+        "export": "Exportar"
+      }
+    },
     "bank_accounts": {
       "page_title": "Cuentas bancarias",
       "description": "Administra las cuentas bancarias de este beneficiario.",
@@ -81,6 +245,41 @@
         "edit": "Editar cuenta bancaria",
         "set_primary": "Seleccionar como principal",
         "delete": "Eliminar cuenta bancaria"
+      },
+      "export_dialog": {
+        "title": "Exportar datos",
+        "description": "Selecciona el formato en el que deseas exportar las información bancaria.",
+        "file_type_label": "Tipo de archivo",
+        "csv_excel": "CSV / Excel",
+        "pdf": "PDF",
+        "cancel": "Cancelar",
+        "export": "Exportar"
+      },
+      "delete_dialog": {
+        "title": "Eliminar cuenta bancaria",
+        "description": "¿Estás seguro que quieres eliminar la cuenta \"{{bank}}\" terminada en {{lastDigits}}?. El proceso no podrá revertirse.",
+        "cancel": "Cancelar",
+        "confirm": "Eliminar cuenta bancaria"
+      },
+      "delete_success": "Cuenta bancaria eliminada exitosamente",
+      "edit_success": "Cuenta bancaria actualizada exitosamente",
+      "add_success": "Cuenta bancaria añadida exitosamente",
+      "set_primary_success": "Cuenta principal actualizada exitosamente",
+      "edit_dialog": {
+        "title": "Editar cuenta bancaria",
+        "description": "Actualiza la información bancaria del beneficiario:",
+        "cancel": "Cancelar",
+        "submit": "Guardar cambios"
+      },
+      "otp_dialog": {
+        "add_title": "Confirmar nueva cuenta bancaria",
+        "add_description": "Ingresa el código 2FA para confirmar la creación de la nueva cuenta bancaria.",
+        "edit_title": "Ingresar doble factor de autenticación (2FA)",
+        "edit_description": "Para guardar los cambios, por favor introduce el doble factor de autenticación.",
+        "delete_title": "Ingresar doble factor de autenticación (2FA)",
+        "delete_description": "Para eliminar la cuenta bancaria, por favor introduce el doble factor de autenticación.",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar"
       },
       "dialog": {
         "title": "Añadir cuenta bancaria",
@@ -109,6 +308,12 @@
       "description": "Ingresa la información personal y bancaria del beneficiario:",
       "document_type": "Tipo de documento",
       "document_type_placeholder": "Seleccionar tipo de documento",
+      "document_types": {
+        "dni": "DNI",
+        "cuit": "CUIT",
+        "cuil": "CUIL",
+        "passport": "Pasaporte"
+      },
       "document_number": "Número de documento",
       "document_number_placeholder": "Ingresar número de documento",
       "first_name": "Nombre/s",
@@ -117,6 +322,10 @@
       "last_name_placeholder": "Ingresar apellido/s",
       "account_type": "Tipo de cuenta",
       "account_type_placeholder": "Seleccionar tipo de cuenta",
+      "account_types": {
+        "savings": "Caja de ahorro",
+        "checking": "Cuenta corriente"
+      },
       "bank": "Banco",
       "bank_placeholder": "Seleccionar banco",
       "account_number": "Número de cuenta",

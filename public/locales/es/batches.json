@@ -12,10 +12,25 @@
       "status": "Estado",
       "all": "Todas",
       "all_status": "Todos",
+      "last_7_days": "Últimos 7 días",
+      "last_30_days": "Últimos 30 días",
+      "last_90_days": "Últimos 90 días",
       "today": "Hoy",
       "week": "Esta semana",
       "month": "Este mes",
-      "reset": "Restablecer filtros"
+      "custom": "Personalizada",
+      "reset": "Restablecer filtros",
+      "cancel": "Cancelar",
+      "apply": "Aplicar"
+    },
+    "export_dialog": {
+      "title": "Exportar datos",
+      "description": "Seleccioná los filtros y el formato para exportar los datos de lotes.",
+      "file_type_label": "Tipo de archivo",
+      "csv_excel": "CSV / Excel",
+      "pdf": "PDF",
+      "cancel": "Cancelar",
+      "export": "Exportar"
     },
     "table": {
       "date": "FECHA",
@@ -47,7 +62,15 @@
       "view_timeline": "Ver timeline de lote",
       "export_data": "Exportar datos",
       "search_placeholder": "Buscar por fecha/ nombre/ monto/ ID del lote o estado",
-      "transactions_count": "{{count}} Transacciones"
+      "transactions_count": "{{count}} Transacciones",
+      "table": {
+        "date": "FECHA",
+        "beneficiary": "BENEFICIARIO",
+        "id_number": "Nº DE ID",
+        "amount": "MONTO",
+        "reference": "REFERENCIA",
+        "status": "ESTADO"
+      }
     },
     "transaction_detail": {
       "payment_status": "Estado del pago:",
@@ -112,6 +135,45 @@
         "approved": "Aprobado",
         "rejected": "Rechazado"
       }
+    },
+    "create_batch": {
+      "breadcrumb_title": "Nuevo lote",
+      "balance_title": "Saldo total disponible",
+      "manage_accounts": "Gestionar cuentas",
+      "template_question": "¿No tienes la plantilla de pago?",
+      "template_download": "Haz click aquí para descargar.",
+      "file_upload": {
+        "drag_drop": "Arrastra tu documento o",
+        "select_file": "Selecciona desde tu dispositivo",
+        "file_requirements": "Archivos permitidos: {{extensions}}. Tamaño máximo {{size}} MB."
+      },
+      "batch_summary": {
+        "title": "Resumen de lote",
+        "edit_button": "Editar",
+        "total_beneficiaries": "Total de beneficiarios",
+        "total_to_pay": "Total a pagar",
+        "balance_after": "Saldo luego de la transacción"
+      },
+      "actions": {
+        "cancel": "Cancelar lote",
+        "confirm": "Confirmar y procesar lote"
+      },
+      "cancel_dialog": {
+        "title": "Cancelar lote",
+        "description": "¿Estás seguro que deseas cancelar el lote? Los datos se perderán.",
+        "discard": "Cancelar lote",
+        "continue_editing": "Seguir editando"
+      },
+      "otp_dialog": {
+        "title": "Ingresar Doble Factor de Autenticación (2FA)",
+        "description": "Para procesar el lote, por favor introduce el Doble Factor de Autenticación.",
+        "otp_label": "Código de verificación",
+        "cancel": "Cancelar",
+        "confirm": "Procesar lote"
+      }
+    },
+    "messages": {
+      "batch_created": "Lote creado con éxito"
     }
   }
 }

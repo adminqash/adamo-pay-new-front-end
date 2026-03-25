@@ -12,10 +12,25 @@
       "status": "Status",
       "all": "All",
       "all_status": "All",
+      "last_7_days": "Last 7 days",
+      "last_30_days": "Last 30 days",
+      "last_90_days": "Last 90 days",
       "today": "Today",
       "week": "This week",
       "month": "This month",
-      "reset": "Reset filters"
+      "custom": "Custom",
+      "reset": "Reset filters",
+      "cancel": "Cancel",
+      "apply": "Apply"
+    },
+    "export_dialog": {
+      "title": "Export data",
+      "description": "Select the filters and format to export batch data.",
+      "file_type_label": "File type",
+      "csv_excel": "CSV / Excel",
+      "pdf": "PDF",
+      "cancel": "Cancel",
+      "export": "Export"
     },
     "table": {
       "date": "DATE",
@@ -47,7 +62,15 @@
       "view_timeline": "View batch timeline",
       "export_data": "Export data",
       "search_placeholder": "Search by date/ name/ amount/ batch ID or status",
-      "transactions_count": "{{count}} Transactions"
+      "transactions_count": "{{count}} Transactions",
+      "table": {
+        "date": "DATE",
+        "beneficiary": "BENEFICIARY",
+        "id_number": "ID NUMBER",
+        "amount": "AMOUNT",
+        "reference": "REFERENCE",
+        "status": "STATUS"
+      }
     },
     "transaction_detail": {
       "payment_status": "Payment status:",
@@ -112,6 +135,45 @@
         "approved": "Approved",
         "rejected": "Rejected"
       }
+    },
+    "create_batch": {
+      "breadcrumb_title": "New batch",
+      "balance_title": "Total available balance",
+      "manage_accounts": "Manage accounts",
+      "template_question": "Don't have the payment template?",
+      "template_download": "Click here to download.",
+      "file_upload": {
+        "drag_drop": "Drag your document or",
+        "select_file": "Select from your device",
+        "file_requirements": "Allowed files: {{extensions}}. Maximum size {{size}} MB."
+      },
+      "batch_summary": {
+        "title": "Batch summary",
+        "edit_button": "Edit",
+        "total_beneficiaries": "Total beneficiaries",
+        "total_to_pay": "Total to pay",
+        "balance_after": "Balance after transaction"
+      },
+      "actions": {
+        "cancel": "Cancel batch",
+        "confirm": "Confirm and process batch"
+      },
+      "cancel_dialog": {
+        "title": "Cancel batch",
+        "description": "Are you sure you want to cancel the batch? Data will be lost.",
+        "discard": "Cancel batch",
+        "continue_editing": "Continue editing"
+      },
+      "otp_dialog": {
+        "title": "Enter Two-Factor Authentication (2FA)",
+        "description": "To process the batch, please enter the Two-Factor Authentication code.",
+        "otp_label": "Verification code",
+        "cancel": "Cancel",
+        "confirm": "Process batch"
+      }
+    },
+    "messages": {
+      "batch_created": "Batch created successfully"
     }
   }
 }

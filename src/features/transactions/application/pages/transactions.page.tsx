@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { createPortal } from "react-dom";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { useTransactions } from "../hooks/use-transactions";
@@ -14,17 +14,17 @@ import {
   Sheet,
   SheetBody,
   SheetContent,
-  SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@adamosuiteservices/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@adamosuiteservices/ui/select";
+import { Combobox } from "@adamosuiteservices/ui/combobox";
+import { Calendar } from "@adamosuiteservices/ui/calendar";
+import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/popover";
+import type { DateRange } from "react-day-picker";
+import { format, subDays, startOfDay } from "date-fns";
+import { es, enUS } from "date-fns/locale";
+import { useRef, useState as useStateReact } from "react";
 import {
   Dialog,
   DialogTrigger,
@@ -45,9 +45,165 @@ import {
   TableHeader,
   TableRow,
 } from "@adamosuiteservices/ui/table";
+import {
+  Timeline,
+  TimelineItem,
+  TimelineIndicator,
+  TimelineContent,
+  TimelineTitle,
+  TimelineDescription,
+  TimelineTime,
+} from "@adamosuiteservices/ui/timeline";
+import { Alert, AlertTitle, AlertDescription } from "@adamosuiteservices/ui/alert";
 import type { TransactionStatus } from "../entities/transaction.entity";
 import type { Transaction } from "../entities/transaction.entity";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+/**
+ * custom date range picker component
+ * keeps preset ranges (7/30/90 days) independent from custom selection
+ */
+const DateRangePicker = ({
+  dateRange,
+  onDateRangeChange,
+  labels,
+  className,
+  currentLanguage,
+}: {
+  dateRange: DateRange;
+  onDateRangeChange: (range: DateRange) => void;
+  labels: {
+    last7Days: string;
+    last30Days: string;
+    last90Days: string;
+    custom: string;
+    placeholder: string;
+    cancel: string;
+    apply: string;
+  };
+  className?: string;
+  currentLanguage: string;
+}) => {
+  const comboboxRef = useRef<HTMLElement | null>(null);
+  const [selectedOption, setSelectedOption] = useStateReact<string>(() => {
+    // calculate initial option based on dateRange
+    if (!dateRange.from || !dateRange.to) return "";
+    const today = startOfDay(new Date());
+    if (dateRange.from.getTime() === subDays(today, 7).getTime() && dateRange.to.getTime() === today.getTime()) {
+      return "7_days";
+    }
+    if (dateRange.from.getTime() === subDays(today, 30).getTime() && dateRange.to.getTime() === today.getTime()) {
+      return "30_days";
+    }
+    if (dateRange.from.getTime() === subDays(today, 90).getTime() && dateRange.to.getTime() === today.getTime()) {
+      return "90_days";
+    }
+    return "custom";
+  });
+  const [isCalendarOpen, setIsCalendarOpen] = useStateReact(false);
+  const [tempDateRange, setTempDateRange] = useStateReact<DateRange>({ from: undefined, to: undefined });
+
+  // get locale based on current language
+  const locale = currentLanguage === "es" ? es : enUS;
+
+  const handleComboboxChange = (value: string | string[]) => {
+    const selectedValue = Array.isArray(value) ? value[0] : value;
+    if (selectedValue === "custom") {
+      // open calendar with empty selection
+      setSelectedOption("custom");
+      setTempDateRange({ from: undefined, to: undefined });
+      setIsCalendarOpen(true);
+      return;
+    }
+
+    // handle preset selection
+    setSelectedOption(selectedValue);
+    const today = startOfDay(new Date());
+    const daysMap = { "7_days": 7, "30_days": 30, "90_days": 90 };
+    const days = daysMap[selectedValue as keyof typeof daysMap];
+    if (days) {
+      onDateRangeChange({ from: subDays(today, days), to: today });
+    }
+  };
+
+  const handleApply = () => {
+    if (tempDateRange.from && tempDateRange.to) {
+      onDateRangeChange(tempDateRange);
+      setIsCalendarOpen(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsCalendarOpen(false);
+  };
+
+  // get display text for combobox
+  const getDisplayText = () => {
+    if (selectedOption === "custom" && dateRange.from && dateRange.to) {
+      return format(dateRange.from, "dd/MM/yyyy") + " - " + format(dateRange.to, "dd/MM/yyyy");
+    }
+    return "";
+  };
+
+  return (
+    <>
+      <Combobox
+        ref={(node) => {
+          comboboxRef.current = node;
+        }}
+        alwaysShowPlaceholder
+        selectedFeedback="check"
+        icon="calendar_today"
+        options={[
+          { label: labels.last7Days, value: "7_days" },
+          { label: labels.last30Days, value: "30_days" },
+          { label: labels.last90Days, value: "90_days" },
+          { label: labels.custom, value: "custom" },
+        ]}
+        labels={{ placeholder: labels.placeholder }}
+        value={selectedOption}
+        onValueChange={handleComboboxChange}
+        classNames={{ trigger: className }}
+        renders={{
+          displayValue: ({ text, value }) => {
+            if (value === "custom" && dateRange.from && dateRange.to) {
+              return getDisplayText();
+            }
+            return text;
+          },
+        }}
+      />
+      <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <PopoverAnchor virtualRef={comboboxRef as React.RefObject<HTMLElement>} />
+        <PopoverContent align="start">
+          <Calendar
+            required
+            mode="range"
+            selected={tempDateRange}
+            onSelect={setTempDateRange}
+            captionLayout="dropdown"
+            locale={locale}
+            formatters={{
+              formatMonthDropdown: (date) => {
+                const monthName = date.toLocaleString(currentLanguage === "es" ? "es-ES" : "en-US", { month: "long" });
+                return monthName.charAt(0).toUpperCase() + monthName.slice(1);
+              },
+            }}
+            classNames={{ root: "adm:p-0!" }}
+          />
+          <div className="adm:mt-2 adm:flex adm:justify-end adm:gap-2">
+            <Button variant="link" onClick={handleCancel}>
+              {labels.cancel}
+            </Button>
+            <Button variant="link" onClick={handleApply} disabled={!tempDateRange.from || !tempDateRange.to}>
+              {labels.apply}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </>
+  );
+};
 
 /**
  * transactions page
@@ -55,36 +211,71 @@ import { useState } from "react";
  * displays transactions list
  */
 export const TransactionsPage = () => {
-  const { t } = useTranslation("transactions");
+  const { t, i18n } = useTranslation("transactions");
   const { transactions, totalCount } = useTransactions();
+  const [searchParams] = useSearchParams();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [dateFilter, setDateFilter] = useState("all");
-  const [accountFilter, setAccountFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const today = startOfDay(new Date());
+    return {
+      from: subDays(today, 7),
+      to: today,
+    };
+  });
+  const [accountFilter, setAccountFilter] = useState<string[]>(["all"]);
+  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
 
   // export dialog state
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [exportDateFilter, setExportDateFilter] = useState("all");
-  const [exportStatusFilter, setExportStatusFilter] = useState("all");
+  const [exportDateRange, setExportDateRange] = useState<DateRange>({
+    from: undefined,
+    to: undefined,
+  });
+  const [exportStatusFilter, setExportStatusFilter] = useState<string[]>(["all"]);
   const [exportFormatCSV, setExportFormatCSV] = useState(false);
   const [exportFormatPDF, setExportFormatPDF] = useState(false);
 
   /**
+   * apply status filter from URL on mount
+   */
+  useEffect(() => {
+    const statusParam = searchParams.get("status");
+    if (statusParam && ["pending", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
+      setStatusFilter([statusParam]);
+    }
+  }, [searchParams]);
+
+  /**
+   * check if date range is different from default (last 7 days)
+   */
+  const isDateRangeCustom = () => {
+    if (!dateRange.from || !dateRange.to) return false;
+    const today = startOfDay(new Date());
+    const defaultFrom = subDays(today, 7);
+    return dateRange.from.getTime() !== defaultFrom.getTime() || dateRange.to.getTime() !== today.getTime();
+  };
+
+  /**
    * check if any filter is active
    */
-  const hasActiveFilters = dateFilter !== "all" || accountFilter !== "all" || statusFilter !== "all";
+  const hasActiveFilters = isDateRangeCustom() || (accountFilter.length > 0 && !accountFilter.includes("all")) || (statusFilter.length > 0 && !statusFilter.includes("all"));
 
   /**
    * reset all filters
    */
   const handleResetFilters = () => {
-    setDateFilter("all");
-    setAccountFilter("all");
-    setStatusFilter("all");
+    const today = startOfDay(new Date());
+    setDateRange({
+      from: subDays(today, 7),
+      to: today,
+    });
+    setAccountFilter(["all"]);
+    setStatusFilter(["all"]);
   };
 
   /**
@@ -102,6 +293,8 @@ export const TransactionsPage = () => {
     switch (status) {
       case "paid":
         return "success-medium";
+      case "validated":
+        return "default-medium";
       case "returned":
         return "warning-medium";
       case "rejected":
@@ -175,45 +368,48 @@ export const TransactionsPage = () => {
                     <div className="flex gap-4">
                       {/* date filter */}
                       <div className="flex-1">
-                        <Select value={exportDateFilter} onValueChange={setExportDateFilter}>
-                          <SelectTrigger className="h-10 w-full">
-                            <div className="flex items-center gap-2">
-                              <Icon symbol="calendar_today" className="text-neutrals-400" />
-                              <span className="text-neutrals-400 text-sm">{t("transactions.export_dialog.date_filter")}</span>
-                              <span className="ml-auto text-neutrals-900 text-sm font-normal">
-                                {exportDateFilter === "all" ? t("transactions.export_dialog.date_all") : exportDateFilter}
-                              </span>
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">{t("transactions.export_dialog.date_all")}</SelectItem>
-                            <SelectItem value="today">Hoy</SelectItem>
-                            <SelectItem value="week">Esta semana</SelectItem>
-                            <SelectItem value="month">Este mes</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <DateRangePicker
+                          dateRange={exportDateRange}
+                          onDateRangeChange={setExportDateRange}
+                          labels={{
+                            last7Days: t("transactions.filters.last_7_days"),
+                            last30Days: t("transactions.filters.last_30_days"),
+                            last90Days: t("transactions.filters.last_90_days"),
+                            custom: t("transactions.filters.custom"),
+                            placeholder: t("transactions.export_dialog.date_filter"),
+                            cancel: t("transactions.filters.cancel"),
+                            apply: t("transactions.filters.apply"),
+                          }}
+                          className="h-10 w-full"
+                          currentLanguage={i18n.language}
+                        />
                       </div>
 
                       {/* status filter */}
                       <div className="flex-1">
-                        <Select value={exportStatusFilter} onValueChange={setExportStatusFilter}>
-                          <SelectTrigger className="h-10 w-full">
-                            <div className="flex items-center gap-2">
-                              <Icon symbol="circle" className="text-neutrals-400" />
-                              <span className="text-neutrals-400 text-sm">{t("transactions.export_dialog.status_filter")}</span>
-                              <span className="ml-auto text-neutrals-900 text-sm font-normal">
-                                {exportStatusFilter === "all" ? t("transactions.export_dialog.status_all") : exportStatusFilter}
-                              </span>
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">{t("transactions.export_dialog.status_all")}</SelectItem>
-                            <SelectItem value="paid">{t("transactions.status.paid")}</SelectItem>
-                            <SelectItem value="pending">{t("transactions.status.pending")}</SelectItem>
-                            <SelectItem value="returned">{t("transactions.status.returned")}</SelectItem>
-                            <SelectItem value="rejected">{t("transactions.status.rejected")}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          multiple
+                          exclusiveOption="all"
+                          alwaysShowPlaceholder
+                          valuePosition="right"
+                          icon="search_activity"
+                          options={[
+                            { value: "all", label: t("transactions.export_dialog.status_all") },
+                            { value: "pending", label: t("transactions.status.pending") },
+                            { value: "validated", label: t("transactions.status.validated") },
+                            { value: "paid", label: t("transactions.status.paid") },
+                            { value: "returned", label: t("transactions.status.returned") },
+                            { value: "rejected", label: t("transactions.status.rejected") },
+                          ]}
+                          value={exportStatusFilter}
+                          onValueChange={(value) => setExportStatusFilter(value as string[])}
+                          labels={{
+                            placeholder: t("transactions.export_dialog.status_filter"),
+                          }}
+                          classNames={{
+                            trigger: "h-10 w-full",
+                          }}
+                        />
                       </div>
                     </div>
 
@@ -248,7 +444,10 @@ export const TransactionsPage = () => {
                         {t("transactions.export_dialog.cancel")}
                       </Button>
                     </DialogClose>
-                    <Button variant="default" disabled>
+                    <Button 
+                      variant="default" 
+                      disabled={!exportFormatCSV && !exportFormatPDF}
+                    >
                       {t("transactions.export_dialog.export")}
                     </Button>
                   </DialogFooter>
@@ -257,7 +456,7 @@ export const TransactionsPage = () => {
             </div>
 
             {/* search input */}
-            <div className="flex-1 min-w-[500px]">
+            <div className="w-full md:flex-1 md:min-w-[500px]">
               <div className="relative">
                 <Icon
                   symbol="search"
@@ -265,7 +464,7 @@ export const TransactionsPage = () => {
                 />
                 <Input
                   placeholder={t("transactions.header.search_placeholder")}
-                  className="h-10 pl-10 border-neutrals-100 text-sm"
+                  className="h-10 pl-10 text-sm"
                 />
               </div>
             </div>
@@ -275,57 +474,73 @@ export const TransactionsPage = () => {
           <div className="flex flex-wrap items-center gap-6">
             {/* date filter */}
             <div className="flex-1 min-w-[240px]">
-              <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="h-10 border-[#e2e3e5] w-full">
-                  <div className="flex items-center gap-2">
-                    <Icon symbol="calendar_today" className="text-[#898f99]" />
-                    <SelectValue placeholder={t("transactions.filters.date")} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("transactions.filters.all")}</SelectItem>
-                  <SelectItem value="today">Hoy</SelectItem>
-                  <SelectItem value="week">Esta semana</SelectItem>
-                  <SelectItem value="month">Este mes</SelectItem>
-                </SelectContent>
-              </Select>
+              <DateRangePicker
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                labels={{
+                  last7Days: t("transactions.filters.last_7_days"),
+                  last30Days: t("transactions.filters.last_30_days"),
+                  last90Days: t("transactions.filters.last_90_days"),
+                  custom: t("transactions.filters.custom"),
+                  placeholder: t("transactions.filters.date"),
+                  cancel: t("transactions.filters.cancel"),
+                  apply: t("transactions.filters.apply"),
+                }}
+                className="h-10 border-[#e2e3e5] w-full"
+                currentLanguage={i18n.language}
+              />
             </div>
 
             {/* account filter */}
             <div className="flex-1 min-w-[240px]">
-              <Select value={accountFilter} onValueChange={setAccountFilter}>
-                <SelectTrigger className="h-10 border-[#e2e3e5] w-full">
-                  <div className="flex items-center gap-2">
-                    <Icon symbol="account_balance_wallet" className="text-[#898f99]" />
-                    <SelectValue placeholder={t("transactions.filters.account")} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("transactions.filters.all")}</SelectItem>
-                  <SelectItem value="account1">Cuenta 1</SelectItem>
-                  <SelectItem value="account2">Cuenta 2</SelectItem>
-                  <SelectItem value="account3">Cuenta 3</SelectItem>
-                </SelectContent>
-              </Select>
+              <Combobox
+                multiple
+                exclusiveOption="all"
+                alwaysShowPlaceholder
+                valuePosition="right"
+                icon="account_balance_wallet"
+                options={[
+                  { value: "all", label: t("transactions.filters.all") },
+                  { value: "account1", label: "Cuenta 1" },
+                  { value: "account2", label: "Cuenta 2" },
+                  { value: "account3", label: "Cuenta 3" },
+                ]}
+                value={accountFilter}
+                onValueChange={(value) => setAccountFilter(value as string[])}
+                labels={{
+                  placeholder: t("transactions.filters.account"),
+                }}
+                classNames={{
+                  trigger: "h-10 border-[#e2e3e5] w-full",
+                }}
+              />
             </div>
 
             {/* status filter */}
             <div className="flex-1 min-w-[240px]">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-10 border-[#e2e3e5] w-full">
-                  <div className="flex items-center gap-2">
-                    <Icon symbol="circle" className="text-[#898f99]" />
-                    <SelectValue placeholder={t("transactions.filters.status")} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("transactions.filters.all_status")}</SelectItem>
-                  <SelectItem value="paid">{t("transactions.status.paid")}</SelectItem>
-                  <SelectItem value="pending">{t("transactions.status.pending")}</SelectItem>
-                  <SelectItem value="returned">{t("transactions.status.returned")}</SelectItem>
-                  <SelectItem value="rejected">{t("transactions.status.rejected")}</SelectItem>
-                </SelectContent>
-              </Select>
+              <Combobox
+                multiple
+                exclusiveOption="all"
+                alwaysShowPlaceholder
+                valuePosition="right"
+                icon="search_activity"
+                options={[
+                  { value: "all", label: t("transactions.filters.all_status") },
+                  { value: "pending", label: t("transactions.status.pending") },
+                  { value: "validated", label: t("transactions.status.validated") },
+                  { value: "paid", label: t("transactions.status.paid") },
+                  { value: "returned", label: t("transactions.status.returned") },
+                  { value: "rejected", label: t("transactions.status.rejected") },
+                ]}
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value as string[])}
+                labels={{
+                  placeholder: t("transactions.filters.status"),
+                }}
+                classNames={{
+                  trigger: "h-10 border-[#e2e3e5] w-full",
+                }}
+              />
             </div>
 
             {/* reset filters button */}
@@ -388,7 +603,14 @@ export const TransactionsPage = () => {
                     {transaction.reference}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(transaction.status)}>
+                    <Badge 
+                      variant={getStatusVariant(transaction.status)} 
+                      className={`h-8 px-2 text-sm leading-5 ${
+                        transaction.status === 'pending' ? 'bg-neutrals-50' : 
+                        transaction.status === 'validated' ? 'bg-[#E5F3FA] text-neutrals-700' : 
+                        ''
+                      }`}
+                    >
                       {t(`transactions.status.${transaction.status}`)}
                     </Badge>
                   </TableCell>
@@ -401,59 +623,176 @@ export const TransactionsPage = () => {
 
     {/* transaction detail sheet */}
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-      <SheetContent>
+      <SheetContent className="sm:w-[576px] sm:max-w-[576px]">
         <SheetHeader>
-          <SheetTitle>Detalle de transacción</SheetTitle>
-          <SheetDescription>
-            Información completa de la transacción
-          </SheetDescription>
+          <SheetTitle className="text-sm font-bold text-neutrals-900">Detalles del pago</SheetTitle>
         </SheetHeader>
-        <SheetBody>
+        <SheetBody className="flex flex-col gap-8 overflow-y-auto">
           {selectedTransaction && (
-            <div className="flex flex-col gap-6">
-              {/* status badge */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-neutrals-400">Estado:</span>
-                <Badge variant={getStatusVariant(selectedTransaction.status)}>
-                  {t(`transactions.status.${selectedTransaction.status}`)}
-                </Badge>
-              </div>
-
-              {/* transaction details */}
+            <>
+              {/* Transaction details fields */}
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-neutrals-400 uppercase">Fecha</span>
-                  <span className="text-sm text-neutrals-700 font-medium">{selectedTransaction.date}</span>
+                {/* Fecha */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Fecha</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Icon symbol="calendar_today" className="text-neutrals-700 size-6" />
+                    <span className="text-sm font-semibold text-neutrals-700">{selectedTransaction.date}</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-neutrals-400 uppercase">Beneficiario</span>
-                  <span className="text-sm text-neutrals-700 font-medium">{selectedTransaction.beneficiary}</span>
+                {/* Beneficiario */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Beneficiario</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Icon symbol="account_circle" className="text-neutrals-700 size-6" />
+                    <span className="text-sm font-semibold text-neutrals-700">{selectedTransaction.beneficiary}</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-neutrals-400 uppercase">Número de ID</span>
-                  <span className="text-sm text-neutrals-700 font-medium">{selectedTransaction.idNumber}</span>
+                {/* Tipo y número de identificación */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Tipo y número de identificación</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Icon symbol="contacts" className="text-neutrals-700 size-6" />
+                    <span className="text-sm font-semibold text-neutrals-700">Cédula de Ciudadanía: {selectedTransaction.idNumber}</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-neutrals-400 uppercase">Monto</span>
-                  <span className="text-sm text-neutrals-700 font-semibold">{formatAmount(selectedTransaction.amount)}</span>
+                {/* Tipo y número de cuenta */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Tipo y número de cuenta</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Icon symbol="account_balance" className="text-neutrals-700 size-6" />
+                    <span className="text-sm font-semibold text-neutrals-700">Corriente. Davivienda Nº 002-83336-90116</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-neutrals-400 uppercase">Referencia</span>
-                  <span className="text-sm text-neutrals-700 font-medium">{selectedTransaction.reference}</span>
+                {/* Número de referencia */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Número de referencia</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Icon symbol="confirmation_number" className="text-neutrals-700 size-6" />
+                    <span className="text-sm font-semibold text-neutrals-700">{selectedTransaction.reference}</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs text-neutrals-400 uppercase">ID de transacción</span>
-                  <span className="text-sm text-neutrals-700 font-mono">{selectedTransaction.id}</span>
+                {/* Monto */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Monto</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Icon symbol="paid" className="text-neutrals-700 size-6" />
+                    <span className="text-sm font-semibold text-neutrals-700">{formatAmount(selectedTransaction.amount)}</span>
+                  </div>
                 </div>
+
+                {/* Cuenta */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Cuenta</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Icon symbol="account_balance_wallet" className="text-neutrals-700 size-6" />
+                    <span className="text-sm font-semibold text-neutrals-700">Cuenta de ahorros</span>
+                  </div>
+                </div>
+
+                {/* Estado */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs text-neutrals-500">Estado</span>
+                  <div className="flex items-center gap-2 pl-2 h-10">
+                    <Badge 
+                      variant={getStatusVariant(selectedTransaction.status)} 
+                      className={`h-8 px-2 text-sm leading-5 ${
+                        selectedTransaction.status === 'pending' ? 'bg-neutrals-50' : 
+                        selectedTransaction.status === 'validated' ? 'bg-[#E5F3FA] text-neutrals-700' : 
+                        ''
+                      }`}
+                    >
+                      {t(`transactions.status.${selectedTransaction.status}`)}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Alert/Motivo - only show for returned/rejected */}
+                {(selectedTransaction.status === 'returned' || selectedTransaction.status === 'rejected') && (
+                  <Alert variant="warning" className="bg-warning-50 border-0">
+                    <Icon symbol="info" />
+                    <AlertTitle>
+                      {selectedTransaction.status === 'returned' ? 'Motivo de retorno' : 'Motivo de rechazo'}
+                    </AlertTitle>
+                    <AlertDescription>
+                      Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
-            </div>
+
+              {/* Timeline section */}
+              <div className="flex flex-col gap-6">
+                <Button
+                  variant="link"
+                  className="flex items-center gap-2 text-primary h-6 px-0 self-start"
+                  onClick={() => setShowTimeline(!showTimeline)}
+                >
+                  <span className="text-sm">{showTimeline ? 'Ocultar timeline de pago' : 'Ver timeline de pago'}</span>
+                  <Icon 
+                    symbol={showTimeline ? "expand_less" : "expand_more"} 
+                    className="size-6" 
+                  />
+                </Button>
+
+                {showTimeline && (
+                  <Timeline>
+                    <TimelineItem status="complete">
+                      <TimelineIndicator />
+                      <TimelineContent>
+                        <TimelineTitle>Pago completado con éxito.</TimelineTitle>
+                        <TimelineDescription>
+                          El pago ha sido procesado exitosamente. Confirmación bancaria recibida.
+                        </TimelineDescription>
+                        <TimelineTime>02 Septiembre. 02:35 PM</TimelineTime>
+                      </TimelineContent>
+                    </TimelineItem>
+                    <TimelineItem status="active">
+                      <TimelineIndicator />
+                      <TimelineContent>
+                        <TimelineTitle>En proceso</TimelineTitle>
+                        <TimelineDescription>
+                          El pago está siendo procesado por el banco.
+                        </TimelineDescription>
+                        <TimelineTime>01 Septiembre. 10:15 AM</TimelineTime>
+                      </TimelineContent>
+                    </TimelineItem>
+                    <TimelineItem status="pending">
+                      <TimelineIndicator />
+                      <TimelineContent>
+                        <TimelineTitle>Pago iniciado</TimelineTitle>
+                        <TimelineDescription>
+                          Solicitud de pago recibida.
+                        </TimelineDescription>
+                        <TimelineTime>01 Septiembre. 09:00 AM</TimelineTime>
+                      </TimelineContent>
+                    </TimelineItem>
+                  </Timeline>
+                )}
+              </div>
+            </>
           )}
         </SheetBody>
+        {/* Action button - only show for returned/rejected */}
+        {selectedTransaction && (selectedTransaction.status === 'returned' || selectedTransaction.status === 'rejected') && (
+          <SheetFooter>
+            <Button 
+              variant="default" 
+              size="default" 
+              className="self-start"
+              asChild
+            >
+              <Link to={`/transactions/correct/${selectedTransaction.id}`}>
+                Corregir y volver a enviar pago
+              </Link>
+            </Button>
+          </SheetFooter>
+        )}
       </SheetContent>
     </Sheet>
     </>

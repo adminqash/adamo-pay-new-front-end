@@ -40,7 +40,7 @@ export const useTransactions = () => {
       idNumber: "56.789.012",
       amount: 15500000,
       reference: "STU-3456",
-      status: "pending",
+      status: "validated",
     },
     {
       id: "5",
@@ -85,7 +85,7 @@ export const useTransactions = () => {
       idNumber: "56.789.012",
       amount: 30000000,
       reference: "HIJ-9101",
-      status: "pending",
+      status: "validated",
     },
     {
       id: "10",

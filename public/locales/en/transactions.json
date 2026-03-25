@@ -12,7 +12,13 @@
       "account": "Account",
       "status": "Status",
       "all": "All",
-      "all_status": "All"
+      "all_status": "All",
+      "last_7_days": "Last 7 days",
+      "last_30_days": "Last 30 days",
+      "last_90_days": "Last 90 days",
+      "custom": "Custom",
+      "cancel": "Cancel",
+      "apply": "Apply"
     },
     "table": {
       "date": "DATE",
@@ -24,6 +30,7 @@
     },
     "status": {
       "pending": "Pending",
+      "validated": "Validated",
       "paid": "Paid",
       "returned": "Returned",
       "rejected": "Rejected"
@@ -48,6 +55,7 @@
       "step_3": "Summary",
       "description": "Search for a saved beneficiary or enter information manually to make a new payment:",
       "search_placeholder": "Search beneficiary by name or identification number",
+      "recent_beneficiaries": "Recent beneficiaries",
       "toggle_manual": "Enter information manually",
       "document_type": "Document type",
       "document_number": "Document number",
@@ -62,7 +70,79 @@
       "input_name_placeholder": "Enter the name",
       "input_lastname_placeholder": "Enter the last name",
       "cancel": "Cancel payment",
-      "continue": "Continue"
+      "continue": "Continue",
+      "beneficiary_label": "Beneficiary",
+      "source_account_label": "Source account",
+      "amount_label": "Amount to pay",
+      "use_all": "Use all",
+      "available": "Available",
+      "edit": "Edit",
+      "amount_placeholder": "$0.00",
+      "account_principal": "Main account",
+      "account_payroll": "Payroll account",
+      "account_savings": "Savings account",
+      "beneficiary_title": "Beneficiary",
+      "amount_source_title": "Amount and source account",
+      "full_name": "Full name",
+      "id_type_number": "ID type and number",
+      "account_type_number": "Account type and number",
+      "checking_account": "Checking. Davivienda No. 002-83336-90116",
+      "select_another": "Select another",
+      "amount": "Amount",
+      "source_account": "Source account",
+      "cancel_payment": "Cancel payment",
+      "confirm_payment": "Confirm payment",
+      "verify_data": "Verify the data before continuing",
+      "operation_warning": "Once the payment is confirmed, the operation cannot be canceled. Make sure all data is correct."
+    },
+    "correct_payment": {
+      "page_title": "Correct payment",
+      "payment_status": "Payment status:",
+      "return_reason_title": "Return reason",
+      "rejection_reason_title": "Rejection reason",
+      "beneficiary_title": "Beneficiary",
+      "amount_account_title": "Amount and source account",
+      "edit_button": "Edit",
+      "full_name": "Full name",
+      "id_type_number": "ID type and number",
+      "account_type_number": "Account type and number",
+      "select_another": "Select another",
+      "amount": "Amount",
+      "source_account": "Source account",
+      "cancel_button": "Cancel",
+      "confirm_button": "Confirm payment"
+    },
+    "quick_payment": {
+      "breadcrumb_title": "Quick payment",
+      "beneficiary_info_title": "Beneficiary information",
+      "full_name_label": "Full name",
+      "account_type_label": "Account type and number",
+      "select_another_account": "Select another account",
+      "source_account_label": "Source account",
+      "amount_label": "Amount to pay",
+      "amount_placeholder": "$0.00",
+      "use_all": "Use all",
+      "available": "Available",
+      "cancel": "Cancel payment",
+      "confirm": "Confirm and send payment",
+      "add_bank_account": "Add new bank account",
+      "no_other_accounts": "The user has no other accounts added"
+    },
+    "select_account_dialog": {
+      "title": "Select bank account",
+      "description": "Choose the beneficiary's bank account to which you want to send the payment:",
+      "cancel": "Cancel",
+      "confirm": "Select account"
+    },
+    "otp_dialog": {
+      "title": "Enter Two-Factor Authentication (2FA)",
+      "description": "To process the payment, please enter the Two-Factor Authentication code.",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "messages": {
+      "payment_corrected": "Payment corrected and sent successfully",
+      "payment_created": "Payment created and sent successfully"
     }
   }
 }
