@@ -38,6 +38,13 @@ import {
   DialogFooter,
   DialogClose,
 } from "@adamosuiteservices/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from "@adamosuiteservices/ui/sheet";
 import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import { Label } from "@adamosuiteservices/ui/label";
 import { Combobox } from "@adamosuiteservices/ui/combobox";
@@ -49,6 +56,15 @@ import {
   PaginationLink,
   PaginationNext,
 } from "@adamosuiteservices/ui/pagination";
+import {
+  Timeline,
+  TimelineItem,
+  TimelineIndicator,
+  TimelineContent,
+  TimelineTitle,
+  TimelineDescription,
+  TimelineTime,
+} from "@adamosuiteservices/ui/timeline";
 import type { TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
 import { useState } from "react";
 
@@ -71,6 +87,9 @@ export const BatchDetailPage = () => {
   const [exportStatusFilter, setExportStatusFilter] = useState<string[]>(["all"]);
   const [exportFormatCSV, setExportFormatCSV] = useState(false);
   const [exportFormatPDF, setExportFormatPDF] = useState(false);
+
+  // timeline dialog state
+  const [isTimelineDialogOpen, setIsTimelineDialogOpen] = useState(false);
 
   /**
    * format currency amount
@@ -165,7 +184,7 @@ export const BatchDetailPage = () => {
             <Button variant="default">
               {t("batches.detail.review_later")}
             </Button>
-            <Button variant="link">
+            <Button variant="link" onClick={() => setIsTimelineDialogOpen(true)}>
               <Icon symbol="hourglass" />
               {t("batches.detail.view_timeline")}
             </Button>
@@ -407,6 +426,59 @@ export const BatchDetailPage = () => {
         </div>
       </Card>
       </PageContainer>
+
+      {/* Timeline Sheet */}
+      <Sheet open={isTimelineDialogOpen} onOpenChange={setIsTimelineDialogOpen}>
+        <SheetContent className="sm:w-[576px] sm:max-w-[576px]">
+          <SheetHeader>
+            <SheetTitle>{t("batches.detail.timeline_dialog.title")}</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="overflow-y-auto">
+            <Timeline>
+              <TimelineItem status="complete">
+                <TimelineIndicator />
+                <TimelineContent>
+                  <TimelineTitle>Lote enviado exitosamente</TimelineTitle>
+                  <TimelineDescription>
+                    El lote ha sido procesado y enviado al banco para su ejecución.
+                  </TimelineDescription>
+                  <TimelineTime>15 Marzo 2026. 03:45 PM</TimelineTime>
+                </TimelineContent>
+              </TimelineItem>
+              <TimelineItem status="complete">
+                <TimelineIndicator />
+                <TimelineContent>
+                  <TimelineTitle>Validación completada</TimelineTitle>
+                  <TimelineDescription>
+                    Todas las transacciones del lote han sido validadas correctamente.
+                  </TimelineDescription>
+                  <TimelineTime>15 Marzo 2026. 03:30 PM</TimelineTime>
+                </TimelineContent>
+              </TimelineItem>
+              <TimelineItem status="complete">
+                <TimelineIndicator />
+                <TimelineContent>
+                  <TimelineTitle>Lote en revisión</TimelineTitle>
+                  <TimelineDescription>
+                    El sistema está revisando las transacciones incluidas en el lote.
+                  </TimelineDescription>
+                  <TimelineTime>15 Marzo 2026. 03:15 PM</TimelineTime>
+                </TimelineContent>
+              </TimelineItem>
+              <TimelineItem status="complete">
+                <TimelineIndicator />
+                <TimelineContent>
+                  <TimelineTitle>Lote creado</TimelineTitle>
+                  <TimelineDescription>
+                    El lote de pagos ha sido creado con {batch.transactions} transacciones.
+                  </TimelineDescription>
+                  <TimelineTime>15 Marzo 2026. 03:00 PM</TimelineTime>
+                </TimelineContent>
+              </TimelineItem>
+            </Timeline>
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };

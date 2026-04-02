@@ -157,8 +157,8 @@ export const CreatePaymentPage = () => {
       variant: "success",
     });
     
-    // Navigate to home
-    navigate("/");
+    // Navigate to transactions
+    navigate("/transactions");
   };
 
   return (

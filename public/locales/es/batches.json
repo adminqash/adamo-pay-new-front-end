@@ -70,9 +70,15 @@
         "amount": "MONTO",
         "reference": "REFERENCIA",
         "status": "ESTADO"
+      },
+      "timeline_dialog": {
+        "title": "Timeline del lote",
+        "description": "Ver el historial completo de este lote",
+        "close": "Cerrar"
       }
     },
     "transaction_detail": {
+      "page_title": "Detalle de pago",
       "payment_status": "Estado del pago:",
       "beneficiary": {
         "title": "Beneficiario",
@@ -111,10 +117,11 @@
       "payment_edit_dialog": {
         "title": "Editar información de pago",
         "payment_amount": "Monto a pagar (COP)",
+        "account_info": "Tipo y número de cuenta",
         "account_type": "Tipo de cuenta",
         "bank": "Banco",
         "account_number": "Número de cuenta",
-        "select_saved_account": "Seleccionar una cuenta bancaria agendada",
+        "select_saved_account": "Seleccionar / añadir otra",
         "cancel": "Cancelar",
         "save": "Guardar cambios"
       },
@@ -125,10 +132,26 @@
         "cancel": "Cancelar",
         "save": "Guardar cambios"
       },
+      "account_selection_dialog": {
+        "title": "Seleccionar cuenta bancaria agendada",
+        "description": "Elige la cuenta bancaria a la que deseas enviar el pago:",
+        "savings_account": "Cuenta de ahorros",
+        "checking_account": "Cuenta corriente",
+        "primary": "Principal",
+        "add_new_account": "Añadir nueva cuenta",
+        "cancel": "Cancelar",
+        "select_account": "Seleccionar cuenta"
+      },
       "actions": {
         "reject": "Rechazar pago",
         "approve": "Aprobar y enviar",
         "review_later": "Revisar después"
+      },
+      "reject_dialog": {
+        "title": "Rechazar pago",
+        "description": "¿Estás seguro de que deseas rechazar este pago? Esta acción no se puede deshacer.",
+        "cancel": "Cancelar",
+        "confirm": "Rechazar pago"
       },
       "status": {
         "pending": "Pendiente",
@@ -156,7 +179,8 @@
       },
       "actions": {
         "cancel": "Cancelar lote",
-        "confirm": "Confirmar y procesar lote"
+        "confirm": "Confirmar y procesar lote",
+        "save_for_later": "Guardar y procesar luego"
       },
       "cancel_dialog": {
         "title": "Cancelar lote",
@@ -173,7 +197,8 @@
       }
     },
     "messages": {
-      "batch_created": "Lote creado con éxito"
+      "batch_created": "Lote creado con éxito",
+      "batch_saved": "Lote guardado con éxito"
     }
   }
 }

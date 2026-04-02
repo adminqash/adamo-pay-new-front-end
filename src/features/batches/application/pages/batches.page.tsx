@@ -201,10 +201,17 @@ export const BatchesPage = () => {
 
   // Show success toast if redirected from create batch
   useEffect(() => {
-    const state = location.state as { showSuccessToast?: boolean } | null;
+    const state = location.state as { showSuccessToast?: boolean; showSavedToast?: boolean } | null;
     if (state?.showSuccessToast) {
       ToastManager.show({
         message: t("batches.messages.batch_created"),
+        variant: "success",
+      });
+      // Clear the state to prevent showing toast on refresh
+      window.history.replaceState({}, document.title);
+    } else if (state?.showSavedToast) {
+      ToastManager.show({
+        message: t("batches.messages.batch_saved"),
         variant: "success",
       });
       // Clear the state to prevent showing toast on refresh
