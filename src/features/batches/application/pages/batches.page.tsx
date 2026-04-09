@@ -3,6 +3,7 @@ import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container"
 import { createPortal } from "react-dom";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 import { useBatches } from "../hooks/use-batches";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
@@ -312,9 +313,8 @@ export const BatchesPage = () => {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <Card className="p-6 border-[#e2e3e5]">
-        {/* header section */}
-        <div className="flex flex-col gap-6">
+        <Card className="p-6 border overflow-visible">
+          <StickyFilterHeader className="flex flex-col gap-0">
           {/* header + search */}
           <div className="flex flex-wrap items-center gap-6">
             {/* title + refresh button */}
@@ -449,14 +449,14 @@ export const BatchesPage = () => {
                 />
                 <Input
                   placeholder={t("batches.header.search_placeholder")}
-                  className="h-10 pl-10 border-[#e2e3e5] text-sm"
+                  className="h-10 pl-10 text-sm"
                 />
               </div>
             </div>
           </div>
 
           {/* filters */}
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6 mt-6">
             {/* date filter */}
             <div className="flex-1 min-w-[240px]">
               <DateRangePicker
@@ -471,7 +471,7 @@ export const BatchesPage = () => {
                   cancel: t("batches.filters.cancel"),
                   apply: t("batches.filters.apply"),
                 }}
-                className="h-10 border-[#e2e3e5] w-full"
+                className="h-10 w-full"
                 currentLanguage={i18n.language}
               />
             </div>
@@ -496,7 +496,7 @@ export const BatchesPage = () => {
                   placeholder: t("batches.filters.status"),
                 }}
                 classNames={{
-                  trigger: "h-10 border-[#e2e3e5] w-full",
+                  trigger: "h-10 w-full",
                 }}
               />
             </div>
@@ -512,9 +512,9 @@ export const BatchesPage = () => {
               </Button>
             )}
           </div>
-        </div>
+          </StickyFilterHeader>
 
-        {/* table */}
+          {/* table */}
         <Table className="rounded-2xl">
           <TableHeader>
               <TableRow>

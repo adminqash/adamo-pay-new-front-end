@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 import { useTransactions } from "../hooks/use-transactions";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
@@ -323,9 +324,8 @@ export const TransactionsPage = () => {
         sidebarTopBarPortal,
       )}
       <PageContainer className="bg-neutrals-25">
-        <Card className="p-6">
-        {/* header section */}
-        <div className="flex flex-col gap-6">
+        <Card className="p-6 border overflow-visible">
+          <StickyFilterHeader className="flex flex-col gap-0">
           {/* header + search */}
           <div className="flex flex-wrap items-center gap-6">
             {/* title + refresh button */}
@@ -471,7 +471,7 @@ export const TransactionsPage = () => {
           </div>
 
           {/* filters */}
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6 mt-6">
             {/* date filter */}
             <div className="flex-1 min-w-[240px]">
               <DateRangePicker
@@ -486,7 +486,7 @@ export const TransactionsPage = () => {
                   cancel: t("transactions.filters.cancel"),
                   apply: t("transactions.filters.apply"),
                 }}
-                className="h-10 border-[#e2e3e5] w-full"
+                className="h-10 w-full"
                 currentLanguage={i18n.language}
               />
             </div>
@@ -511,7 +511,7 @@ export const TransactionsPage = () => {
                   placeholder: t("transactions.filters.account"),
                 }}
                 classNames={{
-                  trigger: "h-10 border-[#e2e3e5] w-full",
+                  trigger: "h-10 w-full",
                 }}
               />
             </div>
@@ -538,7 +538,7 @@ export const TransactionsPage = () => {
                   placeholder: t("transactions.filters.status"),
                 }}
                 classNames={{
-                  trigger: "h-10 border-[#e2e3e5] w-full",
+                  trigger: "h-10 w-full",
                 }}
               />
             </div>
@@ -554,10 +554,10 @@ export const TransactionsPage = () => {
               </Button>
             )}
           </div>
-        </div>
+          </StickyFilterHeader>
 
-        {/* table */}
-        <Table className="rounded-2xl">
+          {/* table */}
+          <Table className="rounded-2xl">
           <TableHeader>
               <TableRow>
                 <TableHead className="text-xs font-semibold text-neutrals-700 uppercase">
