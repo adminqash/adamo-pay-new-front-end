@@ -70,9 +70,15 @@
         "amount": "AMOUNT",
         "reference": "REFERENCE",
         "status": "STATUS"
+      },
+      "timeline_dialog": {
+        "title": "Batch timeline",
+        "description": "View the complete history of this batch",
+        "close": "Close"
       }
     },
     "transaction_detail": {
+      "page_title": "Payment detail",
       "payment_status": "Payment status:",
       "beneficiary": {
         "title": "Beneficiary",
@@ -111,10 +117,11 @@
       "payment_edit_dialog": {
         "title": "Edit payment information",
         "payment_amount": "Payment amount (COP)",
+        "account_info": "Account type and number",
         "account_type": "Account type",
         "bank": "Bank",
         "account_number": "Account number",
-        "select_saved_account": "Select a saved bank account",
+        "select_saved_account": "Select / add another",
         "cancel": "Cancel",
         "save": "Save changes"
       },
@@ -125,10 +132,26 @@
         "cancel": "Cancel",
         "save": "Save changes"
       },
+      "account_selection_dialog": {
+        "title": "Select saved bank account",
+        "description": "Choose the bank account to which you want to send the payment:",
+        "savings_account": "Savings account",
+        "checking_account": "Checking account",
+        "primary": "Primary",
+        "add_new_account": "Add new account",
+        "cancel": "Cancel",
+        "select_account": "Select account"
+      },
       "actions": {
         "reject": "Reject payment",
         "approve": "Approve and send",
         "review_later": "Review later"
+      },
+      "reject_dialog": {
+        "title": "Reject payment",
+        "description": "Are you sure you want to reject this payment? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Reject payment"
       },
       "status": {
         "pending": "Pending",
@@ -156,7 +179,8 @@
       },
       "actions": {
         "cancel": "Cancel batch",
-        "confirm": "Confirm and process batch"
+        "confirm": "Confirm and process batch",
+        "save_for_later": "Save and process later"
       },
       "cancel_dialog": {
         "title": "Cancel batch",
@@ -173,7 +197,8 @@
       }
     },
     "messages": {
-      "batch_created": "Batch created successfully"
+      "batch_created": "Batch created successfully",
+      "batch_saved": "Batch saved successfully"
     }
   }
 }

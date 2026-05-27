@@ -61,6 +61,13 @@ import {
   SelectableCardTitle,
   SelectableCardDescription,
 } from "@adamosuiteservices/ui/selectable-card";
+import {
+  Timeline,
+  TimelineItem,
+  TimelineIndicator,
+  TimelineContent,
+  TimelineTitle,
+} from "@adamosuiteservices/ui/timeline";
 
 /**
  * create payment page
@@ -157,8 +164,8 @@ export const CreatePaymentPage = () => {
       variant: "success",
     });
     
-    // Navigate to home
-    navigate("/");
+    // Navigate to transactions
+    navigate("/transactions");
   };
 
   return (
@@ -185,62 +192,27 @@ export const CreatePaymentPage = () => {
         sidebarTopBarPortal,
       )}
       <PageContainer className="bg-subtle">
-        {/* Stepper */}
-        <div className="flex items-center gap-2 w-fit mb-6">
-          {/* Step 1 */}
-          <div className="flex items-center gap-2">
-            {currentStep > 1 ? (
-              <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                <Icon symbol="check" className="text-white text-[12px]" />
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded-full border-2 border-primary bg-background flex items-center justify-center shadow-[0px_0px_0px_4px_rgba(var(--primary-rgb),0.1)]">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              </div>
-            )}
-            <p className={`text-sm ${currentStep >= 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {t("transactions.create_payment.step_1")}
-            </p>
-          </div>
-
-          {/* Separator */}
-          <div className="w-6 h-px bg-border" />
-
-          {/* Step 2 */}
-          <div className="flex items-center gap-2">
-            {currentStep > 2 ? (
-              <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                <Icon symbol="check" className="text-white text-[12px]" />
-              </div>
-            ) : currentStep === 2 ? (
-              <div className="w-5 h-5 rounded-full border-2 border-primary bg-background flex items-center justify-center shadow-[0px_0px_0px_4px_rgba(var(--primary-rgb),0.1)]">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded-full border border-border bg-background" />
-            )}
-            <p className={`text-sm ${currentStep >= 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {t("transactions.create_payment.step_2")}
-            </p>
-          </div>
-
-          {/* Separator */}
-          <div className="w-6 h-px bg-border" />
-
-          {/* Step 3 */}
-          <div className="flex items-center gap-2">
-            {currentStep === 3 ? (
-              <div className="w-5 h-5 rounded-full border-2 border-primary bg-background flex items-center justify-center shadow-[0px_0px_0px_4px_rgba(var(--primary-rgb),0.1)]">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded-full border border-border bg-background" />
-            )}
-            <p className={`text-sm ${currentStep >= 3 ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {t("transactions.create_payment.step_3")}
-            </p>
-          </div>
-        </div>
+        {/* Timeline Stepper */}
+        <Timeline orientation="horizontal" className="mb-6 w-fit">
+          <TimelineItem status={currentStep > 1 ? "complete" : "active"}>
+            <TimelineIndicator />
+            <TimelineContent>
+              <TimelineTitle>{t("transactions.create_payment.step_1")}</TimelineTitle>
+            </TimelineContent>
+          </TimelineItem>
+          <TimelineItem status={currentStep > 2 ? "complete" : currentStep === 2 ? "active" : "pending"}>
+            <TimelineIndicator />
+            <TimelineContent>
+              <TimelineTitle>{t("transactions.create_payment.step_2")}</TimelineTitle>
+            </TimelineContent>
+          </TimelineItem>
+          <TimelineItem status={currentStep === 3 ? "active" : "pending"}>
+            <TimelineIndicator />
+            <TimelineContent>
+              <TimelineTitle>{t("transactions.create_payment.step_3")}</TimelineTitle>
+            </TimelineContent>
+          </TimelineItem>
+        </Timeline>
 
         {/* Main Card */}
         <div className="flex flex-col gap-6">

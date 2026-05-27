@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
+import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 import { DeleteReportDialog } from "../components/delete-report-dialog";
 
 interface Report {
@@ -82,7 +83,8 @@ export function ReportsPage() {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <Card className="p-6 border border-neutral-200 flex flex-col gap-6">
+        <Card className="p-6 border overflow-visible flex flex-col gap-0">
+          <StickyFilterHeader className="flex flex-col gap-0">
           {/* header + search */}
           <div className="flex flex-wrap items-center gap-6">
             {/* title */}
@@ -101,14 +103,16 @@ export function ReportsPage() {
                 />
                 <Input
                   placeholder={t("reports:header.search_placeholder")}
-                  className="h-10 pl-10 border-neutral-200 text-sm"
+                  className="h-10 pl-10 text-sm"
                 />
               </div>
             </div>
           </div>
+          </StickyFilterHeader>
 
           {/* table */}
-          <Table className="rounded-2xl">
+          <div className="mt-6">
+            <Table className="rounded-2xl">
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs font-semibold text-neutral-700 uppercase">
@@ -161,6 +165,7 @@ export function ReportsPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </Card>
       </PageContainer>
 

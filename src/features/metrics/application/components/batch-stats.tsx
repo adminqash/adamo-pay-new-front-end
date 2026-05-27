@@ -80,10 +80,10 @@ export function BatchStats({ stats, _filterPeriod = "today" }: BatchStatsProps) 
                   {stat.label}
                 </p>
                 <div className="flex items-center gap-2 h-10 pl-2">
-                  <Badge className="h-8 px-2 rounded-xl bg-muted text-foreground">
+                  <Badge className="h-8 px-2 rounded-xl bg-sky-50 text-sky-700">
                     {stat.value.toLocaleString()}
                   </Badge>
-                  <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
+                  <p className="text-xs text-foreground-secondary">{stat.subtitle}</p>
                 </div>
               </div>
             </div>

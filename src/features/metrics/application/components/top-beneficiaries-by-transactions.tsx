@@ -37,25 +37,25 @@ export function TopBeneficiariesByTransactions({ beneficiaries, _filterPeriod = 
 
   return (
     <div className="flex flex-col flex-1 basis-full md:basis-[340px] gap-6">
-      <p className="text-sm text-foreground">
+      <p className="text-sm text-neutral-700">
         {t("metrics.beneficiaries_by_transactions.title")}
       </p>
-      <div className="bg-background flex flex-col gap-2 p-4 rounded-3xl w-full">
+      <div className="bg-white flex flex-col gap-2 p-4 rounded-3xl w-full">
         {displayBeneficiaries.map((beneficiary) => (
           <div
             key={beneficiary.rank}
-            className="bg-secondary flex flex-col p-4 rounded-2xl w-full"
+            className="bg-neutral-50 flex flex-col p-4 rounded-2xl w-full"
           >
             <div className="flex h-16 items-center w-full">
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-xs font-semibold text-foreground">
+                <p className="text-xs font-semibold text-neutral-700">
                   {beneficiary.name}
                 </p>
                 <div className="flex items-center gap-2 h-10 pl-2">
-                  <Badge className="h-8 px-2 rounded-xl bg-secondary text-foreground">
+                  <Badge className="h-8 px-2 rounded-xl bg-neutral-50 text-neutral-700">
                     {beneficiary.transactions.toLocaleString()} {t("metrics.beneficiaries_by_transactions.transactions")}
                   </Badge>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-neutral-500">
                     #{beneficiary.rank.toString().padStart(2, "0")}
                   </p>
                 </div>

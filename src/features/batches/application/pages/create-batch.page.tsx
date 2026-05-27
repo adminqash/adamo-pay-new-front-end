@@ -188,6 +188,20 @@ export const CreateBatchPage = () => {
     navigate("/batches", { state: { showSuccessToast: true } });
   };
 
+  /**
+   * handle save batch for later processing
+   */
+  const handleSaveForLater = () => {
+    // TODO: Implement save batch in pending state
+    console.log("Saving batch for later processing");
+    
+    // Set processing flag to prevent blocker from intercepting
+    isProcessingRef.current = true;
+    
+    // Navigate to batches page with saved state
+    navigate("/batches", { state: { showSavedToast: true } });
+  };
+
   return (
     <>
       {sidebarTopBarPortal && createPortal(
@@ -353,13 +367,19 @@ export const CreateBatchPage = () => {
 
           {/* action buttons - only show when file is uploaded */}
           {batchSummary && (
-            <div className="flex gap-6 mt-8">
-              <Button variant="secondary" onClick={handleCancelBatch}>
-                {t("batches.create_batch.actions.cancel")}
-              </Button>
-              <Button variant="default" onClick={handleConfirmBatch}>
-                <Icon symbol="check" weight={200} />
-                {t("batches.create_batch.actions.confirm")}
+            <div className="flex flex-wrap items-center gap-6 mt-8">
+              <div className="flex gap-6">
+                <Button variant="secondary" onClick={handleCancelBatch}>
+                  {t("batches.create_batch.actions.cancel")}
+                </Button>
+                <Button variant="default" onClick={handleConfirmBatch}>
+                  <Icon symbol="check" weight={200} />
+                  {t("batches.create_batch.actions.confirm")}
+                </Button>
+              </div>
+              <div className="flex-1" />
+              <Button variant="link" onClick={handleSaveForLater}>
+                {t("batches.create_batch.actions.save_for_later")}
               </Button>
             </div>
           )}

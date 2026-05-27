@@ -37,8 +37,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@adamosuiteservices/ui/select";
+import {
+  SelectableCard,
+  SelectableCardGroup,
+} from "@adamosuiteservices/ui/selectable-card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { AddBankAccountDialog } from "@/features/beneficiaries/application/components/add-bank-account-dialog";
 import { useState, useEffect } from "react";
 
 /**
@@ -104,6 +109,58 @@ export const CorrectPaymentPage = () => {
   const [originalAccountType, setOriginalAccountType] = useState("");
   const [originalBank, setOriginalBank] = useState("");
   const [originalAccountNumber, setOriginalAccountNumber] = useState("");
+
+  // account selection dialog state
+  const [isAccountSelectionDialogOpen, setIsAccountSelectionDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState("");
+
+  // add bank account dialog state
+  const [isAddBankAccountDialogOpen, setIsAddBankAccountDialogOpen] = useState(false);
+
+  // saved bank accounts state
+  const [savedAccounts, setSavedAccounts] = useState<Array<{
+    id: string;
+    accountType: string;
+    bank: string;
+    accountNumber: string;
+    displayBank: string;
+    displayAccountType: string;
+    isPrimary?: boolean;
+  }>>([
+    {
+      id: "account-1",
+      accountType: "ahorros",
+      bank: "bancolombia",
+      accountNumber: "123-45678-90123",
+      displayBank: "Bancolombia",
+      displayAccountType: "Ahorros",
+    },
+    {
+      id: "account-2",
+      accountType: "ahorros",
+      bank: "bbva",
+      accountNumber: "9876-5432-1098",
+      displayBank: "BBVA",
+      displayAccountType: "Ahorros",
+      isPrimary: true,
+    },
+    {
+      id: "account-3",
+      accountType: "corriente",
+      bank: "davivienda",
+      accountNumber: "0123-93838-001",
+      displayBank: "Davivienda",
+      displayAccountType: "Corriente",
+    },
+  ]);
+
+  // mock beneficiary data - TODO: get from actual transaction data
+  const beneficiaryData = {
+    documentType: "cc",
+    documentNumber: transaction.beneficiary.idNumber,
+    firstName: transaction.beneficiary.fullName.split(" ")[0],
+    lastName: transaction.beneficiary.fullName.split(" ").slice(1).join(" "),
+  };
 
   // Reference dialog state
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
@@ -317,6 +374,99 @@ export const CorrectPaymentPage = () => {
     });
 
     setIsPaymentDialogOpen(false);
+  };
+
+  /**
+   * open account selection dialog
+   */
+  const handleOpenAccountSelection = () => {
+    setIsAccountSelectionDialogOpen(true);
+  };
+
+  /**
+   * open add bank account dialog
+   */
+  const handleOpenAddBankAccount = () => {
+    setIsAccountSelectionDialogOpen(false);
+    // Small delay to allow account selection dialog to close before opening add bank account dialog
+    setTimeout(() => {
+      setIsAddBankAccountDialogOpen(true);
+    }, 200);
+  };
+
+  /**
+   * handle add bank account confirmation
+   */
+  const handleAddBankAccountConfirm = (data: {
+    accountType: string;
+    bank: string;
+    accountNumber: string;
+    isPrimary: boolean;
+  }) => {
+    console.log("New bank account added:", data);
+    
+    // Map to display format
+    const bankMap: Record<string, string> = {
+      bancolombia: "Bancolombia",
+      davivienda: "Davivienda",
+      bbva: "BBVA",
+      cobre: "Cobre",
+    };
+    
+    const accountTypeMap: Record<string, string> = {
+      ahorros: "Ahorros",
+      corriente: "Corriente",
+    };
+    
+    // Generate new account ID
+    const newAccountId = `account-${Date.now()}`;
+    
+    // Add new account to saved accounts
+    setSavedAccounts(prev => {
+      // If new account is primary, remove primary from all others
+      const updatedAccounts = data.isPrimary
+        ? prev.map(acc => ({ ...acc, isPrimary: false }))
+        : prev;
+      
+      return [
+        ...updatedAccounts,
+        {
+          id: newAccountId,
+          accountType: data.accountType,
+          bank: data.bank,
+          accountNumber: data.accountNumber,
+          displayBank: bankMap[data.bank] || data.bank.charAt(0).toUpperCase() + data.bank.slice(1),
+          displayAccountType: accountTypeMap[data.accountType] || data.accountType.charAt(0).toUpperCase() + data.accountType.slice(1),
+          isPrimary: data.isPrimary,
+        },
+      ];
+    });
+    
+    // Update form fields (not transaction yet - will save on "Save changes")
+    setAccountType(data.accountType);
+    setBank(data.bank);
+    setAccountNumber(data.accountNumber);
+    
+    // Reopen payment dialog to show updated fields
+    setTimeout(() => {
+      setIsPaymentDialogOpen(true);
+    }, 200);
+  };
+
+  /**
+   * confirm selected account
+   */
+  const handleConfirmAccountSelection = () => {
+    const selectedAccountData = savedAccounts.find(acc => acc.id === selectedAccount);
+    
+    if (selectedAccountData) {
+      // Update form fields (not transaction yet - will save on "Save changes")
+      setAccountType(selectedAccountData.accountType);
+      setBank(selectedAccountData.bank);
+      setAccountNumber(selectedAccountData.accountNumber);
+    }
+    
+    setIsAccountSelectionDialogOpen(false);
   };
 
   /**
@@ -605,71 +755,57 @@ export const CorrectPaymentPage = () => {
                       <DialogTitle>{t("batches:batches.transaction_detail.payment_edit_dialog.title")}</DialogTitle>
                     </DialogHeader>
                     <DialogBody className="flex flex-col gap-8">
-                      <div className="flex flex-wrap gap-4">
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="paymentAmount" className="text-xs text-[#41454c]">
-                            {t("batches:batches.transaction_detail.payment_edit_dialog.payment_amount")}
-                          </Label>
-                          <Input
-                            id="paymentAmount"
-                            value={paymentAmount}
-                            onChange={(e) => setPaymentAmount(e.target.value)}
-                            className="h-10"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="accountType" className="text-xs text-[#41454c]">
-                            {t("batches:batches.transaction_detail.payment_edit_dialog.account_type")}
-                          </Label>
-                          <Select value={accountType} onValueChange={setAccountType}>
-                            <SelectTrigger className="h-10 w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="corriente">Corriente</SelectItem>
-                              <SelectItem value="ahorros">Ahorros</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="bank" className="text-xs text-[#41454c]">
-                            {t("batches:batches.transaction_detail.payment_edit_dialog.bank")}
-                          </Label>
-                          <Select value={bank} onValueChange={setBank}>
-                            <SelectTrigger className="h-10 w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="bancolombia">Bancolombia</SelectItem>
-                              <SelectItem value="banco-bogota">Banco de Bogotá</SelectItem>
-                              <SelectItem value="davivienda">Davivienda</SelectItem>
-                              <SelectItem value="bbva">BBVA Colombia</SelectItem>
-                              <SelectItem value="banco-popular">Banco Popular Colombia</SelectItem>
-                              <SelectItem value="av-villas">Banco AV Villas</SelectItem>
-                              <SelectItem value="caja-social">Banco Caja Social</SelectItem>
-                              <SelectItem value="colpatria">Scotiabank Colpatria</SelectItem>
-                              <SelectItem value="agrario">Banco Agrario de Colombia</SelectItem>
-                              <SelectItem value="occidente">Banco de Occidente Colombia</SelectItem>
-                              <SelectItem value="gnb-sudameris">Banco GNB Sudameris Colombia</SelectItem>
-                              <SelectItem value="citibank">Citibank Colombia</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="accountNumber" className="text-xs text-[#41454c]">
-                            {t("batches:batches.transaction_detail.payment_edit_dialog.account_number")}
-                          </Label>
-                          <Input
-                            id="accountNumber"
-                            value={accountNumber}
-                            onChange={(e) => setAccountNumber(e.target.value)}
-                            className="h-10"
-                          />
-                        </div>
-                        <Button variant="link" className="text-[#0e9384] h-6 px-0">
-                          {t("batches:batches.transaction_detail.payment_edit_dialog.select_saved_account")}
-                        </Button>
+                      {/* payment amount field */}
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="paymentAmount" className="text-xs text-[#41454c]">
+                          {t("batches:batches.transaction_detail.payment_edit_dialog.payment_amount")}
+                        </Label>
+                        <Input
+                          id="paymentAmount"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          className="h-10"
+                        />
                       </div>
+
+                      {/* account information card */}
+                      <Card className="bg-[#f9fafb] border-0 rounded-3xl p-4 flex flex-col gap-6">
+                        <div className="flex flex-col gap-2">
+                          <p className="text-xs text-[#6c737f]">
+                            {t("batches:batches.transaction_detail.payment_edit_dialog.account_info")}
+                          </p>
+                          <div className="flex items-center gap-2 pl-2 h-10">
+                            <div className="flex flex-1 items-center gap-2">
+                              <Icon symbol="account_balance" weight={200} className="text-[#384250] size-[24px]" />
+                              <p className="text-sm font-semibold text-[#384250]">
+                                {accountType && bank && accountNumber
+                                  ? (() => {
+                                      const bankMap: Record<string, string> = {
+                                        bancolombia: "Bancolombia",
+                                        "banco-bogota": "Banco de Bogotá",
+                                        davivienda: "Davivienda",
+                                        bbva: "BBVA Colombia",
+                                        "banco-popular": "Banco Popular Colombia",
+                                        "av-villas": "Banco AV Villas",
+                                        "caja-social": "Banco Caja Social",
+                                        colpatria: "Scotiabank Colpatria",
+                                        agrario: "Banco Agrario de Colombia",
+                                        occidente: "Banco de Occidente Colombia",
+                                        "gnb-sudameris": "Banco GNB Sudameris Colombia",
+                                        citibank: "Citibank Colombia",
+                                      };
+                                      const displayBank = bankMap[bank] || bank.charAt(0).toUpperCase() + bank.slice(1);
+                                      return `${accountType.charAt(0).toUpperCase() + accountType.slice(1)}. ${displayBank} Nº ${accountNumber}`;
+                                    })()
+                                  : `${transaction.payment.accountType}. ${transaction.payment.bank} Nº ${transaction.payment.accountNumber}`}
+                              </p>
+                            </div>
+                            <Button variant="link" className="text-[#0e9384] h-6 px-0" onClick={handleOpenAccountSelection}>
+                              {t("batches:batches.transaction_detail.payment_edit_dialog.select_saved_account")}
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
                     </DialogBody>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -857,6 +993,76 @@ export const CorrectPaymentPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Account Selection Dialog */}
+      <Dialog open={isAccountSelectionDialogOpen} onOpenChange={setIsAccountSelectionDialogOpen}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>{t("batches:batches.transaction_detail.account_selection_dialog.title")}</DialogTitle>
+            <p className="text-sm text-foreground mt-2">
+              {t("batches:batches.transaction_detail.account_selection_dialog.description")}
+            </p>
+          </DialogHeader>
+          <DialogBody className="flex flex-col gap-4">
+            <SelectableCardGroup value={selectedAccount} onValueChange={setSelectedAccount} className="flex flex-col gap-2">
+              {savedAccounts.map((account) => (
+                <SelectableCard key={account.id} value={account.id}>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs text-[#6c737f]">
+                      {account.displayAccountType === "Ahorros" 
+                        ? t("batches:batches.transaction_detail.account_selection_dialog.savings_account")
+                        : t("batches:batches.transaction_detail.account_selection_dialog.checking_account")}
+                    </p>
+                    <div className="flex items-center gap-2 pl-2">
+                      <Icon symbol="account_balance" weight={200} className="text-[#384250] size-[24px]" />
+                      <p className="text-sm font-semibold text-[#384250]">
+                        {account.displayBank} Nº {account.accountNumber}
+                      </p>
+                      {account.isPrimary && (
+                        <Badge variant="default-medium" className="h-8 px-2 bg-[#f9fafb] text-sm">
+                          {t("batches:batches.transaction_detail.account_selection_dialog.primary")}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </SelectableCard>
+              ))}
+            </SelectableCardGroup>
+
+            {/* Add new account button */}
+            <Button 
+              variant="link" 
+              className="text-[#0e9384] h-6 px-0 justify-start"
+              onClick={handleOpenAddBankAccount}
+            >
+              <Icon symbol="add" weight={200} />
+              {t("batches:batches.transaction_detail.account_selection_dialog.add_new_account")}
+            </Button>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="secondary">
+                {t("batches:batches.transaction_detail.account_selection_dialog.cancel")}
+              </Button>
+            </DialogClose>
+            <Button 
+              variant="default" 
+              disabled={!selectedAccount}
+              onClick={handleConfirmAccountSelection}
+            >
+              {t("batches:batches.transaction_detail.account_selection_dialog.select_account")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Bank Account Dialog */}
+      <AddBankAccountDialog
+        open={isAddBankAccountDialogOpen}
+        onOpenChange={setIsAddBankAccountDialogOpen}
+        beneficiaryData={beneficiaryData}
+        onConfirm={handleAddBankAccountConfirm}
+      />
     </>
   );
 };

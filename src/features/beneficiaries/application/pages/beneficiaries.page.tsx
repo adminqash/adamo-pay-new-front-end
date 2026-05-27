@@ -34,6 +34,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
+import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 
 export function BeneficiariesPage() {
   const { t } = useTranslation("beneficiaries");
@@ -120,9 +121,8 @@ export function BeneficiariesPage() {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <Card className="p-6 flex flex-col gap-6">
-          {/* header section */}
-          <div className="flex flex-col gap-6">
+        <Card className="p-6 border overflow-visible flex flex-col gap-0">
+          <StickyFilterHeader className="flex flex-col gap-0">
             {/* header with search */}
             <div className="flex flex-wrap gap-6 items-center">
               <div className="flex-1 min-w-[220px] flex items-center gap-4">
@@ -370,18 +370,19 @@ export function BeneficiariesPage() {
             </div>
 
             {/* tabs */}
-            <Tabs defaultValue="all">
+            <Tabs defaultValue="all" className="mt-6">
               <TabsList>
                 <TabsTrigger value="all">{t("beneficiaries.tabs.all")}</TabsTrigger>
                 <TabsTrigger value="with-news">{t("beneficiaries.tabs.with_news")}</TabsTrigger>
                 <TabsTrigger value="without-news">{t("beneficiaries.tabs.without_news")}</TabsTrigger>
               </TabsList>
             </Tabs>
-          </div>
+          </StickyFilterHeader>
 
           {/* table */}
-          <Table className="rounded-2xl">
-            <TableHeader>
+          <div className="mt-6">
+            <Table className="rounded-2xl">
+              <TableHeader>
               <TableRow className="bg-muted">
                 <TableHead className="text-xs font-semibold text-foreground">{t("beneficiaries.table.beneficiary")}</TableHead>
                 <TableHead className="text-xs font-semibold text-foreground">{t("beneficiaries.table.id_number")}</TableHead>
@@ -411,6 +412,7 @@ export function BeneficiariesPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </Card>
       </PageContainer>
     </>
