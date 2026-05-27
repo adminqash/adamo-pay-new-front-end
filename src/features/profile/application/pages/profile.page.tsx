@@ -1,4 +1,3 @@
-import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { Avatar, AvatarFallback, AvatarImage } from "@adamosuiteservices/ui/avatar";
 import { Badge } from "@adamosuiteservices/ui/badge";
 import { Button } from "@adamosuiteservices/ui/button";
@@ -11,8 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@adamosuiteservices/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@adamosuiteservices/ui/dropdown-menu";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
 import {
   Select,
   SelectContent,
@@ -21,19 +27,13 @@ import {
   SelectValue,
 } from "@adamosuiteservices/ui/select";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@adamosuiteservices/ui/dropdown-menu";
-import { createPortal } from "react-dom";
+import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
-import { useAvatar } from "@/features/common/contexts/avatar-context";
+import { useAvatar } from "@/features/common/contexts/use-avatar";
 
 export function ProfilePage() {
   const { t, i18n } = useTranslation(["profile"]);
@@ -105,54 +105,73 @@ export function ProfilePage() {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <Card className="w-full p-6 flex flex-col gap-6">
+        <Card className="flex w-full flex-col gap-6 p-6">
           {/* Profile header */}
-          <div className="flex flex-col gap-4 w-full">
-            <div className="bg-muted flex flex-wrap gap-8 items-center p-6 rounded-3xl w-full">
-              <div 
+          <div className="flex w-full flex-col gap-4">
+            <div className={`
+              flex w-full flex-wrap items-center gap-8 rounded-3xl bg-muted p-6
+            `}
+            >
+              <div
                 className="relative"
                 onMouseEnter={() => setIsAvatarHovered(true)}
                 onMouseLeave={() => !isDropdownOpen && setIsAvatarHovered(false)}
               >
                 <Avatar className="size-[92px] rounded-2xl">
                   <AvatarImage src={avatarUrl} alt={userName} />
-                  <AvatarFallback className="text-2xl font-bold text-primary bg-primary-100 rounded-2xl">
+                  <AvatarFallback className={`
+                    rounded-2xl bg-primary-100 text-2xl font-bold text-primary
+                  `}
+                  >
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
                 {(isAvatarHovered || isDropdownOpen) && (
                   <>
-                    <div className="absolute inset-0 bg-white/20 rounded-2xl pointer-events-none" />
-                    {avatarUrl ? (
-                      <DropdownMenu onOpenChange={setIsDropdownOpen}>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="secondary"
-                            size="sm"
-                            className="absolute bottom-0 left-0 right-0 w-full z-10"
-                          >
-                            {t("profile:header.update_photo")}
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                            {t("profile:header.upload_photo")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleDeleteAvatar} className="text-destructive">
-                            {t("profile:header.delete_photo")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : (
-                      <Button 
-                        variant="secondary"
-                        size="sm"
-                        className="absolute bottom-0 left-0 right-0 w-full z-10"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        {t("profile:header.update_photo")}
-                      </Button>
-                    )}
+                    <div className={`
+                      pointer-events-none absolute inset-0 rounded-2xl
+                      bg-white/20
+                    `}
+                    />
+                    {avatarUrl
+                      ? (
+                        <DropdownMenu onOpenChange={setIsDropdownOpen}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className={`
+                                absolute right-0 bottom-0 left-0 z-10 w-full
+                              `}
+                            >
+                              {t("profile:header.update_photo")}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                              {t("profile:header.upload_photo")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={handleDeleteAvatar}
+                              className="text-destructive"
+                            >
+                              {t("profile:header.delete_photo")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )
+                      : (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className={`
+                            absolute right-0 bottom-0 left-0 z-10 w-full
+                          `}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          {t("profile:header.update_photo")}
+                        </Button>
+                      )}
                   </>
                 )}
                 <input
@@ -163,44 +182,67 @@ export function ProfilePage() {
                   onChange={handleAvatarChange}
                 />
               </div>
-              <div className="flex-1 min-w-[275px] flex flex-col gap-2">
-                <h1 className="text-base font-bold text-foreground leading-[22px]">
+              <div className="flex min-w-[275px] flex-1 flex-col gap-2">
+                <h1 className={`
+                  text-base leading-[22px] font-bold text-foreground
+                `}
+                >
                   {userName}
                 </h1>
-                <p className="text-base text-foreground leading-[22px]">
+                <p className="text-base leading-[22px] text-foreground">
                   {userEmail}
                 </p>
               </div>
-              <Badge variant="secondary" className="h-8 px-2 bg-[#e5f3fa] text-foreground text-sm leading-5">
+              <Badge
+                variant="secondary"
+                className={`
+                  h-8 bg-[#e5f3fa] px-2 text-sm leading-5 text-foreground
+                `}
+              >
                 {userRole}
               </Badge>
             </div>
-            <p className="text-sm text-foreground leading-5">
+            <p className="text-sm leading-5 text-foreground">
               {t("profile:header.email_update_notice")}{" "}
               <span className="text-pay-500">{t("profile:header.customer_service")}</span>
             </p>
           </div>
-
           {/* Settings cards */}
-          <div className="flex flex-wrap gap-4 w-full">
+          <div className="flex w-full flex-wrap gap-4">
             {/* Security card */}
-            <Card className="w-full md:w-auto md:flex-[1_1_480px] p-6 flex flex-col gap-8">
+            <Card className={`
+              flex w-full flex-col gap-8 p-6
+              md:w-auto md:flex-[1_1_480px]
+            `}
+            >
               <div className="flex flex-col gap-4">
-                <div className="bg-pay-25 flex items-center gap-3 h-14 px-4 py-4 rounded-full w-fit">
-                  <Icon symbol="verified_user" weight={200} className="text-pay-500" />
+                <div className={`
+                  flex h-14 w-fit items-center gap-3 rounded-full bg-pay-25 px-4
+                  py-4
+                `}
+                >
+                  <Icon
+                    symbol="verified_user"
+                    weight={200}
+                    className="text-pay-500"
+                  />
                 </div>
-                <h2 className="text-sm font-bold text-foreground leading-5">
+                <h2 className="text-sm leading-5 font-bold text-foreground">
                   {t("profile:security.title")}
                 </h2>
-                <p className="text-sm text-foreground leading-5">
+                <p className="text-sm leading-5 text-foreground">
                   {t("profile:security.description")}
                 </p>
               </div>
-              <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+              <div className={`
+                flex flex-col items-start gap-4
+                md:flex-row md:gap-6
+              `}
+              >
                 <Button variant="secondary" onClick={() => setIsPasswordDialogOpen(true)}>
                   {t("profile:security.change_password")}
                 </Button>
-                <Button 
+                <Button
                   variant={is2FAEnabled ? "destructive-medium" : "default"}
                   onClick={() => {
                     if (is2FAEnabled) {
@@ -212,24 +254,30 @@ export function ProfilePage() {
                     }
                   }}
                 >
-                  {is2FAEnabled 
+                  {is2FAEnabled
                     ? t("profile:security.deactivate_2fa")
-                    : t("profile:security.activate_2fa")
-                  }
+                    : t("profile:security.activate_2fa")}
                 </Button>
               </div>
             </Card>
-
             {/* Language card */}
-            <Card className="w-full md:w-auto md:flex-[1_1_480px] p-6 flex flex-col gap-8">
+            <Card className={`
+              flex w-full flex-col gap-8 p-6
+              md:w-auto md:flex-[1_1_480px]
+            `}
+            >
               <div className="flex flex-col gap-4">
-                <div className="bg-pay-25 flex items-center gap-3 h-14 px-4 py-4 rounded-full w-fit">
+                <div className={`
+                  flex h-14 w-fit items-center gap-3 rounded-full bg-pay-25 px-4
+                  py-4
+                `}
+                >
                   <Icon symbol="language" weight={200} className="text-pay-500" />
                 </div>
-                <h2 className="text-sm font-bold text-foreground leading-5">
+                <h2 className="text-sm leading-5 font-bold text-foreground">
                   {t("profile:language.title")}
                 </h2>
-                <p className="text-sm text-foreground leading-5">
+                <p className="text-sm leading-5 text-foreground">
                   {t("profile:language.description")}
                   <br />
                   {t("profile:language.current")}
@@ -241,17 +289,28 @@ export function ProfilePage() {
                 </Button>
               </div>
             </Card>
-
             {/* Billing card */}
-            <Card className="w-full md:w-auto md:flex-[1_1_480px] p-6 flex flex-col gap-8">
+            <Card className={`
+              flex w-full flex-col gap-8 p-6
+              md:w-auto md:flex-[1_1_480px]
+            `}
+            >
               <div className="flex flex-col gap-4">
-                <div className="bg-pay-25 flex items-center gap-3 h-14 px-4 py-4 rounded-full w-fit">
-                  <Icon symbol="receipt_long" weight={200} className="text-pay-500" />
+                <div className={`
+                  flex h-14 w-fit items-center gap-3 rounded-full bg-pay-25 px-4
+                  py-4
+                `}
+                >
+                  <Icon
+                    symbol="receipt_long"
+                    weight={200}
+                    className="text-pay-500"
+                  />
                 </div>
-                <h2 className="text-sm font-bold text-foreground leading-5">
+                <h2 className="text-sm leading-5 font-bold text-foreground">
                   {t("profile:billing.title")}
                 </h2>
-                <p className="text-sm text-foreground leading-5">
+                <p className="text-sm leading-5 text-foreground">
                   {t("profile:billing.description")}
                 </p>
               </div>
@@ -264,7 +323,6 @@ export function ProfilePage() {
           </div>
         </Card>
       </PageContainer>
-
       {/* Language dialog */}
       <Dialog open={isLanguageDialogOpen} onOpenChange={setIsLanguageDialogOpen}>
         <DialogContent className="max-w-[610px] gap-12">
@@ -276,7 +334,6 @@ export function ProfilePage() {
               {t("profile:language.dialog.description")}
             </DialogDescription>
           </DialogHeader>
-
           <div className="flex flex-col gap-8">
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
               <SelectTrigger className="h-10 w-full">
@@ -288,7 +345,6 @@ export function ProfilePage() {
               </SelectContent>
             </Select>
           </div>
-
           <DialogFooter className="gap-6">
             <Button
               variant="secondary"
@@ -316,10 +372,9 @@ export function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Password dialog */}
-      <Dialog 
-        open={isPasswordDialogOpen} 
+      <Dialog
+        open={isPasswordDialogOpen}
         onOpenChange={(open) => {
           setIsPasswordDialogOpen(open);
           if (!open) {
@@ -340,88 +395,99 @@ export function ProfilePage() {
               {t("profile:security.password_dialog.title")}
             </DialogTitle>
             <DialogDescription className="text-sm text-foreground">
-              {passwordStep === 1 
+              {passwordStep === 1
                 ? t("profile:security.password_dialog.step1_description")
-                : t("profile:security.password_dialog.step2_description")
-              }
+                : t("profile:security.password_dialog.step2_description")}
             </DialogDescription>
           </DialogHeader>
-
           <div className="flex flex-col gap-8">
-            {passwordStep === 1 ? (
-              <div className="relative">
-                <Input
-                  type={showCurrentPassword ? "text" : "password"}
-                  placeholder={t("profile:security.password_dialog.current_password_placeholder")}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="h-10 w-full pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-2 inset-y-0 flex items-center text-foreground-secondary hover:text-foreground"
-                >
-                  <Icon 
-                    symbol={showCurrentPassword ? "visibility" : "visibility_off"} 
-                    weight={200}
-                    className="size-6"
-                  />
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-col gap-2">
-                  <div className="relative">
-                    <Input
-                      type={showNewPassword ? "text" : "password"}
-                      placeholder={t("profile:security.password_dialog.new_password_placeholder")}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      aria-invalid={showPasswordError}
-                      className="h-10 w-full pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-2 inset-y-0 flex items-center text-foreground-secondary hover:text-foreground"
-                    >
-                      <Icon 
-                        symbol={showNewPassword ? "visibility" : "visibility_off"} 
-                        weight={200}
-                        className="size-6"
-                      />
-                    </button>
-                  </div>
-                  <p className="text-xs text-foreground leading-4">
-                    {t("profile:security.password_dialog.password_requirements")}
-                  </p>
-                </div>
+            {passwordStep === 1
+              ? (
                 <div className="relative">
                   <Input
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder={t("profile:security.password_dialog.confirm_password_placeholder")}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    aria-invalid={showConfirmError}
+                    type={showCurrentPassword ? "text" : "password"}
+                    placeholder={t("profile:security.password_dialog.current_password_placeholder")}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
                     className="h-10 w-full pr-10"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-2 inset-y-0 flex items-center text-foreground-secondary hover:text-foreground"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className={`
+                      absolute inset-y-0 right-2 flex items-center
+                      text-foreground-secondary
+                      hover:text-foreground
+                    `}
                   >
-                    <Icon 
-                      symbol={showConfirmPassword ? "visibility" : "visibility_off"} 
+                    <Icon
+                      symbol={showCurrentPassword ? "visibility" : "visibility_off"}
                       weight={200}
                       className="size-6"
                     />
                   </button>
                 </div>
-              </div>
-            )}
+              )
+              : (
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-2">
+                    <div className="relative">
+                      <Input
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder={t("profile:security.password_dialog.new_password_placeholder")}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        aria-invalid={showPasswordError}
+                        className="h-10 w-full pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className={`
+                          absolute inset-y-0 right-2 flex items-center
+                          text-foreground-secondary
+                          hover:text-foreground
+                        `}
+                      >
+                        <Icon
+                          symbol={showNewPassword ? "visibility" : "visibility_off"}
+                          weight={200}
+                          className="size-6"
+                        />
+                      </button>
+                    </div>
+                    <p className="text-xs leading-4 text-foreground">
+                      {t("profile:security.password_dialog.password_requirements")}
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder={t("profile:security.password_dialog.confirm_password_placeholder")}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      aria-invalid={showConfirmError}
+                      className="h-10 w-full pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`
+                        absolute inset-y-0 right-2 flex items-center
+                        text-foreground-secondary
+                        hover:text-foreground
+                      `}
+                    >
+                      <Icon
+                        symbol={showConfirmPassword ? "visibility" : "visibility_off"}
+                        weight={200}
+                        className="size-6"
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
           </div>
-
           <DialogFooter className="gap-6">
             <Button
               variant="secondary"
@@ -439,7 +505,7 @@ export function ProfilePage() {
             <Button
               variant="default"
               disabled={
-                passwordStep === 1 
+                passwordStep === 1
                   ? !currentPassword.trim()
                   : !newPassword.trim() || !confirmPassword.trim()
               }
@@ -453,7 +519,7 @@ export function ProfilePage() {
                     setHasAttemptedSubmit(true);
                     return;
                   }
-                  
+
                   // TODO: Implement password change logic
                   console.log("Change password:", { currentPassword, newPassword });
                   ToastManager.show({
@@ -471,16 +537,14 @@ export function ProfilePage() {
             >
               {passwordStep === 1
                 ? t("profile:security.password_dialog.continue")
-                : t("profile:security.password_dialog.save")
-              }
+                : t("profile:security.password_dialog.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* 2FA dialog */}
-      <Dialog 
-        open={is2FADialogOpen} 
+      <Dialog
+        open={is2FADialogOpen}
         onOpenChange={(open) => {
           setIs2FADialogOpen(open);
           if (!open) {
@@ -494,32 +558,45 @@ export function ProfilePage() {
             <DialogTitle className="text-sm font-semibold">
               {t("profile:security.twofa_dialog.title")}
             </DialogTitle>
-            <DialogDescription className="text-sm text-foreground leading-5">
-              {twoFAStep === 1 
+            <DialogDescription className="text-sm leading-5 text-foreground">
+              {twoFAStep === 1
                 ? t("profile:security.twofa_dialog.step1_description")
-                : t("profile:security.twofa_dialog.step2_description")
-              }
+                : t("profile:security.twofa_dialog.step2_description")}
             </DialogDescription>
           </DialogHeader>
-
           {twoFAStep === 2 && (
             <div className="flex flex-col gap-6">
               {/* QR Code Container */}
-              <div className="bg-muted flex flex-col items-center gap-6 p-6 rounded-3xl w-full">
+              <div className={`
+                flex w-full flex-col items-center gap-6 rounded-3xl bg-muted p-6
+              `}
+              >
                 {/* QR Code */}
-                <div className="bg-white p-4 rounded shadow-sm">
-                  <div className="w-36 h-36 bg-foreground/10 flex items-center justify-center">
+                <div className="rounded bg-white p-4 shadow-sm">
+                  <div className={`
+                    flex h-36 w-36 items-center justify-center bg-foreground/10
+                  `}
+                  >
                     {/* Placeholder for QR code - replace with actual QR code component */}
                   </div>
                 </div>
-
                 {/* Secret Key */}
-                <div className="flex flex-col gap-2 w-full">
-                  <p className="text-xs text-muted-foreground text-center leading-4">
+                <div className="flex w-full flex-col gap-2">
+                  <p className={`
+                    text-center text-xs leading-4 text-muted-foreground
+                  `}
+                  >
                     {t("profile:security.twofa_dialog.secret_key_label")}
                   </p>
-                  <div className="bg-accent flex items-center justify-center gap-2 px-3 py-3 rounded-lg">
-                    <p className="flex-1 text-sm text-foreground text-center leading-5">
+                  <div className={`
+                    flex items-center justify-center gap-2 rounded-lg bg-accent
+                    px-3 py-3
+                  `}
+                  >
+                    <p className={`
+                      flex-1 text-center text-sm leading-5 text-foreground
+                    `}
+                    >
                       ZVF3 XCP2 CHG5 A246
                     </p>
                     <button
@@ -531,17 +608,19 @@ export function ProfilePage() {
                           variant: "success",
                         });
                       }}
-                      className="text-foreground hover:text-foreground/80"
+                      className={`
+                        text-foreground
+                        hover:text-foreground/80
+                      `}
                     >
                       <Icon symbol="content_copy" className="size-6" />
                     </button>
                   </div>
                 </div>
               </div>
-
               {/* OTP Input */}
               <div className="flex flex-col gap-3">
-                <p className="text-sm text-foreground text-center leading-5">
+                <p className="text-center text-sm leading-5 text-foreground">
                   {t("profile:security.twofa_dialog.otp_label")}
                 </p>
                 <InputOTP
@@ -550,18 +629,17 @@ export function ProfilePage() {
                   onChange={setOtpCode}
                 >
                   <InputOTPGroup className="w-full gap-2">
-                    <InputOTPSlot index={0} className="flex-1 h-10" />
-                    <InputOTPSlot index={1} className="flex-1 h-10" />
-                    <InputOTPSlot index={2} className="flex-1 h-10" />
-                    <InputOTPSlot index={3} className="flex-1 h-10" />
-                    <InputOTPSlot index={4} className="flex-1 h-10" />
-                    <InputOTPSlot index={5} className="flex-1 h-10" />
+                    <InputOTPSlot index={0} className="h-10 flex-1" />
+                    <InputOTPSlot index={1} className="h-10 flex-1" />
+                    <InputOTPSlot index={2} className="h-10 flex-1" />
+                    <InputOTPSlot index={3} className="h-10 flex-1" />
+                    <InputOTPSlot index={4} className="h-10 flex-1" />
+                    <InputOTPSlot index={5} className="h-10 flex-1" />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
             </div>
           )}
-
           <DialogFooter className="gap-6">
             <Button
               variant="secondary"
@@ -595,16 +673,14 @@ export function ProfilePage() {
             >
               {twoFAStep === 1
                 ? t("profile:security.twofa_dialog.continue")
-                : t("profile:security.twofa_dialog.activate")
-              }
+                : t("profile:security.twofa_dialog.activate")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Deactivate 2FA dialog */}
-      <Dialog 
-        open={isDeactivate2FADialogOpen} 
+      <Dialog
+        open={isDeactivate2FADialogOpen}
         onOpenChange={(open) => {
           setIsDeactivate2FADialogOpen(open);
           if (!open) {
@@ -618,14 +694,12 @@ export function ProfilePage() {
             <DialogTitle className="text-sm font-semibold">
               {t("profile:security.deactivate_2fa_dialog.title")}
             </DialogTitle>
-            <DialogDescription className="text-sm text-foreground leading-5">
-              {deactivate2FAStep === 1 
+            <DialogDescription className="text-sm leading-5 text-foreground">
+              {deactivate2FAStep === 1
                 ? t("profile:security.deactivate_2fa_dialog.description")
-                : t("profile:security.deactivate_2fa_dialog.otp_description")
-              }
+                : t("profile:security.deactivate_2fa_dialog.otp_description")}
             </DialogDescription>
           </DialogHeader>
-
           {deactivate2FAStep === 2 && (
             <InputOTP
               maxLength={6}
@@ -633,16 +707,15 @@ export function ProfilePage() {
               onChange={setDeactivateOtpCode}
             >
               <InputOTPGroup className="w-full gap-2">
-                <InputOTPSlot index={0} className="flex-1 h-10" />
-                <InputOTPSlot index={1} className="flex-1 h-10" />
-                <InputOTPSlot index={2} className="flex-1 h-10" />
-                <InputOTPSlot index={3} className="flex-1 h-10" />
-                <InputOTPSlot index={4} className="flex-1 h-10" />
-                <InputOTPSlot index={5} className="flex-1 h-10" />
+                <InputOTPSlot index={0} className="h-10 flex-1" />
+                <InputOTPSlot index={1} className="h-10 flex-1" />
+                <InputOTPSlot index={2} className="h-10 flex-1" />
+                <InputOTPSlot index={3} className="h-10 flex-1" />
+                <InputOTPSlot index={4} className="h-10 flex-1" />
+                <InputOTPSlot index={5} className="h-10 flex-1" />
               </InputOTPGroup>
             </InputOTP>
           )}
-
           <DialogFooter className="gap-6">
             <Button
               variant="secondary"
@@ -682,4 +755,3 @@ export function ProfilePage() {
     </>
   );
 }
-
