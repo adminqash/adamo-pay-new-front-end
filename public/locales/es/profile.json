@@ -1,0 +1,72 @@
+{
+  "page_title": "Perfil",
+  "header": {
+    "name": "María Laura Gómez",
+    "email": "marialauragomez@starlink.com",
+    "role": "Client Support Specialist",
+    "email_update_notice": "Si necesitas actualizar tu correo electrónico, ponte en contacto con el",
+    "customer_service": "Servicio de Atención al Cliente.",
+    "update_photo": "Actualizar",
+    "upload_photo": "Subir foto",
+    "delete_photo": "Eliminar foto",
+    "photo_updated": "Foto actualizada exitosamente",
+    "photo_deleted": "Foto eliminada exitosamente"
+  },
+  "security": {
+    "title": "Seguridad",
+    "description": "Actualiza tu contraseña y/o activa la Autenticación de doble Factores (2FA) para mayor seguridad.",
+    "change_password": "Cambiar contraseña",
+    "activate_2fa": "Activar 2FA",
+    "deactivate_2fa": "Desactivar 2FA",
+    "deactivate_2fa_success": "2FA desactivado exitosamente",
+    "deactivate_2fa_dialog": {
+      "title": "Desactivar Doble Factor de Autenticación (2FA)",
+      "description": "Si desactivas el Doble Factor de Autenticación, se debilitará la seguridad de tu cuenta y estarás expuesto a ingresos no autorizados.",
+      "otp_description": "Ingresa el código de 6 dígitos brindado por la aplicación de Autenticación.",
+      "cancel": "Cancelar",
+      "confirm": "Desactivar 2FA"
+    },
+    "password_dialog": {
+      "title": "Cambiar contraseña",
+      "step1_description": "Para continuar, introduce tu actual contraseña:",
+      "step2_description": "Introduce la nueva contraseña:",
+      "current_password_placeholder": "Introduce tu contraseña",
+      "new_password_placeholder": "Nueva contraseña",
+      "confirm_password_placeholder": "Repite la nueva contraseña",
+      "password_requirements": "Debe contener al menos 8 caracteres, una mayúscula y un número.",
+      "cancel": "Cancelar",
+      "continue": "Continuar",
+      "save": "Cambiar contraseña",
+      "success": "Contraseña cambiada exitosamente"
+    },
+    "twofa_dialog": {
+      "title": "Activar Doble Factor de Autenticación (2FA)",
+      "step1_description": "Para comenzar descarga en tu móvil una aplicación de autenticación como por ejemplo Google Authenticator.",
+      "step2_description": "Escaneá el código QR o ingresá la clave secreta que ves a continuación. Luego ingresá el código de confirmación generado por tu aplicación de autenticación.",
+      "secret_key_label": "Clave secreta",
+      "otp_label": "Ingresa el código de confirmación generado por la aplicación de autenticación:",
+      "cancel": "Cancelar",
+      "continue": "Continuar",
+      "activate": "Activar 2FA",
+      "success": "2FA activado exitosamente"
+    }
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Idioma preferido del sistema:",
+    "current": "Español",
+    "change_language": "Cambiar idioma",
+    "dialog": {
+      "title": "Idioma",
+      "description": "Selecciona tu idioma de preferencia:",
+      "cancel": "Cancelar",
+      "save": "Cambiar idioma",
+      "success": "Idioma cambiado exitosamente"
+    }
+  },
+  "billing": {
+    "title": "Planes y facturación",
+    "description": "Administra tu facturación, accede a tu plan y más planes disponibles.",
+    "manage_plan": "Administrar plan"
+  }
+}

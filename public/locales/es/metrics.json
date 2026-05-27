@@ -1,0 +1,203 @@
+{
+  "metrics": {
+    "page_title": "Métricas",
+    "description": "Visualiza y analiza las métricas y estadísticas de la plataforma.",
+    "filter_label": "Filtrar métricas por",
+    "export_data": "Exportar datos",
+    "export_dialog": {
+      "title": "Exportar datos",
+      "description": "Selecciona filtros y formato del archivo a exportar",
+      "filters": {
+        "date_placeholder": "Fecha",
+        "type_placeholder": "Tipo",
+        "all": "Todo",
+        "today": "Hoy",
+        "week": "Últimos 7 días",
+        "month": "Últimos 30 días",
+        "custom": "Personalizado",
+        "last_7_days": "Últimos 7 días",
+        "last_30_days": "Últimos 30 días",
+        "last_90_days": "Últimos 90 días",
+        "all_types": "Todos los tipos",
+        "transactions": "Transacciones",
+        "batches": "Lotes",
+        "beneficiaries": "Beneficiarios",
+        "accounts": "Cuentas"
+      },
+      "file_type_label": "Tipo de archivo:",
+      "csv_excel": "CSV / Excel",
+      "pdf": "PDF",
+      "cancel": "Cancelar",
+      "export": "Exportar"
+    },
+    "date_picker": {
+      "cancel": "Cancelar",
+      "apply": "Aplicar"
+    },
+    "filters": {
+      "today": "Hoy",
+      "this_week": "Esta semana",
+      "this_month": "Este mes",
+      "custom": "Personalizado",
+      "custom_range_button": "Rango personalizado"
+    },
+    "cards": {
+      "total_volume": "Volumen total procesado",
+      "total_transactions": "Total de transacciones",
+      "average_ticket": "Ticket promedio",
+      "average_funding": "Promedio de fondeos",
+      "previous_period": "período anterior"
+    },
+    "tabs": {
+      "transactions": "Transacciones",
+      "batches": "Lotes",
+      "beneficiaries": "Beneficiarios",
+      "accounts": "Cuentas"
+    },
+    "chart": {
+      "title": "Frecuencia de pagos y estadísticas de movimientos",
+      "total_payments": "pagos en total"
+    },
+    "days": {
+      "monday": "Lunes",
+      "tuesday": "Martes",
+      "wednesday": "Miércoles",
+      "thursday": "Jueves",
+      "friday": "Viernes",
+      "saturday": "Sábado",
+      "sunday": "Domingo"
+    },
+    "transaction_status": {
+      "title": "Transacciones por estado",
+      "total_transactions": "Total transacciones",
+      "payments": "pagos",
+      "status": {
+        "completed": "Completadas",
+        "validated": "Validadas",
+        "returned": "Retornadas",
+        "rejected": "Rechazadas",
+        "pending": "Pendientes"
+      }
+    },
+    "rejection_reasons": {
+      "title": "Motivos de rechazo",
+      "cases_detected": "casos detectados",
+      "reasons": {
+        "invalid_account": "Cuenta inválida",
+        "daily_limit_exceeded": "Límite diario excedido",
+        "account_mismatch": "Cuenta bancaria no corresponde al usuario",
+        "incorrect_id": "Número de ID incorrecto",
+        "other": "Otros motivos"
+      }
+    },
+    "top_banks": {
+      "title": "Top 5 bancos con menor tiempo de respuesta",
+      "transactions": "transacciones",
+      "minutes": "minutos"
+    },
+    "aml_compliance": {
+      "title": "Cumplimiento AML",
+      "total_validations": "Total validaciones",
+      "status": {
+        "no_issues": "Sin novedades",
+        "with_issues": "Con novedades"
+      }
+    },
+    "batch_status": {
+      "title": "Lotes por estado",
+      "total_batches": "Total de lotes",
+      "batches": "lotes",
+      "status": {
+        "completed": "Completadas",
+        "sent": "Enviadas",
+        "processing": "Procesando"
+      }
+    },
+    "batch_rejection": {
+      "title": "% promedio de pagos rechazados por lote",
+      "total_batches": "Total de lotes",
+      "payments": "pagos",
+      "status": {
+        "rejected": "Rechazadas",
+        "others": "Otros"
+      }
+    },
+    "batch_stats": {
+      "title": "Transacciones por lotes",
+      "average": "Promedio",
+      "maximum": "Máxima",
+      "minimum": "Mínima",
+      "transactions": "Transacciones"
+    },
+    "beneficiary_stats": {
+      "new_beneficiaries": "Nuevos beneficiarios",
+      "previous_period": "período anterior"
+    },
+    "beneficiaries_by_amount": {
+      "title": "Beneficiarios con mayor volumen por monto"
+    },
+    "beneficiaries_by_transactions": {
+      "title": "Beneficiarios con mayor volumen por transacciones",
+      "transactions": "transacciones"
+    },
+    "recurring_failures": {
+      "title": "Beneficiarios con fallas recurrentes",
+      "rank": "Ranking",
+      "beneficiary": "Beneficiario",
+      "returns": "Retornos",
+      "rejections": "Rechazos"
+    },
+    "account_status": {
+      "title": "Número de transacciones",
+      "total_transactions": "Total transacciones",
+      "transactions": "transacciones",
+      "accounts_list": {
+        "main": "Cuenta principal",
+        "payroll": "Cuenta de nómina",
+        "savings": "Cuenta de ahorros"
+      }
+    },
+    "account_type": {
+      "title": "Monto de transacciones",
+      "total_amount": "Monto total",
+      "accounts_list": {
+        "main": "Cuenta principal",
+        "payroll": "Cuenta de nómina",
+        "savings": "Cuenta de ahorros"
+      }
+    },
+    "account_transaction_count": {
+      "title": "Número de transacciones",
+      "total_transactions": "Total transacciones",
+      "transactions": "transacciones",
+      "accounts_list": {
+        "main": "Cuenta principal",
+        "payroll": "Cuenta de nómina",
+        "savings": "Cuenta de ahorros"
+      }
+    },
+    "account_transaction_amount": {
+      "title": "Monto de transacciones",
+      "total_amount": "Monto total",
+      "accounts_list": {
+        "main": "Cuenta principal",
+        "payroll": "Cuenta de nómina",
+        "savings": "Cuenta de ahorros"
+      }
+    },
+    "account_transactions_table": {
+      "title": "Beneficiarios más recurrentes",
+      "rank": "Ranking",
+      "beneficiary": "Beneficiario",
+      "transactions": "Transacciones",
+      "amount": "Monto"
+    },
+    "recurring_beneficiaries_table": {
+      "title": "Beneficiarios más recurrentes",
+      "rank": "Ranking",
+      "beneficiary": "Beneficiario",
+      "transactions": "Transacciones",
+      "amount": "Monto"
+    }
+  }
+}

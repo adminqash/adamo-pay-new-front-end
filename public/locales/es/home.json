@@ -1,0 +1,46 @@
+{
+  "home": {
+    "page_title": "Inicio",
+    "wallet_card": {
+      "title": "Saldo total disponible",
+      "currency": "COP",
+      "manage_accounts": "Gestionar cuentas"
+    },
+    "send_payment_card": {
+      "title": "Enviar un pago",
+      "description": "Selecciona o añade un beneficiario y realiza un pago de inmediato.",
+      "button": "Realizar pago"
+    },
+    "batch_upload": {
+      "title": "Cargar pagos en lote",
+      "view_all": "Ver todos los lotes",
+      "drag_drop": "Arrastra aquí tu archivo de Excel con múltiples pagos y lo procesaremos por ti o",
+      "select_file": "Selecciona desde tu dispositivo",
+      "requirements": "Archivos permitidos: .xlsx o .numbers. Tamaño máximo 50 MB."
+    },
+    "transactions": {
+      "title": "Transacciones",
+      "view_all": "Ver todas las transacciones",
+      "pending": {
+        "title": "Transacciones pendientes",
+        "button": "Ver transacciones"
+      },
+      "returned": {
+        "title": "Transacciones retornadas",
+        "button": "Ver transacciones"
+      },
+      "rejected": {
+        "title": "Transacciones rechazadas",
+        "button": "Ver transacciones"
+      },
+      "validated": {
+        "title": "Transacciones validadas",
+        "button": "Ver transacciones"
+      },
+      "paid": {
+        "title": "Transacciones pagadas",
+        "button": "Ver transacciones"
+      }
+    }
+  }
+}

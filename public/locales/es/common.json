@@ -1,0 +1,9 @@
+{
+  "create": "Crear",
+    "actions": {
+    "success": "Acción completada con éxito" 
+  },
+  "errors": {
+    "generic": "Ocurrió un error inesperado"
+  }
+}

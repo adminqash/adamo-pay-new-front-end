@@ -1,0 +1,100 @@
+{
+  "accounts": {
+    "page_title": "Cuentas",
+    "total_balance": "Saldo total disponible",
+    "create_account_button": "Crear nueva cuenta",
+    "create_account_dialog": {
+      "title": "Crear nueva cuenta",
+      "description": "Ingresá un nombre para crear una nueva cuenta:",
+      "input_placeholder": "Ingresá un nombre",
+      "cancel": "Cancelar",
+      "create": "Crear cuenta"
+    },
+    "dropdown_menu": {
+      "add_balance": "Añadir saldo",
+      "transfer": "Transferir a otra cuenta",
+      "view_movements": "Ver movimientos",
+      "edit_name": "Editar nombre de cuenta",
+      "delete": "Eliminar cuenta"
+    },
+    "card": {
+      "view_movements": "Ver movimientos",
+      "transfer": "Transferir"
+    },
+    "edit_name_dialog": {
+      "title": "Editar nombre de cuenta",
+      "label": "Nombre de la cuenta",
+      "placeholder": "Ingresá un nombre",
+      "cancel": "Cancelar",
+      "save": "Guardar cambios"
+    },
+    "otp_dialog": {
+      "title": "Confirmar cambios",
+      "description": "Ingresá el código de verificación enviado a tu correo para confirmar el cambio de nombre.",
+      "delete_title": "Confirmar eliminación",
+      "delete_description": "Ingresá el código de verificación enviado a tu correo para confirmar la eliminación de la cuenta.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar"
+    },
+    "delete_dialog": {
+      "title": "Eliminar cuenta",
+      "warning_message": "Estás a punto de eliminar esta cuenta. Esta acción no se puede revertir. Si la cuenta posee fondos, serán transferidos automáticamente a otra de tus cuentas y perderás acceso permanente al historial de movimientos de esta cuenta.",
+      "cancel": "Cancelar",
+      "continue": "Eliminar cuenta"
+    },
+    "messages": {
+      "account_created": "Cuenta creada exitosamente",
+      "name_updated": "Nombre de cuenta actualizado exitosamente",
+      "account_deleted": "Cuenta eliminada exitosamente",
+      "transfer_success": "Transferencia realizada exitosamente"
+    },
+    "transfer_dialog": {
+      "title": "Transferir saldo desde {{accountName}}",
+      "description": "Ingresa el monto y la cuenta a la que deseas transferir saldo:",
+      "to_account": "Cuenta destino",
+      "select_account": "Seleccionar cuenta",
+      "amount": "Monto",
+      "available_balance": "Saldo disponible",
+      "use_all": "Usar todo",
+      "cancel": "Cancelar",
+      "confirm": "Transferir"
+    }
+  },
+  "movements": {
+    "page_title": "Movimientos",
+    "header": {
+      "count": "{{count}} Movimientos",
+      "export_data": "Exportar datos",
+      "search_placeholder": "Buscar por fecha/ tipo de movimiento o monto"
+    },
+    "export_dialog": {
+      "title": "Exportar datos",
+      "description": "Selecciona los filtros para exportar los datos de movimientos:",
+      "date_filter": "Fecha",
+      "date_all": "Todos",
+      "type_filter": "Tipo de movimiento",
+      "type_all": "Todos",
+      "file_type_label": "Tipo de archivo:",
+      "csv_excel": "CSV / Excel",
+      "pdf": "PDF",
+      "cancel": "Cancelar",
+      "export": "Exportar datos"
+    },
+    "filters": {
+      "all": "Todos",
+      "last_7_days": "Últimos 7 días",
+      "last_30_days": "Últimos 30 días",
+      "last_90_days": "Últimos 90 días",
+      "today": "Hoy",
+      "week": "Esta semana",
+      "month": "Este mes",
+      "custom": "Personalizado",
+      "cancel": "Cancelar",
+      "apply": "Aplicar"
+    },
+    "type": {
+      "debit": "Débito",
+      "credit": "Crédito"
+    }
+  }
+}

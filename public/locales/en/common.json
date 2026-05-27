@@ -1,0 +1,9 @@
+{
+  "create": "Create",
+  "actions": {
+    "success": "Action completed successfully" 
+  },
+  "errors": {
+    "generic": "An unexpected error occurred"
+  }
+}

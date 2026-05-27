@@ -1,0 +1,23 @@
+{
+  "page_title": "Reports",
+  "header": {
+    "count": "{{count}} generated reports",
+    "search_placeholder": "Search by date/ name or report type"
+  },
+  "table": {
+    "date": "Date",
+    "report_name": "Report name",
+    "report_type": "Report type",
+    "actions": "Actions",
+    "download": "Download"
+  },
+  "delete_dialog": {
+    "title": "Delete report",
+    "description": "Are you sure you want to delete the report \"{{name}}\"?",
+    "cancel": "Cancel",
+    "confirm": "Delete report"
+  },
+  "messages": {
+    "delete_success": "Report successfully deleted"
+  }
+}
