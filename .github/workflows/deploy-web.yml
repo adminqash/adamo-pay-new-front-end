@@ -61,13 +61,15 @@ jobs:
           cat >> "${ENV_FILE}" << EOF
           VITE_ENVIRONMENT=${ENV_NAME}
           VITE_SECRET=${{ github.ref_name == 'main' && secrets.VITE_SECRET_PROD || secrets.VITE_SECRET_DEV }}
+          VITE_API_BASE_URL=${{ github.ref_name == 'main' && secrets.VITE_API_BASE_URL_PROD || secrets.VITE_API_BASE_URL_DEV }}
           EOF
 
           echo "======================================"
           echo "Variables being set in ${ENV_FILE}:"
           echo "======================================"
           echo "VITE_ENVIRONMENT=${ENV_NAME}"
-          echo "VITE_SECRET=${{ github.ref_name == 'main' && secrets.VITE_SECRET_PROD || secrets.VITE_SECRET_DEV }}"
+          echo "VITE_SECRET=***"
+          echo "VITE_API_BASE_URL=***"
           echo "======================================"
           echo ""
           echo "Created ${ENV_FILE} (masked):"
