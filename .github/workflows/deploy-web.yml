@@ -22,6 +22,7 @@ jobs:
 
       S3_BUCKET: ${{ github.ref_name == 'main' && secrets.S3_BUCKET_PROD || secrets.S3_BUCKET_DEV }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ github.ref_name == 'main' && secrets.CLOUDFRONT_DIST_ID_PROD || secrets.CLOUDFRONT_DIST_ID_DEV }}
+      VITE_API_BASE_URL: ${{ github.ref_name == 'main' && (secrets.VITE_API_BASE_URL_PROD || secrets.VITE_API_BASE_URL) || (secrets.VITE_API_BASE_URL_DEV || secrets.VITE_API_BASE_URL) }}
 
       VITE_MODE: ${{ github.ref_name == 'main' && 'production' || 'development' }}
 
@@ -58,10 +59,15 @@ jobs:
 
           rm -f "${ENV_FILE}"
 
+          if [ -z "${VITE_API_BASE_URL}" ]; then
+            echo "Missing VITE_API_BASE_URL secret. Configure VITE_API_BASE_URL_DEV/PROD or VITE_API_BASE_URL." >&2
+            exit 1
+          fi
+
           cat >> "${ENV_FILE}" << EOF
           VITE_ENVIRONMENT=${ENV_NAME}
           VITE_SECRET=${{ github.ref_name == 'main' && secrets.VITE_SECRET_PROD || secrets.VITE_SECRET_DEV }}
-          VITE_API_BASE_URL=${{ github.ref_name == 'main' && secrets.VITE_API_BASE_URL_PROD || secrets.VITE_API_BASE_URL_DEV }}
+          VITE_API_BASE_URL=${VITE_API_BASE_URL}
           EOF
 
           echo "======================================"
