@@ -1,0 +1,175 @@
+name: Deploy Web (Vite) to S3 + CloudFront
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_VERSION: "20"
+      AWS_REGION: sa-east-1
+
+      S3_BUCKET: ${{ github.ref_name == 'main' && secrets.S3_BUCKET_PROD || secrets.S3_BUCKET_DEV }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ github.ref_name == 'main' && secrets.CLOUDFRONT_DIST_ID_PROD || secrets.CLOUDFRONT_DIST_ID_DEV }}
+
+      VITE_MODE: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+
+    steps:
+      - name: Start time
+        id: start-time
+        shell: bash
+        run: echo "timestamp=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Create Vite env file
+        shell: bash
+        run: |
+          set -e
+
+          if [ "${VITE_MODE}" = "production" ]; then
+            ENV_FILE=".env.production"
+            ENV_NAME="production"
+          else
+            ENV_FILE=".env.development"
+            ENV_NAME="development"
+          fi
+
+          rm -f "${ENV_FILE}"
+
+          cat >> "${ENV_FILE}" << EOF
+          VITE_ENVIRONMENT=${ENV_NAME}
+          VITE_SECRET=${{ github.ref_name == 'main' && secrets.VITE_SECRET_PROD || secrets.VITE_SECRET_DEV }}
+          EOF
+
+          echo "======================================"
+          echo "Variables being set in ${ENV_FILE}:"
+          echo "======================================"
+          echo "VITE_ENVIRONMENT=${ENV_NAME}"
+          echo "VITE_SECRET=${{ github.ref_name == 'main' && secrets.VITE_SECRET_PROD || secrets.VITE_SECRET_DEV }}"
+          echo "======================================"
+          echo ""
+          echo "Created ${ENV_FILE} (masked):"
+          cat "${ENV_FILE}" | sed -E 's/=.*$/=***/g'
+
+      - name: Build
+        run: |
+          if [ "${VITE_MODE}" = "production" ]; then
+            npm run build:prod
+          else
+            npm run build:qa
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync dist/ "s3://${S3_BUCKET}" --delete --only-show-errors
+
+      - name: CloudFront Invalidation
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"
+
+      - name: 📣 Notify Telegram on success
+        if: success()
+        shell: bash
+        run: |
+          set -e
+          END_TIME=$(date +%s)
+          START_TIME=${{ steps.start-time.outputs.timestamp }}
+          DURATION=$(( END_TIME - START_TIME ))
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
+          # Escape helper for Telegram MarkdownV2
+          esc () {
+            printf '%s' "$1" | sed 's/[][\\`*_(){}#+.!|~>:=\-]/\\&/g'
+          }
+
+          ACTOR=$(esc "${{ github.actor }}")
+          BRANCH=$(esc "${{ github.ref_name }}")
+          BUCKET=$(esc "${{ env.S3_BUCKET }}")
+          DIST=$(esc "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}")
+          COMMIT_MSG=$(esc "${{ github.event.head_commit.message }}")
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          JOB_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          MESSAGE="✅ *Web Deployment Successful*\n\n"
+          MESSAGE+="🪣 *S3 Bucket:* \`${BUCKET}\`\n"
+          MESSAGE+="🌐 *CloudFront:* \`${DIST}\`\n"
+          MESSAGE+="👤 *By:* \`${ACTOR}\`\n"
+          MESSAGE+="📂 *Branch:* \`${BRANCH}\`\n"
+          MESSAGE+="📝 *Commit:* [\`${SHORT_SHA}\`](${COMMIT_URL})\n"
+          MESSAGE+="💬 *Message:* _${COMMIT_MSG}_\n"
+          MESSAGE+="⌛ *Duration:* ${DURATION}s\n"
+          MESSAGE+="🔗 [View GitHub Job](${JOB_URL})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="MarkdownV2" \
+            -d text="$MESSAGE" >/dev/null
+
+      - name: ❌ Notify Telegram on failure
+        if: failure()
+        shell: bash
+        run: |
+          set -e
+          END_TIME=$(date +%s)
+          START_TIME=${{ steps.start-time.outputs.timestamp }}
+          DURATION=$(( END_TIME - START_TIME ))
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
+          esc () {
+            printf '%s' "$1" | sed 's/[][\\`*_(){}#+.!|~>:=\-]/\\&/g'
+          }
+
+          ACTOR=$(esc "${{ github.actor }}")
+          BRANCH=$(esc "${{ github.ref_name }}")
+          BUCKET=$(esc "${{ env.S3_BUCKET }}")
+          DIST=$(esc "${{ env.CLOUDFRONT_DISTRIBUTION_ID }}")
+          COMMIT_MSG=$(esc "${{ github.event.head_commit.message }}")
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          JOB_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          MESSAGE="🚨 *Web Deployment Failed*\n\n"
+          MESSAGE+="🪣 *S3 Bucket:* \`${BUCKET}\`\n"
+          MESSAGE+="🌐 *CloudFront:* \`${DIST}\`\n"
+          MESSAGE+="👤 *By:* \`${ACTOR}\`\n"
+          MESSAGE+="📂 *Branch:* \`${BRANCH}\`\n"
+          MESSAGE+="📝 *Commit:* [\`${SHORT_SHA}\`](${COMMIT_URL})\n"
+          MESSAGE+="💬 *Message:* _${COMMIT_MSG}_\n"
+          MESSAGE+="⌛ *Duration:* ${DURATION}s\n"
+          MESSAGE+="❗ *Check the logs for details\\.*\n"
+          MESSAGE+="🔗 [View GitHub Job](${JOB_URL})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="MarkdownV2" \
+            -d text="$MESSAGE" >/dev/null
