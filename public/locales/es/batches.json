@@ -175,7 +175,8 @@
         "edit_button": "Editar",
         "total_beneficiaries": "Total de beneficiarios",
         "total_to_pay": "Total a pagar",
-        "balance_after": "Saldo luego de la transacción"
+        "balance_after": "Saldo luego de la transacción",
+        "calculating": "Calculando..."
       },
       "actions": {
         "cancel": "Cancelar lote",
@@ -194,11 +195,28 @@
         "otp_label": "Código de verificación",
         "cancel": "Cancelar",
         "confirm": "Procesar lote"
-      }
+      },
+      "upload_status": {
+        "idle": "Esperando archivo...",
+        "creating": "Creando lote...",
+        "accepted": "Archivo recibido. Procesando en segundo plano...",
+        "uploading": "Subiendo archivo...",
+        "parsing": "Leyendo filas del archivo...",
+        "ingesting": "Registrando beneficiarios en el lote...",
+        "completed": "Archivo procesado correctamente. Revisa el resumen.",
+        "failed": "No se pudo completar el procesamiento del archivo."
+      },
+      "upload_failed": "No se pudo procesar el archivo. Intenta subirlo de nuevo."
+    },
+    "errors": {
+      "upload_failed": "Error al subir el archivo del lote",
+      "template_download_failed": "Error al descargar la plantilla",
+      "detail_failed": "Error al cargar el lote"
     },
     "messages": {
       "batch_created": "Lote creado con éxito",
-      "batch_saved": "Lote guardado con éxito"
+      "batch_saved": "Lote guardado con éxito",
+      "template_downloaded": "Plantilla descargada correctamente"
     }
   }
 }

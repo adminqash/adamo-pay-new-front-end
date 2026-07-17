@@ -1,31 +1,10 @@
-import { useTranslation } from "react-i18next";
-import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
-import { createPortal } from "react-dom";
-import { Link, useSearchParams } from "react-router";
-import { PageTitle } from "@/features/common/components/layout/page-title";
-import { PageContainer } from "@/features/common/components/layout/page-container";
-import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
-import { useTransactions } from "../hooks/use-transactions";
-import { Button } from "@adamosuiteservices/ui/button";
-import { Card } from "@adamosuiteservices/ui/card";
-import { Icon } from "@adamosuiteservices/ui/icon";
-import { Input } from "@adamosuiteservices/ui/input";
+import { Alert, AlertTitle, AlertDescription } from "@adamosuiteservices/ui/alert";
 import { Badge } from "@adamosuiteservices/ui/badge";
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@adamosuiteservices/ui/sheet";
-import { Combobox } from "@adamosuiteservices/ui/combobox";
+import { Button } from "@adamosuiteservices/ui/button";
 import { Calendar } from "@adamosuiteservices/ui/calendar";
-import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/popover";
-import type { DateRange } from "react-day-picker";
-import { format, subDays, startOfDay } from "date-fns";
-import { es, enUS } from "date-fns/locale";
-import { useRef, useState as useStateReact } from "react";
+import { Card } from "@adamosuiteservices/ui/card";
+import { Checkbox } from "@adamosuiteservices/ui/checkbox";
+import { Combobox } from "@adamosuiteservices/ui/combobox";
 import {
   Dialog,
   DialogTrigger,
@@ -36,7 +15,32 @@ import {
   DialogFooter,
   DialogClose,
 } from "@adamosuiteservices/ui/dialog";
-import { Checkbox } from "@adamosuiteservices/ui/checkbox";
+import { Icon } from "@adamosuiteservices/ui/icon";
+import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import { useTranslation } from "react-i18next";
+import { createPortal } from "react-dom";
+import { Link, useSearchParams } from "react-router";
+import { PageContainer } from "@/features/common/components/layout/page-container";
+import { PageTitle } from "@/features/common/components/layout/page-title";
+import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
+import { useTransactions } from "../hooks/use-transactions";
+import { useTransactionDetail } from "../hooks/use-transaction-detail";
+import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
+import { buildTransactionListParams } from "../utils/transaction-filters.utils";
+import { Input } from "@adamosuiteservices/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@adamosuiteservices/ui/sheet";
+import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/popover";
+import type { DateRange } from "react-day-picker";
+import { format, subDays, startOfDay } from "date-fns";
+import { es, enUS } from "date-fns/locale";
+import { useRef, useState as useStateReact, useState, useMemo } from "react";
 import { Label } from "@adamosuiteservices/ui/label";
 import {
   Table,
@@ -55,10 +59,8 @@ import {
   TimelineDescription,
   TimelineTime,
 } from "@adamosuiteservices/ui/timeline";
-import { Alert, AlertTitle, AlertDescription } from "@adamosuiteservices/ui/alert";
-import type { TransactionStatus } from "../entities/transaction.entity";
-import type { Transaction } from "../entities/transaction.entity";
-import { useState, useEffect } from "react";
+import type { TransactionStatus, Transaction } from "../entities/transaction.entity";
+import type { TransactionDetail } from "../entities/transaction-detail.entity";
 
 /**
  * custom date range picker component
@@ -71,19 +73,19 @@ const DateRangePicker = ({
   className,
   currentLanguage,
 }: {
-  dateRange: DateRange;
-  onDateRangeChange: (range: DateRange) => void;
+  dateRange: DateRange
+  onDateRangeChange: (range: DateRange) => void
   labels: {
-    last7Days: string;
-    last30Days: string;
-    last90Days: string;
-    custom: string;
-    placeholder: string;
-    cancel: string;
-    apply: string;
-  };
-  className?: string;
-  currentLanguage: string;
+    last7Days: string
+    last30Days: string
+    last90Days: string
+    custom: string
+    placeholder: string
+    cancel: string
+    apply: string
+  }
+  className?: string
+  currentLanguage: string
 }) => {
   const comboboxRef = useRef<HTMLElement | null>(null);
   const [selectedOption, setSelectedOption] = useStateReact<string>(() => {
@@ -208,28 +210,36 @@ const DateRangePicker = ({
 
 /**
  * transactions page
- * 
+ *
  * displays transactions list
  */
 export const TransactionsPage = () => {
   const { t, i18n } = useTranslation("transactions");
-  const { transactions, totalCount } = useTransactions();
+  const { accounts } = useAccounts({ page: 1, limit: 20 });
   const [searchParams] = useSearchParams();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange>(() => {
     const today = startOfDay(new Date());
     return {
-      from: subDays(today, 7),
+      from: subDays(today, 30),
       to: today,
     };
   });
   const [accountFilter, setAccountFilter] = useState<string[]>(["all"]);
-  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
+  const [statusFilter, setStatusFilter] = useState<string[]>(() => {
+    const statusParam = searchParams.get("status");
+    if (statusParam && ["pending", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
+      return [statusParam];
+    }
+    return ["all"];
+  });
 
   // export dialog state
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -241,15 +251,50 @@ export const TransactionsPage = () => {
   const [exportFormatCSV, setExportFormatCSV] = useState(false);
   const [exportFormatPDF, setExportFormatPDF] = useState(false);
 
-  /**
-   * apply status filter from URL on mount
-   */
-  useEffect(() => {
-    const statusParam = searchParams.get("status");
-    if (statusParam && ["pending", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
-      setStatusFilter([statusParam]);
+  const accountFilterOptions = useMemo(
+    () => [
+      { value: "all", label: t("transactions.filters.all") },
+      ...accounts.map((account) => ({
+        value: account.id,
+        label: account.name,
+      })),
+    ],
+    [accounts, t],
+  );
+
+  const listParams = useMemo(
+    () => buildTransactionListParams({
+      dateRange,
+      statusFilter,
+      accountFilter,
+      search: searchQuery,
+    }),
+    [dateRange, statusFilter, accountFilter, searchQuery],
+  );
+
+  const { transactions, totalCount, refetch } = useTransactions(listParams);
+  const { detail: transactionDetail } = useTransactionDetail(
+    selectedTransactionId,
+    isSheetOpen,
+  );
+
+  const displayedTransaction = useMemo<TransactionDetail | null>(() => {
+    if (transactionDetail) {
+      return transactionDetail;
     }
-  }, [searchParams]);
+
+    if (!selectedTransaction) {
+      return null;
+    }
+
+    return {
+      ...selectedTransaction,
+      idTypeLabel: "",
+      destinationAccountLabel: "",
+      sourceAccountName: "Cuenta",
+      timeline: [],
+    };
+  }, [transactionDetail, selectedTransaction]);
 
   /**
    * check if date range is different from default (last 7 days)
@@ -257,14 +302,17 @@ export const TransactionsPage = () => {
   const isDateRangeCustom = () => {
     if (!dateRange.from || !dateRange.to) return false;
     const today = startOfDay(new Date());
-    const defaultFrom = subDays(today, 7);
+    const defaultFrom = subDays(today, 30);
     return dateRange.from.getTime() !== defaultFrom.getTime() || dateRange.to.getTime() !== today.getTime();
   };
 
   /**
    * check if any filter is active
    */
-  const hasActiveFilters = isDateRangeCustom() || (accountFilter.length > 0 && !accountFilter.includes("all")) || (statusFilter.length > 0 && !statusFilter.includes("all"));
+  const hasActiveFilters = isDateRangeCustom()
+    || (accountFilter.length > 0 && !accountFilter.includes("all"))
+    || (statusFilter.length > 0 && !statusFilter.includes("all"))
+    || searchQuery.trim().length > 0;
 
   /**
    * reset all filters
@@ -272,11 +320,12 @@ export const TransactionsPage = () => {
   const handleResetFilters = () => {
     const today = startOfDay(new Date());
     setDateRange({
-      from: subDays(today, 7),
+      from: subDays(today, 30),
       to: today,
     });
     setAccountFilter(["all"]);
     setStatusFilter(["all"]);
+    setSearchQuery("");
   };
 
   /**
@@ -284,6 +333,8 @@ export const TransactionsPage = () => {
    */
   const handleRowClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
+    setSelectedTransactionId(transaction.id);
+    setShowTimeline(false);
     setIsSheetOpen(true);
   };
 
@@ -324,268 +375,290 @@ export const TransactionsPage = () => {
         sidebarTopBarPortal,
       )}
       <PageContainer className="bg-neutrals-25">
-        <Card className="p-6 border overflow-visible">
+        <Card className="overflow-visible border p-6">
           <StickyFilterHeader className="flex flex-col gap-0">
-          {/* header + search */}
-          <div className="flex flex-wrap items-center gap-6">
-            {/* title + refresh button */}
-            <div className="flex flex-1 items-center gap-4 min-w-[220px]">
-              <Button
-                variant="secondary"
-              >
-                <Icon symbol="refresh" weight={200} />
-              </Button>
-              <p className="text-sm font-semibold text-neutrals-700">
-                {t("transactions.header.count", { count: totalCount })}
-              </p>
-            </div>
-
-            {/* action buttons */}
-            <div className="flex items-center gap-4">
-              <Button
-                variant="default"
-                asChild
-              >
-                <Link to="/transactions/create">
-                  {t("transactions.header.new_payment")}
-                </Link>
-              </Button>
-              <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="secondary"
-                  >
-                    {t("transactions.header.export_data")}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[640px]">
-                  <DialogHeader>
-                    <DialogTitle>{t("transactions.export_dialog.title")}</DialogTitle>
-                    <p className="text-sm text-neutrals-700 mt-2">{t("transactions.export_dialog.description")}</p>
-                  </DialogHeader>
-                  <DialogBody className="flex flex-col gap-8">
-                    {/* filters */}
-                    <div className="flex gap-4">
-                      {/* date filter */}
-                      <div className="flex-1">
-                        <DateRangePicker
-                          dateRange={exportDateRange}
-                          onDateRangeChange={setExportDateRange}
-                          labels={{
-                            last7Days: t("transactions.filters.last_7_days"),
-                            last30Days: t("transactions.filters.last_30_days"),
-                            last90Days: t("transactions.filters.last_90_days"),
-                            custom: t("transactions.filters.custom"),
-                            placeholder: t("transactions.export_dialog.date_filter"),
-                            cancel: t("transactions.filters.cancel"),
-                            apply: t("transactions.filters.apply"),
-                          }}
-                          className="h-10 w-full"
-                          currentLanguage={i18n.language}
-                        />
-                      </div>
-
-                      {/* status filter */}
-                      <div className="flex-1">
-                        <Combobox
-                          multiple
-                          exclusiveOption="all"
-                          alwaysShowPlaceholder
-                          valuePosition="right"
-                          icon="search_activity"
-                          options={[
-                            { value: "all", label: t("transactions.export_dialog.status_all") },
-                            { value: "pending", label: t("transactions.status.pending") },
-                            { value: "validated", label: t("transactions.status.validated") },
-                            { value: "paid", label: t("transactions.status.paid") },
-                            { value: "returned", label: t("transactions.status.returned") },
-                            { value: "rejected", label: t("transactions.status.rejected") },
-                          ]}
-                          value={exportStatusFilter}
-                          onValueChange={(value) => setExportStatusFilter(value as string[])}
-                          labels={{
-                            placeholder: t("transactions.export_dialog.status_filter"),
-                          }}
-                          classNames={{
-                            trigger: "h-10 w-full",
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* file type checkboxes */}
-                    <div className="flex items-center gap-8">
-                      <p className="text-sm text-neutrals-700">{t("transactions.export_dialog.file_type_label")}</p>
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          id="csv"
-                          checked={exportFormatCSV}
-                          onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
-                        />
-                        <Label htmlFor="csv" className="text-sm text-neutrals-700 cursor-pointer">
-                          {t("transactions.export_dialog.csv_excel")}
-                        </Label>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          id="pdf"
-                          checked={exportFormatPDF}
-                          onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
-                        />
-                        <Label htmlFor="pdf" className="text-sm text-neutrals-700 cursor-pointer">
-                          {t("transactions.export_dialog.pdf")}
-                        </Label>
-                      </div>
-                    </div>
-                  </DialogBody>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="secondary">
-                        {t("transactions.export_dialog.cancel")}
-                      </Button>
-                    </DialogClose>
-                    <Button 
-                      variant="default" 
-                      disabled={!exportFormatCSV && !exportFormatPDF}
+            {/* header + search */}
+            <div className="flex flex-wrap items-center gap-6">
+              {/* title + refresh button */}
+              <div className="flex min-w-[220px] flex-1 items-center gap-4">
+                <Button
+                  variant="secondary"
+                  onClick={() => void refetch()}
+                >
+                  <Icon symbol="refresh" weight={200} />
+                </Button>
+                <p className="text-sm font-semibold text-neutrals-700">
+                  {t("transactions.header.count", { count: totalCount })}
+                </p>
+              </div>
+              {/* action buttons */}
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="default"
+                  asChild
+                >
+                  <Link to="/transactions/create">
+                    {t("transactions.header.new_payment")}
+                  </Link>
+                </Button>
+                <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="secondary"
                     >
-                      {t("transactions.export_dialog.export")}
+                      {t("transactions.header.export_data")}
                     </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* search input */}
-            <div className="w-full md:flex-1 md:min-w-[500px]">
-              <div className="relative">
-                <Icon
-                  symbol="search"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-neutrals-400"
-                />
-                <Input
-                  placeholder={t("transactions.header.search_placeholder")}
-                  className="h-10 pl-10 text-sm"
-                />
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[640px]">
+                    <DialogHeader>
+                      <DialogTitle>{t("transactions.export_dialog.title")}</DialogTitle>
+                      <p className="mt-2 text-sm text-neutrals-700">{t("transactions.export_dialog.description")}</p>
+                    </DialogHeader>
+                    <DialogBody className="flex flex-col gap-8">
+                      {/* filters */}
+                      <div className="flex gap-4">
+                        {/* date filter */}
+                        <div className="flex-1">
+                          <DateRangePicker
+                            dateRange={exportDateRange}
+                            onDateRangeChange={setExportDateRange}
+                            labels={{
+                              last7Days: t("transactions.filters.last_7_days"),
+                              last30Days: t("transactions.filters.last_30_days"),
+                              last90Days: t("transactions.filters.last_90_days"),
+                              custom: t("transactions.filters.custom"),
+                              placeholder: t("transactions.export_dialog.date_filter"),
+                              cancel: t("transactions.filters.cancel"),
+                              apply: t("transactions.filters.apply"),
+                            }}
+                            className="h-10 w-full"
+                            currentLanguage={i18n.language}
+                          />
+                        </div>
+                        {/* status filter */}
+                        <div className="flex-1">
+                          <Combobox
+                            multiple
+                            exclusiveOption="all"
+                            alwaysShowPlaceholder
+                            valuePosition="right"
+                            icon="search_activity"
+                            options={[
+                              { value: "all", label: t("transactions.export_dialog.status_all") },
+                              { value: "pending", label: t("transactions.status.pending") },
+                              { value: "validated", label: t("transactions.status.validated") },
+                              { value: "paid", label: t("transactions.status.paid") },
+                              { value: "returned", label: t("transactions.status.returned") },
+                              { value: "rejected", label: t("transactions.status.rejected") },
+                            ]}
+                            value={exportStatusFilter}
+                            onValueChange={(value) => setExportStatusFilter(value as string[])}
+                            labels={{
+                              placeholder: t("transactions.export_dialog.status_filter"),
+                            }}
+                            classNames={{
+                              trigger: "h-10 w-full",
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {/* file type checkboxes */}
+                      <div className="flex items-center gap-8">
+                        <p className="text-sm text-neutrals-700">{t("transactions.export_dialog.file_type_label")}</p>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="csv"
+                            checked={exportFormatCSV}
+                            onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
+                          />
+                          <Label
+                            htmlFor="csv"
+                            className="cursor-pointer text-sm text-neutrals-700"
+                          >
+                            {t("transactions.export_dialog.csv_excel")}
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="pdf"
+                            checked={exportFormatPDF}
+                            onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
+                          />
+                          <Label
+                            htmlFor="pdf"
+                            className="cursor-pointer text-sm text-neutrals-700"
+                          >
+                            {t("transactions.export_dialog.pdf")}
+                          </Label>
+                        </div>
+                      </div>
+                    </DialogBody>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="secondary">
+                          {t("transactions.export_dialog.cancel")}
+                        </Button>
+                      </DialogClose>
+                      <Button
+                        variant="default"
+                        disabled={!exportFormatCSV && !exportFormatPDF}
+                      >
+                        {t("transactions.export_dialog.export")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              {/* search input */}
+              <div className={`
+                w-full
+                md:min-w-[500px] md:flex-1
+              `}
+              >
+                <div className="relative">
+                  <Icon
+                    symbol="search"
+                    className={`
+                      absolute top-1/2 left-2 -translate-y-1/2 text-neutrals-400
+                    `}
+                  />
+                  <Input
+                    placeholder={t("transactions.header.search_placeholder")}
+                    className="h-10 pl-10 text-sm"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* filters */}
-          <div className="flex flex-wrap items-center gap-6 mt-6">
-            {/* date filter */}
-            <div className="flex-1 min-w-[240px]">
-              <DateRangePicker
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-                labels={{
-                  last7Days: t("transactions.filters.last_7_days"),
-                  last30Days: t("transactions.filters.last_30_days"),
-                  last90Days: t("transactions.filters.last_90_days"),
-                  custom: t("transactions.filters.custom"),
-                  placeholder: t("transactions.filters.date"),
-                  cancel: t("transactions.filters.cancel"),
-                  apply: t("transactions.filters.apply"),
-                }}
-                className="h-10 w-full"
-                currentLanguage={i18n.language}
-              />
+            {/* filters */}
+            <div className="mt-6 flex flex-wrap items-center gap-6">
+              {/* date filter */}
+              <div className="min-w-[240px] flex-1">
+                <DateRangePicker
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                  labels={{
+                    last7Days: t("transactions.filters.last_7_days"),
+                    last30Days: t("transactions.filters.last_30_days"),
+                    last90Days: t("transactions.filters.last_90_days"),
+                    custom: t("transactions.filters.custom"),
+                    placeholder: t("transactions.filters.date"),
+                    cancel: t("transactions.filters.cancel"),
+                    apply: t("transactions.filters.apply"),
+                  }}
+                  className="h-10 w-full"
+                  currentLanguage={i18n.language}
+                />
+              </div>
+              {/* account filter */}
+              <div className="min-w-[240px] flex-1">
+                <Combobox
+                  multiple
+                  exclusiveOption="all"
+                  alwaysShowPlaceholder
+                  valuePosition="right"
+                  icon="account_balance_wallet"
+                  options={accountFilterOptions}
+                  value={accountFilter}
+                  onValueChange={(value) => setAccountFilter(value as string[])}
+                  labels={{
+                    placeholder: t("transactions.filters.account"),
+                  }}
+                  classNames={{
+                    trigger: "h-10 w-full",
+                  }}
+                />
+              </div>
+              {/* status filter */}
+              <div className="min-w-[240px] flex-1">
+                <Combobox
+                  multiple
+                  exclusiveOption="all"
+                  alwaysShowPlaceholder
+                  valuePosition="right"
+                  icon="search_activity"
+                  options={[
+                    { value: "all", label: t("transactions.filters.all_status") },
+                    { value: "pending", label: t("transactions.status.pending") },
+                    { value: "validated", label: t("transactions.status.validated") },
+                    { value: "paid", label: t("transactions.status.paid") },
+                    { value: "returned", label: t("transactions.status.returned") },
+                    { value: "rejected", label: t("transactions.status.rejected") },
+                  ]}
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value as string[])}
+                  labels={{
+                    placeholder: t("transactions.filters.status"),
+                  }}
+                  classNames={{
+                    trigger: "h-10 w-full",
+                  }}
+                />
+              </div>
+              {/* reset filters button */}
+              {hasActiveFilters && (
+                <Button
+                  variant="link"
+                  onClick={handleResetFilters}
+                  className="h-10 shrink-0 text-pay-500"
+                >
+                  Restablecer filtros
+                </Button>
+              )}
             </div>
-
-            {/* account filter */}
-            <div className="flex-1 min-w-[240px]">
-              <Combobox
-                multiple
-                exclusiveOption="all"
-                alwaysShowPlaceholder
-                valuePosition="right"
-                icon="account_balance_wallet"
-                options={[
-                  { value: "all", label: t("transactions.filters.all") },
-                  { value: "account1", label: "Cuenta 1" },
-                  { value: "account2", label: "Cuenta 2" },
-                  { value: "account3", label: "Cuenta 3" },
-                ]}
-                value={accountFilter}
-                onValueChange={(value) => setAccountFilter(value as string[])}
-                labels={{
-                  placeholder: t("transactions.filters.account"),
-                }}
-                classNames={{
-                  trigger: "h-10 w-full",
-                }}
-              />
-            </div>
-
-            {/* status filter */}
-            <div className="flex-1 min-w-[240px]">
-              <Combobox
-                multiple
-                exclusiveOption="all"
-                alwaysShowPlaceholder
-                valuePosition="right"
-                icon="search_activity"
-                options={[
-                  { value: "all", label: t("transactions.filters.all_status") },
-                  { value: "pending", label: t("transactions.status.pending") },
-                  { value: "validated", label: t("transactions.status.validated") },
-                  { value: "paid", label: t("transactions.status.paid") },
-                  { value: "returned", label: t("transactions.status.returned") },
-                  { value: "rejected", label: t("transactions.status.rejected") },
-                ]}
-                value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value as string[])}
-                labels={{
-                  placeholder: t("transactions.filters.status"),
-                }}
-                classNames={{
-                  trigger: "h-10 w-full",
-                }}
-              />
-            </div>
-
-            {/* reset filters button */}
-            {hasActiveFilters && (
-              <Button 
-                variant="link" 
-                onClick={handleResetFilters}
-                className="h-10 text-pay-500 shrink-0"
-              >
-                Restablecer filtros
-              </Button>
-            )}
-          </div>
           </StickyFilterHeader>
-
           {/* table */}
           <Table className="rounded-2xl">
-          <TableHeader>
+            <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-semibold text-neutrals-700 uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-neutrals-700 uppercase
+                `}
+                >
                   {t("transactions.table.date")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700 uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-neutrals-700 uppercase
+                `}
+                >
                   {t("transactions.table.beneficiary")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700 uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-neutrals-700 uppercase
+                `}
+                >
                   {t("transactions.table.id_number")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700 uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-neutrals-700 uppercase
+                `}
+                >
                   {t("transactions.table.amount")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700 uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-neutrals-700 uppercase
+                `}
+                >
                   {t("transactions.table.reference")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-neutrals-700 uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-neutrals-700 uppercase
+                `}
+                >
                   {t("transactions.table.status")}
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.map((transaction) => (
-                <TableRow 
+                <TableRow
                   key={transaction.id}
                   onClick={() => handleRowClick(transaction)}
-                  className="cursor-pointer hover:bg-neutrals-25"
+                  className={`
+                    cursor-pointer
+                    hover:bg-neutrals-25
+                  `}
                 >
                   <TableCell className="text-sm text-neutrals-700">
                     {transaction.date}
@@ -603,13 +676,18 @@ export const TransactionsPage = () => {
                     {transaction.reference}
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant={getStatusVariant(transaction.status)} 
-                      className={`h-8 px-2 text-sm leading-5 ${
-                        transaction.status === 'pending' ? 'bg-neutrals-50' : 
-                        transaction.status === 'validated' ? 'bg-[#E5F3FA] text-neutrals-700' : 
-                        ''
-                      }`}
+                    <Badge
+                      variant={getStatusVariant(transaction.status)}
+                      className={`
+                        h-8 px-2 text-sm leading-5
+                        ${
+                transaction.status === "pending"
+                  ? "bg-neutrals-50"
+                  : transaction.status === "validated"
+                    ? "bg-[#E5F3FA] text-neutrals-700"
+                    : ""
+                }
+                      `}
                     >
                       {t(`transactions.status.${transaction.status}`)}
                     </Badge>
@@ -618,183 +696,223 @@ export const TransactionsPage = () => {
               ))}
             </TableBody>
           </Table>
-      </Card>
-    </PageContainer>
-
-    {/* transaction detail sheet */}
-    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-      <SheetContent className="sm:w-[576px] sm:max-w-[576px]">
-        <SheetHeader>
-          <SheetTitle className="text-sm font-bold text-neutrals-900">Detalles del pago</SheetTitle>
-        </SheetHeader>
-        <SheetBody className="flex flex-col gap-8 overflow-y-auto">
-          {selectedTransaction && (
-            <>
-              {/* Transaction details fields */}
-              <div className="flex flex-col gap-4">
-                {/* Fecha */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Fecha</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="calendar_today" className="text-neutrals-700 size-6" />
-                    <span className="text-sm font-semibold text-neutrals-700">{selectedTransaction.date}</span>
+        </Card>
+      </PageContainer>
+      {/* transaction detail sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="sm:w-[576px] sm:max-w-[576px]">
+          <SheetHeader>
+            <SheetTitle className="text-sm font-bold text-neutrals-900">Detalles del pago</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="flex flex-col gap-8 overflow-y-auto">
+            {displayedTransaction && (
+              <>
+                {/* Transaction details fields */}
+                <div className="flex flex-col gap-4">
+                  {/* Fecha */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Fecha</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Icon
+                        symbol="calendar_today"
+                        className="size-6 text-neutrals-700"
+                      />
+                      <span className="text-sm font-semibold text-neutrals-700">{displayedTransaction.date}</span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Beneficiario */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Beneficiario</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="account_circle" className="text-neutrals-700 size-6" />
-                    <span className="text-sm font-semibold text-neutrals-700">{selectedTransaction.beneficiary}</span>
+                  {/* Beneficiario */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Beneficiario</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Icon
+                        symbol="account_circle"
+                        className="size-6 text-neutrals-700"
+                      />
+                      <span className="text-sm font-semibold text-neutrals-700">{displayedTransaction.beneficiary}</span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Tipo y número de identificación */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Tipo y número de identificación</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="contacts" className="text-neutrals-700 size-6" />
-                    <span className="text-sm font-semibold text-neutrals-700">Cédula de Ciudadanía: {selectedTransaction.idNumber}</span>
+                  {/* Tipo y número de identificación */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Tipo y número de identificación</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Icon
+                        symbol="contacts"
+                        className="size-6 text-neutrals-700"
+                      />
+                      <span className="text-sm font-semibold text-neutrals-700">
+                        {displayedTransaction.idTypeLabel
+                          ? `${displayedTransaction.idTypeLabel}: ${displayedTransaction.idNumber}`
+                          : `Cédula de Ciudadanía: ${displayedTransaction.idNumber}`}
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Tipo y número de cuenta */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Tipo y número de cuenta</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="account_balance" className="text-neutrals-700 size-6" />
-                    <span className="text-sm font-semibold text-neutrals-700">Corriente. Davivienda Nº 002-83336-90116</span>
+                  {/* Tipo y número de cuenta */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Tipo y número de cuenta</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Icon
+                        symbol="account_balance"
+                        className="size-6 text-neutrals-700"
+                      />
+                      <span className="text-sm font-semibold text-neutrals-700">
+                        {displayedTransaction.destinationAccountLabel || "Corriente. Davivienda Nº 002-83336-90116"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Número de referencia */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Número de referencia</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="confirmation_number" className="text-neutrals-700 size-6" />
-                    <span className="text-sm font-semibold text-neutrals-700">{selectedTransaction.reference}</span>
+                  {/* Número de referencia */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Número de referencia</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Icon
+                        symbol="confirmation_number"
+                        className="size-6 text-neutrals-700"
+                      />
+                      <span className="text-sm font-semibold text-neutrals-700">{displayedTransaction.reference}</span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Monto */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Monto</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="paid" className="text-neutrals-700 size-6" />
-                    <span className="text-sm font-semibold text-neutrals-700">{formatAmount(selectedTransaction.amount)}</span>
+                  {/* Monto */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Monto</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Icon symbol="paid" className="size-6 text-neutrals-700" />
+                      <span className="text-sm font-semibold text-neutrals-700">{formatAmount(displayedTransaction.amount)}</span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Cuenta */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Cuenta</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="account_balance_wallet" className="text-neutrals-700 size-6" />
-                    <span className="text-sm font-semibold text-neutrals-700">Cuenta de ahorros</span>
+                  {/* Cuenta */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Cuenta</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Icon
+                        symbol="account_balance_wallet"
+                        className="size-6 text-neutrals-700"
+                      />
+                      <span className="text-sm font-semibold text-neutrals-700">
+                        {displayedTransaction.sourceAccountName || "Cuenta de ahorros"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Estado */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs text-neutrals-500">Estado</span>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Badge 
-                      variant={getStatusVariant(selectedTransaction.status)} 
-                      className={`h-8 px-2 text-sm leading-5 ${
-                        selectedTransaction.status === 'pending' ? 'bg-neutrals-50' : 
-                        selectedTransaction.status === 'validated' ? 'bg-[#E5F3FA] text-neutrals-700' : 
-                        ''
-                      }`}
-                    >
-                      {t(`transactions.status.${selectedTransaction.status}`)}
-                    </Badge>
+                  {/* Estado */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-neutrals-500">Estado</span>
+                    <div className="flex h-10 items-center gap-2 pl-2">
+                      <Badge
+                        variant={getStatusVariant(displayedTransaction.status)}
+                        className={`
+                          h-8 px-2 text-sm leading-5
+                          ${
+              displayedTransaction.status === "pending"
+                ? "bg-neutrals-50"
+                : displayedTransaction.status === "validated"
+                  ? "bg-[#E5F3FA] text-neutrals-700"
+                  : ""
+              }
+                        `}
+                      >
+                        {t(`transactions.status.${displayedTransaction.status}`)}
+                      </Badge>
+                    </div>
                   </div>
+                  {/* Alert/Motivo - only show for returned/rejected */}
+                  {(displayedTransaction.status === "returned" || displayedTransaction.status === "rejected") && (
+                    <Alert variant="warning" className="border-0 bg-warning-50">
+                      <Icon symbol="info" />
+                      <AlertTitle>
+                        {displayedTransaction.status === "returned" ? "Motivo de retorno" : "Motivo de rechazo"}
+                      </AlertTitle>
+                      <AlertDescription>
+                        {displayedTransaction.statusReason
+                          ?? "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
-
-                {/* Alert/Motivo - only show for returned/rejected */}
-                {(selectedTransaction.status === 'returned' || selectedTransaction.status === 'rejected') && (
-                  <Alert variant="warning" className="bg-warning-50 border-0">
-                    <Icon symbol="info" />
-                    <AlertTitle>
-                      {selectedTransaction.status === 'returned' ? 'Motivo de retorno' : 'Motivo de rechazo'}
-                    </AlertTitle>
-                    <AlertDescription>
-                      Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-
-              {/* Timeline section */}
-              <div className="flex flex-col gap-6">
-                <Button
-                  variant="link"
-                  className="flex items-center gap-2 text-primary h-6 px-0 self-start"
-                  onClick={() => setShowTimeline(!showTimeline)}
-                >
-                  <span className="text-sm">{showTimeline ? 'Ocultar timeline de pago' : 'Ver timeline de pago'}</span>
-                  <Icon 
-                    symbol={showTimeline ? "expand_less" : "expand_more"} 
-                    className="size-6" 
-                  />
-                </Button>
-
-                {showTimeline && (
-                  <Timeline>
-                    <TimelineItem status="complete">
-                      <TimelineIndicator />
-                      <TimelineContent>
-                        <TimelineTitle>Pago completado con éxito.</TimelineTitle>
-                        <TimelineDescription>
-                          El pago ha sido procesado exitosamente. Confirmación bancaria recibida.
-                        </TimelineDescription>
-                        <TimelineTime>02 Septiembre. 02:35 PM</TimelineTime>
-                      </TimelineContent>
-                    </TimelineItem>
-                    <TimelineItem status="active">
-                      <TimelineIndicator />
-                      <TimelineContent>
-                        <TimelineTitle>En proceso</TimelineTitle>
-                        <TimelineDescription>
-                          El pago está siendo procesado por el banco.
-                        </TimelineDescription>
-                        <TimelineTime>01 Septiembre. 10:15 AM</TimelineTime>
-                      </TimelineContent>
-                    </TimelineItem>
-                    <TimelineItem status="pending">
-                      <TimelineIndicator />
-                      <TimelineContent>
-                        <TimelineTitle>Pago iniciado</TimelineTitle>
-                        <TimelineDescription>
-                          Solicitud de pago recibida.
-                        </TimelineDescription>
-                        <TimelineTime>01 Septiembre. 09:00 AM</TimelineTime>
-                      </TimelineContent>
-                    </TimelineItem>
-                  </Timeline>
-                )}
-              </div>
-            </>
+                {/* Timeline section */}
+                <div className="flex flex-col gap-6">
+                  <Button
+                    variant="link"
+                    className={`
+                      flex h-6 items-center gap-2 self-start px-0 text-primary
+                    `}
+                    onClick={() => setShowTimeline(!showTimeline)}
+                  >
+                    <span className="text-sm">{showTimeline ? "Ocultar timeline de pago" : "Ver timeline de pago"}</span>
+                    <Icon
+                      symbol={showTimeline ? "expand_less" : "expand_more"}
+                      className="size-6"
+                    />
+                  </Button>
+                  {showTimeline && (
+                    <Timeline>
+                      {displayedTransaction.timeline.length > 0
+                        ? displayedTransaction.timeline.map((event) => (
+                          <TimelineItem key={event.id} status={event.status}>
+                            <TimelineIndicator />
+                            <TimelineContent>
+                              <TimelineTitle>{event.title}</TimelineTitle>
+                              {event.description && (
+                                <TimelineDescription>{event.description}</TimelineDescription>
+                              )}
+                              <TimelineTime>{event.time}</TimelineTime>
+                            </TimelineContent>
+                          </TimelineItem>
+                        ))
+                        : (
+                          <>
+                            <TimelineItem status="complete">
+                              <TimelineIndicator />
+                              <TimelineContent>
+                                <TimelineTitle>Pago completado con éxito.</TimelineTitle>
+                                <TimelineDescription>
+                                  El pago ha sido procesado exitosamente. Confirmación bancaria recibida.
+                                </TimelineDescription>
+                                <TimelineTime>02 Septiembre. 02:35 PM</TimelineTime>
+                              </TimelineContent>
+                            </TimelineItem>
+                            <TimelineItem status="active">
+                              <TimelineIndicator />
+                              <TimelineContent>
+                                <TimelineTitle>En proceso</TimelineTitle>
+                                <TimelineDescription>
+                                  El pago está siendo procesado por el banco.
+                                </TimelineDescription>
+                                <TimelineTime>01 Septiembre. 10:15 AM</TimelineTime>
+                              </TimelineContent>
+                            </TimelineItem>
+                            <TimelineItem status="pending">
+                              <TimelineIndicator />
+                              <TimelineContent>
+                                <TimelineTitle>Pago iniciado</TimelineTitle>
+                                <TimelineDescription>
+                                  Solicitud de pago recibida.
+                                </TimelineDescription>
+                                <TimelineTime>01 Septiembre. 09:00 AM</TimelineTime>
+                              </TimelineContent>
+                            </TimelineItem>
+                          </>
+                        )}
+                    </Timeline>
+                  )}
+                </div>
+              </>
+            )}
+          </SheetBody>
+          {/* Action button - only show for returned/rejected */}
+          {displayedTransaction && (displayedTransaction.status === "returned" || displayedTransaction.status === "rejected") && (
+            <SheetFooter>
+              <Button
+                variant="default"
+                size="default"
+                className="self-start"
+                asChild
+              >
+                <Link to={`/transactions/correct/${displayedTransaction.id}`}>
+                  Corregir y volver a enviar pago
+                </Link>
+              </Button>
+            </SheetFooter>
           )}
-        </SheetBody>
-        {/* Action button - only show for returned/rejected */}
-        {selectedTransaction && (selectedTransaction.status === 'returned' || selectedTransaction.status === 'rejected') && (
-          <SheetFooter>
-            <Button 
-              variant="default" 
-              size="default" 
-              className="self-start"
-              asChild
-            >
-              <Link to={`/transactions/correct/${selectedTransaction.id}`}>
-                Corregir y volver a enviar pago
-              </Link>
-            </Button>
-          </SheetFooter>
-        )}
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };

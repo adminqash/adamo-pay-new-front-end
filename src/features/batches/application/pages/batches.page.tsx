@@ -5,6 +5,7 @@ import { PageTitle } from "@/features/common/components/layout/page-title";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 import { useBatches } from "../hooks/use-batches";
+import { buildBatchListParams } from "../utils/batch-filters.utils";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
 import { Icon } from "@adamosuiteservices/ui/icon";
@@ -38,7 +39,7 @@ import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import { Label } from "@adamosuiteservices/ui/label";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import type { BatchStatus } from "../entities/batch.entity";
-import { useState, useRef, useState as useStateReact, useEffect } from "react";
+import { useState, useRef, useState as useStateReact, useEffect, useMemo } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
 
 /**
@@ -52,19 +53,19 @@ const DateRangePicker = ({
   className,
   currentLanguage,
 }: {
-  dateRange: DateRange;
-  onDateRangeChange: (range: DateRange) => void;
+  dateRange: DateRange
+  onDateRangeChange: (range: DateRange) => void
   labels: {
-    last7Days: string;
-    last30Days: string;
-    last90Days: string;
-    custom: string;
-    placeholder: string;
-    cancel: string;
-    apply: string;
-  };
-  className?: string;
-  currentLanguage: string;
+    last7Days: string
+    last30Days: string
+    last90Days: string
+    custom: string
+    placeholder: string
+    cancel: string
+    apply: string
+  }
+  className?: string
+  currentLanguage: string
 }) => {
   const comboboxRef = useRef<HTMLElement | null>(null);
   const [selectedOption, setSelectedOption] = useStateReact<string>(() => {
@@ -194,15 +195,35 @@ const DateRangePicker = ({
  */
 export const BatchesPage = () => {
   const { t, i18n } = useTranslation("batches");
-  const { batches, totalCount } = useBatches();
   const navigate = useNavigate();
   const location = useLocation();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const today = startOfDay(new Date());
+    return {
+      from: subDays(today, 30),
+      to: today,
+    };
+  });
+  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
+
+  const listParams = useMemo(
+    () => buildBatchListParams({
+      dateRange,
+      statusFilter,
+      search: searchQuery,
+    }),
+    [dateRange, statusFilter, searchQuery],
+  );
+
+  const { batches, totalCount, refetch } = useBatches(listParams);
+
   // Show success toast if redirected from create batch
   useEffect(() => {
-    const state = location.state as { showSuccessToast?: boolean; showSavedToast?: boolean } | null;
+    const state = location.state as { showSuccessToast?: boolean, showSavedToast?: boolean } | null;
     if (state?.showSuccessToast) {
       ToastManager.show({
         message: t("batches.messages.batch_created"),
@@ -220,15 +241,6 @@ export const BatchesPage = () => {
     }
   }, [location.state, t]);
 
-  const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const today = startOfDay(new Date());
-    return {
-      from: subDays(today, 7),
-      to: today,
-    };
-  });
-  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
-
   // export dialog state
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [exportDateRange, setExportDateRange] = useState<DateRange>({
@@ -245,14 +257,16 @@ export const BatchesPage = () => {
   const isDateRangeCustom = () => {
     if (!dateRange.from || !dateRange.to) return false;
     const today = startOfDay(new Date());
-    const defaultFrom = subDays(today, 7);
+    const defaultFrom = subDays(today, 30);
     return dateRange.from.getTime() !== defaultFrom.getTime() || dateRange.to.getTime() !== today.getTime();
   };
 
   /**
    * check if any filter is active
    */
-  const hasActiveFilters = isDateRangeCustom() || (statusFilter.length > 0 && !statusFilter.includes("all"));
+  const hasActiveFilters = isDateRangeCustom()
+    || (statusFilter.length > 0 && !statusFilter.includes("all"))
+    || searchQuery.trim().length > 0;
 
   /**
    * reset all filters
@@ -260,10 +274,11 @@ export const BatchesPage = () => {
   const handleResetFilters = () => {
     const today = startOfDay(new Date());
     setDateRange({
-      from: subDays(today, 7),
+      from: subDays(today, 30),
       to: today,
     });
     setStatusFilter(["all"]);
+    setSearchQuery("");
   };
 
   /**
@@ -313,14 +328,15 @@ export const BatchesPage = () => {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <Card className="p-6 border overflow-visible">
+        <Card className="overflow-visible border p-6">
           <StickyFilterHeader className="flex flex-col gap-0">
           {/* header + search */}
           <div className="flex flex-wrap items-center gap-6">
             {/* title + refresh button */}
-            <div className="flex flex-1 items-center gap-4 min-w-[220px]">
+            <div className="flex min-w-[220px] flex-1 items-center gap-4">
               <Button
                 variant="secondary"
+                onClick={() => void refetch()}
               >
                 <Icon symbol="refresh" weight={200} />
               </Button>
@@ -348,7 +364,7 @@ export const BatchesPage = () => {
                 <DialogContent className="sm:max-w-[640px]">
                   <DialogHeader>
                     <DialogTitle>{t("batches.export_dialog.title")}</DialogTitle>
-                    <p className="text-sm text-neutrals-700 mt-2">{t("batches.export_dialog.description")}</p>
+                    <p className="mt-2 text-sm text-neutrals-700">{t("batches.export_dialog.description")}</p>
                   </DialogHeader>
                   <DialogBody className="flex flex-col gap-8">
                     {/* filters */}
@@ -379,7 +395,7 @@ export const BatchesPage = () => {
                           exclusiveOption="all"
                           alwaysShowPlaceholder
                           valuePosition="right"
-                            icon="search_activity"
+                          icon="search_activity"
                           options={[
                             { value: "all", label: t("batches.filters.all_status") },
                             { value: "pending", label: t("batches.status.pending") },
@@ -407,7 +423,10 @@ export const BatchesPage = () => {
                           checked={exportFormatCSV}
                           onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
                         />
-                        <Label htmlFor="batch-csv" className="text-sm text-neutrals-700 cursor-pointer">
+                        <Label
+                          htmlFor="batch-csv"
+                          className="cursor-pointer text-sm text-neutrals-700"
+                        >
                           {t("batches.export_dialog.csv_excel")}
                         </Label>
                       </div>
@@ -417,7 +436,10 @@ export const BatchesPage = () => {
                           checked={exportFormatPDF}
                           onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
                         />
-                        <Label htmlFor="batch-pdf" className="text-sm text-neutrals-700 cursor-pointer">
+                        <Label
+                          htmlFor="batch-pdf"
+                          className="cursor-pointer text-sm text-neutrals-700"
+                        >
                           {t("batches.export_dialog.pdf")}
                         </Label>
                       </div>
@@ -441,24 +463,32 @@ export const BatchesPage = () => {
             </div>
 
             {/* search input */}
-            <div className="w-full md:flex-1 md:min-w-[500px]">
+            <div className={`
+              w-full
+              md:min-w-[500px] md:flex-1
+            `}
+            >
               <div className="relative">
                 <Icon
                   symbol="search"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-[#898f99]"
+                  className={`
+                    absolute top-1/2 left-2 -translate-y-1/2 text-[#898f99]
+                  `}
                 />
                 <Input
                   placeholder={t("batches.header.search_placeholder")}
                   className="h-10 pl-10 text-sm"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                 />
               </div>
             </div>
           </div>
 
           {/* filters */}
-          <div className="flex flex-wrap items-center gap-6 mt-6">
+          <div className="mt-6 flex flex-wrap items-center gap-6">
             {/* date filter */}
-            <div className="flex-1 min-w-[240px]">
+            <div className="min-w-[240px] flex-1">
               <DateRangePicker
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
@@ -477,7 +507,7 @@ export const BatchesPage = () => {
             </div>
 
             {/* status filter */}
-            <div className="flex-1 min-w-[240px]">
+            <div className="min-w-[240px] flex-1">
               <Combobox
                 multiple
                 exclusiveOption="all"
@@ -506,7 +536,7 @@ export const BatchesPage = () => {
               <Button 
                 variant="link" 
                 onClick={handleResetFilters}
-                className="h-10 text-[#0e9384] shrink-0"
+                className="h-10 shrink-0 text-[#0e9384]"
               >
                 {t("batches.filters.reset")}
               </Button>
@@ -518,32 +548,53 @@ export const BatchesPage = () => {
         <Table className="rounded-2xl">
           <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.table.date")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.table.batch_name")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.table.transactions")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.table.amount")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.table.batch_id")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.table.status")}
                 </TableHead>
               </TableRow>
-            </TableHeader>
+          </TableHeader>
             <TableBody>
               {batches.map((batch) => (
                 <TableRow 
                   key={batch.id}
                   onClick={() => handleRowClick(batch.id)}
-                  className="cursor-pointer hover:bg-[#f8f8f9]"
+                  className={`
+                    cursor-pointer
+                    hover:bg-[#f8f8f9]
+                  `}
                 >
                   <TableCell className="text-sm text-[#41454c]">
                     {batch.date}
@@ -563,7 +614,10 @@ export const BatchesPage = () => {
                   <TableCell>
                     <Badge 
                       variant={getStatusVariant(batch.status)} 
-                      className={`h-8 px-2 text-sm leading-5 ${batch.status === 'pending' ? 'bg-neutrals-50' : ''}`}
+                      className={`
+                        h-8 px-2 text-sm leading-5
+                        ${batch.status === "pending" ? "bg-neutrals-50" : ""}
+                      `}
                     >
                       {t(`batches.status.${batch.status}`)}
                     </Badge>
@@ -571,9 +625,9 @@ export const BatchesPage = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-      </Card>
-    </PageContainer>
+        </Table>
+        </Card>
+      </PageContainer>
     </>
   );
 };

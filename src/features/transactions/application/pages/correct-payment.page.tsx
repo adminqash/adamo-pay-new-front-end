@@ -1,7 +1,5 @@
-import { useTranslation } from "react-i18next";
-import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
-import { createPortal } from "react-dom";
-import { useParams, useNavigate, Link } from "react-router";
+import { Alert, AlertTitle, AlertDescription } from "@adamosuiteservices/ui/alert";
+import { Badge } from "@adamosuiteservices/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -11,12 +9,8 @@ import {
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
-import { PageContainer } from "@/features/common/components/layout/page-container";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
-import { Icon } from "@adamosuiteservices/ui/icon";
-import { Badge } from "@adamosuiteservices/ui/badge";
-import { Alert, AlertTitle, AlertDescription } from "@adamosuiteservices/ui/alert";
 import {
   Dialog,
   DialogTrigger,
@@ -28,7 +22,9 @@ import {
   DialogFooter,
   DialogClose,
 } from "@adamosuiteservices/ui/dialog";
+import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
 import { Label } from "@adamosuiteservices/ui/label";
 import {
   Select,
@@ -41,14 +37,45 @@ import {
   SelectableCard,
   SelectableCardGroup,
 } from "@adamosuiteservices/ui/selectable-card";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import { useParams, useNavigate, Link } from "react-router";
+import type { BatchTransactionDetail } from "@/features/batches/application/entities/batch-transaction-detail.entity";
 import { AddBankAccountDialog } from "@/features/beneficiaries/application/components/add-bank-account-dialog";
-import { useState, useEffect } from "react";
+import { PageContainer } from "@/features/common/components/layout/page-container";
+import { CorrectPaymentMapper } from "@/features/transactions/api/mappers/correct-payment.mapper";
+import { PaymentsService } from "@/features/transactions/api/services/payments.service";
+import { useCorrectPayment } from "@/features/transactions/application/hooks/use-payment-mutations";
+import { queryKeys } from "@/lib/query/query-keys";
+
+function RiskLevel({ level }: { level: "low" | "medium" | "high" }) {
+  const config = {
+    low: { label: "Riesgo bajo", className: "bg-success-100 text-success-700" },
+    medium: { label: "Riesgo medio", className: "bg-warning-100 text-warning-700" },
+    high: { label: "Riesgo alto", className: "bg-error-100 text-error-700" },
+  };
+
+  const { label, className } = config[level];
+
+  return (
+    <div className={`
+      inline-flex items-center gap-2 rounded-full px-3 py-1
+      ${className}
+    `}
+    >
+      <div className="size-2 rounded-full bg-current" />
+      <span className="text-sm font-semibold">{label}</span>
+    </div>
+  );
+}
 
 /**
  * correct payment page
- * 
+ *
  * allows users to correct and resend returned/rejected payments
  */
 export const CorrectPaymentPage = () => {
@@ -57,36 +84,22 @@ export const CorrectPaymentPage = () => {
   const navigate = useNavigate();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
+  const correctPayment = useCorrectPayment();
 
-  // Mock transaction data - in real implementation, fetch by id
-  const originalTransaction = {
-    id: id || "1",
-    status: "returned" as "returned" | "rejected",
-    beneficiary: {
-      fullName: "Juan Carlos Gutierrez Diaz",
-      idType: "Cédula de ciudadanía",
-      idNumber: "129.330.220",
-      hasIssues: false,
+  const paymentQuery = useQuery({
+    queryKey: queryKeys.payments.detail(id ?? ""),
+    queryFn: async() => {
+      const result = await PaymentsService.getDetailDto(id!);
+      return result.data ?? null;
     },
-    payment: {
-      amount: 2331876,
-      accountType: "Corriente",
-      bank: "Davivienda",
-      accountNumber: "002-83336-90116",
-      accountMismatch: false,
-    },
-    reference: {
-      number: "JKL-5678",
-      notFound: false,
-    },
-    restrictiveList: null as {
-      listName: string;
-      riskLevel: "low" | "medium" | "high";
-    } | null,
-  };
+    enabled: Boolean(id),
+  });
 
-  // local editable transaction state
-  const [transaction, setTransaction] = useState(originalTransaction);
+  const [editedTransaction, setEditedTransaction] = useState<BatchTransactionDetail | null>(null);
+  const mappedTransaction = paymentQuery.data
+    ? CorrectPaymentMapper.toViewModel(paymentQuery.data)
+    : null;
+  const transaction = editedTransaction ?? mappedTransaction;
 
   // Beneficiary dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -119,13 +132,13 @@ export const CorrectPaymentPage = () => {
 
   // saved bank accounts state
   const [savedAccounts, setSavedAccounts] = useState<Array<{
-    id: string;
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    displayBank: string;
-    displayAccountType: string;
-    isPrimary?: boolean;
+    id: string
+    accountType: string
+    bank: string
+    accountNumber: string
+    displayBank: string
+    displayAccountType: string
+    isPrimary?: boolean
   }>>([
     {
       id: "account-1",
@@ -153,14 +166,6 @@ export const CorrectPaymentPage = () => {
       displayAccountType: "Corriente",
     },
   ]);
-
-  // mock beneficiary data - TODO: get from actual transaction data
-  const beneficiaryData = {
-    documentType: "cc",
-    documentNumber: transaction.beneficiary.idNumber,
-    firstName: transaction.beneficiary.fullName.split(" ")[0],
-    lastName: transaction.beneficiary.fullName.split(" ").slice(1).join(" "),
-  };
 
   // Reference dialog state
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
@@ -193,7 +198,7 @@ export const CorrectPaymentPage = () => {
    */
   const mapBankToCode = (displayBank: string): string => {
     const normalized = displayBank.toLowerCase().trim();
-    
+
     if (normalized.includes("bancolombia")) return "bancolombia";
     if (normalized.includes("bogotá") || normalized.includes("bogota")) return "banco-bogota";
     if (normalized.includes("davivienda")) return "davivienda";
@@ -206,81 +211,88 @@ export const CorrectPaymentPage = () => {
     if (normalized.includes("occidente")) return "occidente";
     if (normalized.includes("gnb") || normalized.includes("sudameris")) return "gnb-sudameris";
     if (normalized.includes("citibank")) return "citibank";
-    
+
     return normalized;
   };
 
-  // Load beneficiary data when edit dialog opens
-  useEffect(() => {
-    if (isEditDialogOpen && transaction) {
-      const nameParts = transaction.beneficiary.fullName.split(" ").filter(part => part.length > 0);
-      
-      let firstName = "";
-      let lastName = "";
-      
-      if (nameParts.length === 1) {
-        firstName = nameParts[0];
-      } else if (nameParts.length === 2) {
-        firstName = nameParts[0];
-        lastName = nameParts[1];
-      } else if (nameParts.length === 3) {
-        firstName = nameParts.slice(0, 2).join(" ");
-        lastName = nameParts[2];
-      } else {
-        firstName = nameParts.slice(0, 2).join(" ");
-        lastName = nameParts.slice(2).join(" ");
-      }
-      
-      const documentType = mapDocumentTypeToCode(transaction.beneficiary.idType);
-      
-      setFirstName(firstName);
-      setLastName(lastName);
-      setDocumentType(documentType);
-      setDocumentNumber(transaction.beneficiary.idNumber.replace(/\./g, ""));
-      
-      setOriginalFirstName(firstName);
-      setOriginalLastName(lastName);
-      setOriginalDocumentType(documentType);
-      setOriginalDocumentNumber(transaction.beneficiary.idNumber.replace(/\./g, ""));
+  const openBeneficiaryDialog = () => {
+    if (!transaction) {
+      return;
     }
-  }, [isEditDialogOpen, transaction]);
 
-  // Load payment data when payment dialog opens
-  useEffect(() => {
-    if (isPaymentDialogOpen && transaction) {
-      const accountTypeCode = transaction.payment.accountType.toLowerCase() === "corriente" ? "corriente" : "ahorros";
-      const bankCode = mapBankToCode(transaction.payment.bank);
-      
-      setPaymentAmount(transaction.payment.amount.toString());
-      setAccountType(accountTypeCode);
-      setBank(bankCode);
-      setAccountNumber(transaction.payment.accountNumber);
-      
-      setOriginalPaymentAmount(transaction.payment.amount.toString());
-      setOriginalAccountType(accountTypeCode);
-      setOriginalBank(bankCode);
-      setOriginalAccountNumber(transaction.payment.accountNumber);
-    }
-  }, [isPaymentDialogOpen, transaction]);
+    const nameParts = transaction.beneficiary.fullName.split(" ").filter((part) => part.length > 0);
 
-  // Load reference data when reference dialog opens
-  useEffect(() => {
-    if (isReferenceDialogOpen && transaction) {
-      const refNumber = transaction.reference.number || "";
-      setReferenceNumber(refNumber);
-      setOriginalReferenceNumber(refNumber);
+    let nextFirstName = "";
+    let nextLastName = "";
+
+    if (nameParts.length === 1) {
+      nextFirstName = nameParts[0];
+    } else if (nameParts.length === 2) {
+      nextFirstName = nameParts[0];
+      nextLastName = nameParts[1];
+    } else if (nameParts.length === 3) {
+      nextFirstName = nameParts.slice(0, 2).join(" ");
+      nextLastName = nameParts[2];
+    } else {
+      nextFirstName = nameParts.slice(0, 2).join(" ");
+      nextLastName = nameParts.slice(2).join(" ");
     }
-  }, [isReferenceDialogOpen, transaction]);
+
+    const nextDocumentType = mapDocumentTypeToCode(transaction.beneficiary.idType);
+    const nextDocumentNumber = transaction.beneficiary.idNumber.replace(/\./g, "");
+
+    setFirstName(nextFirstName);
+    setLastName(nextLastName);
+    setDocumentType(nextDocumentType);
+    setDocumentNumber(nextDocumentNumber);
+    setOriginalFirstName(nextFirstName);
+    setOriginalLastName(nextLastName);
+    setOriginalDocumentType(nextDocumentType);
+    setOriginalDocumentNumber(nextDocumentNumber);
+    setIsEditDialogOpen(true);
+  };
+
+  const openPaymentDialog = () => {
+    if (!transaction) {
+      return;
+    }
+
+    const accountTypeCode
+      = transaction.payment.accountType.toLowerCase() === "corriente" ? "corriente" : "ahorros";
+    const bankCode = mapBankToCode(transaction.payment.bank);
+    const nextPaymentAmount = transaction.payment.amount.toString();
+
+    setPaymentAmount(nextPaymentAmount);
+    setAccountType(accountTypeCode);
+    setBank(bankCode);
+    setAccountNumber(transaction.payment.accountNumber);
+    setOriginalPaymentAmount(nextPaymentAmount);
+    setOriginalAccountType(accountTypeCode);
+    setOriginalBank(bankCode);
+    setOriginalAccountNumber(transaction.payment.accountNumber);
+    setIsPaymentDialogOpen(true);
+  };
+
+  const openReferenceDialog = () => {
+    if (!transaction) {
+      return;
+    }
+
+    const refNumber = transaction.reference.number || "";
+    setReferenceNumber(refNumber);
+    setOriginalReferenceNumber(refNumber);
+    setIsReferenceDialogOpen(true);
+  };
 
   /**
    * check if beneficiary has changes
    */
   const hasBeneficiaryChanges = (): boolean => {
     return (
-      firstName !== originalFirstName ||
-      lastName !== originalLastName ||
-      documentType !== originalDocumentType ||
-      documentNumber !== originalDocumentNumber
+      firstName !== originalFirstName
+      || lastName !== originalLastName
+      || documentType !== originalDocumentType
+      || documentNumber !== originalDocumentNumber
     );
   };
 
@@ -289,10 +301,10 @@ export const CorrectPaymentPage = () => {
    */
   const hasPaymentChanges = (): boolean => {
     return (
-      paymentAmount !== originalPaymentAmount ||
-      accountType !== originalAccountType ||
-      bank !== originalBank ||
-      accountNumber !== originalAccountNumber
+      paymentAmount !== originalPaymentAmount
+      || accountType !== originalAccountType
+      || bank !== originalBank
+      || accountNumber !== originalAccountNumber
     );
   };
 
@@ -315,14 +327,21 @@ export const CorrectPaymentPage = () => {
 
     const formattedNumber = documentNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-    setTransaction({
-      ...transaction,
-      beneficiary: {
-        ...transaction.beneficiary,
-        fullName: `${firstName} ${lastName}`,
-        idType: documentTypeMap[documentType] || documentType,
-        idNumber: formattedNumber,
-      },
+    setEditedTransaction((prev) => {
+      const current = prev ?? transaction;
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        beneficiary: {
+          ...current.beneficiary,
+          fullName: `${firstName} ${lastName}`,
+          idType: documentTypeMap[documentType] || documentType,
+          idNumber: formattedNumber,
+        },
+      };
     });
 
     ToastManager.show({
@@ -357,15 +376,22 @@ export const CorrectPaymentPage = () => {
       ahorros: "Ahorros",
     };
 
-    setTransaction({
-      ...transaction,
-      payment: {
-        ...transaction.payment,
-        amount: parseFloat(paymentAmount),
-        accountType: accountTypeMap[accountType] || accountType,
-        bank: bankMap[bank] || bank,
-        accountNumber: accountNumber,
-      },
+    setEditedTransaction((prev) => {
+      const current = prev ?? transaction;
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        payment: {
+          ...current.payment,
+          amount: parseFloat(paymentAmount),
+          accountType: accountTypeMap[accountType] || accountType,
+          bank: bankMap[bank] || bank,
+          accountNumber: accountNumber,
+        },
+      };
     });
 
     ToastManager.show({
@@ -398,13 +424,13 @@ export const CorrectPaymentPage = () => {
    * handle add bank account confirmation
    */
   const handleAddBankAccountConfirm = (data: {
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    isPrimary: boolean;
+    accountType: string
+    bank: string
+    accountNumber: string
+    isPrimary: boolean
   }) => {
     console.log("New bank account added:", data);
-    
+
     // Map to display format
     const bankMap: Record<string, string> = {
       bancolombia: "Bancolombia",
@@ -412,22 +438,22 @@ export const CorrectPaymentPage = () => {
       bbva: "BBVA",
       cobre: "Cobre",
     };
-    
+
     const accountTypeMap: Record<string, string> = {
       ahorros: "Ahorros",
       corriente: "Corriente",
     };
-    
+
     // Generate new account ID
     const newAccountId = `account-${Date.now()}`;
-    
+
     // Add new account to saved accounts
-    setSavedAccounts(prev => {
+    setSavedAccounts((prev) => {
       // If new account is primary, remove primary from all others
       const updatedAccounts = data.isPrimary
-        ? prev.map(acc => ({ ...acc, isPrimary: false }))
+        ? prev.map((acc) => ({ ...acc, isPrimary: false }))
         : prev;
-      
+
       return [
         ...updatedAccounts,
         {
@@ -441,12 +467,12 @@ export const CorrectPaymentPage = () => {
         },
       ];
     });
-    
+
     // Update form fields (not transaction yet - will save on "Save changes")
     setAccountType(data.accountType);
     setBank(data.bank);
     setAccountNumber(data.accountNumber);
-    
+
     // Reopen payment dialog to show updated fields
     setTimeout(() => {
       setIsPaymentDialogOpen(true);
@@ -457,15 +483,15 @@ export const CorrectPaymentPage = () => {
    * confirm selected account
    */
   const handleConfirmAccountSelection = () => {
-    const selectedAccountData = savedAccounts.find(acc => acc.id === selectedAccount);
-    
+    const selectedAccountData = savedAccounts.find((acc) => acc.id === selectedAccount);
+
     if (selectedAccountData) {
       // Update form fields (not transaction yet - will save on "Save changes")
       setAccountType(selectedAccountData.accountType);
       setBank(selectedAccountData.bank);
       setAccountNumber(selectedAccountData.accountNumber);
     }
-    
+
     setIsAccountSelectionDialogOpen(false);
   };
 
@@ -473,13 +499,20 @@ export const CorrectPaymentPage = () => {
    * handle save reference
    */
   const handleSaveReference = () => {
-    setTransaction({
-      ...transaction,
-      reference: {
-        ...transaction.reference,
-        number: referenceNumber,
-        notFound: !referenceNumber,
-      },
+    setEditedTransaction((prev) => {
+      const current = prev ?? transaction;
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        reference: {
+          ...current.reference,
+          number: referenceNumber,
+          notFound: !referenceNumber,
+        },
+      };
     });
 
     ToastManager.show({
@@ -507,18 +540,23 @@ export const CorrectPaymentPage = () => {
   /**
    * handle OTP submit
    */
-  const handleOtpSubmit = () => {
-    console.log("OTP submitted:", otpCode);
+  const handleOtpSubmit = async() => {
+    if (!transaction || !id) {
+      return;
+    }
 
-    setIsOtpDialogOpen(false);
-    setOtpCode("");
+    try {
+      await correctPayment.mutateAsync(
+        CorrectPaymentMapper.toCorrectPayload(id, transaction),
+      );
 
-    ToastManager.show({
-      message: t("transactions:transactions.messages.payment_corrected"),
-      variant: "success",
-    });
-
-    navigate("/transactions");
+      setIsOtpDialogOpen(false);
+      setOtpCode("");
+      navigate("/transactions");
+    } catch {
+      setIsOtpDialogOpen(false);
+      setOtpCode("");
+    }
   };
 
   /**
@@ -550,31 +588,22 @@ export const CorrectPaymentPage = () => {
   /**
    * get return/rejection reason
    */
-  const getReturnReason = (): string => {
-    if (transaction.status === "returned") {
+  const getReturnReason = (current: BatchTransactionDetail): string => {
+    if (current.status === "returned") {
       return "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum mollis nunc a molestie dictum. Mauris venenatis, felis scelerisque aliquet lacinia, nulla nisi venenatis odio, id blandit mauris.";
     }
     return "El pago ha sido rechazado por cumplimiento debido a que se detectó una coincidencia en listas restrictivas.";
   };
 
-  /**
-   * risk level component
-   */
-  const RiskLevel = ({ level }: { level: "low" | "medium" | "high" }) => {
-    const config = {
-      low: { label: "Riesgo bajo", className: "bg-success-100 text-success-700" },
-      medium: { label: "Riesgo medio", className: "bg-warning-100 text-warning-700" },
-      high: { label: "Riesgo alto", className: "bg-error-100 text-error-700" },
-    };
+  if (paymentQuery.isLoading || !transaction) {
+    return null;
+  }
 
-    const { label, className } = config[level];
-
-    return (
-      <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${className}`}>
-        <div className="size-2 rounded-full bg-current" />
-        <span className="text-sm font-semibold">{label}</span>
-      </div>
-    );
+  const beneficiaryData = {
+    documentType: "cc",
+    documentNumber: transaction.beneficiary.idNumber,
+    firstName: transaction.beneficiary.fullName.split(" ")[0],
+    lastName: transaction.beneficiary.fullName.split(" ").slice(1).join(" "),
   };
 
   return (
@@ -582,13 +611,20 @@ export const CorrectPaymentPage = () => {
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to="/transactions">{t("transactions:transactions.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem className="md:hidden">
-              <button onClick={() => navigate("/transactions")} className="flex h-9 w-9 items-center justify-center">
+              <button
+                onClick={() => navigate("/transactions")}
+                className="flex h-9 w-9 items-center justify-center"
+              >
                 <BreadcrumbEllipsis />
               </button>
             </BreadcrumbItem>
@@ -602,39 +638,46 @@ export const CorrectPaymentPage = () => {
       )}
       <PageContainer className="bg-neutrals-25">
         {/* main content card */}
-        <Card className="rounded-3xl p-6 flex flex-col gap-6">
+        <Card className="flex flex-col gap-6 rounded-3xl p-6">
           {/* payment status header */}
           <div className="flex items-center gap-4">
             <p className="text-sm text-[#41454c]">{t("transactions:transactions.correct_payment.payment_status")}</p>
-            <Badge 
-              variant={getStatusVariant(transaction.status)} 
+            <Badge
+              variant={getStatusVariant(
+                transaction.status === "rejected" ? "rejected" : "returned",
+              )}
               className="h-8 px-2 text-sm leading-5"
             >
               {t(`transactions:transactions.status.${transaction.status}`)}
             </Badge>
           </div>
-
           {/* Alert with return/rejection reason */}
-          <Alert variant={transaction.status === "returned" ? "warning" : "destructive"} className="border-0">
+          <Alert
+            variant={transaction.status === "returned" ? "warning" : "destructive"}
+            className="border-0"
+          >
             <Icon symbol="info" weight={200} />
             <AlertTitle>
               {t(`transactions:transactions.correct_payment.${transaction.status === "returned" ? "return_reason_title" : "rejection_reason_title"}`)}
             </AlertTitle>
             <AlertDescription>
-              {getReturnReason()}
+              {getReturnReason(transaction)}
             </AlertDescription>
           </Alert>
-
           {/* 2x2 grid of sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+          <div className={`
+            grid w-full grid-cols-1 gap-4
+            lg:grid-cols-2
+          `}
+          >
             {/* beneficiary section */}
-            <div className="bg-[#f8f8f9] rounded-3xl p-6 flex flex-col gap-6">
+            <div className="flex flex-col gap-6 rounded-3xl bg-[#f8f8f9] p-6">
               {/* header */}
-              <div className="flex items-center justify-between h-5">
+              <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches:batches.transaction_detail.beneficiary.title")}</p>
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={openBeneficiaryDialog}>
                       <Icon symbol="edit" weight={200} />
                       {t("batches:batches.transaction_detail.beneficiary.edit")}
                     </Button>
@@ -645,8 +688,14 @@ export const CorrectPaymentPage = () => {
                     </DialogHeader>
                     <DialogBody className="flex flex-col gap-8">
                       <div className="flex flex-wrap gap-4">
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="firstName" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="firstName"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches:batches.transaction_detail.edit_dialog.first_name")}
                           </Label>
                           <Input
@@ -656,8 +705,14 @@ export const CorrectPaymentPage = () => {
                             className="h-10"
                           />
                         </div>
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="lastName" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="lastName"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches:batches.transaction_detail.edit_dialog.last_name")}
                           </Label>
                           <Input
@@ -667,8 +722,14 @@ export const CorrectPaymentPage = () => {
                             className="h-10"
                           />
                         </div>
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="documentType" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="documentType"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches:batches.transaction_detail.edit_dialog.document_type")}
                           </Label>
                           <Select value={documentType} onValueChange={setDocumentType}>
@@ -682,8 +743,14 @@ export const CorrectPaymentPage = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="documentNumber" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="documentNumber"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches:batches.transaction_detail.edit_dialog.document_number")}
                           </Label>
                           <Input
@@ -701,8 +768,8 @@ export const CorrectPaymentPage = () => {
                           {t("batches:batches.transaction_detail.edit_dialog.cancel")}
                         </Button>
                       </DialogClose>
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         disabled={!hasBeneficiaryChanges()}
                         onClick={handleSaveBeneficiary}
                       >
@@ -712,40 +779,49 @@ export const CorrectPaymentPage = () => {
                   </DialogContent>
                 </Dialog>
               </div>
-
               {/* content card */}
-              <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+              <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches:batches.transaction_detail.beneficiary.full_name")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="account_circle" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="account_circle"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{transaction.beneficiary.fullName}</p>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches:batches.transaction_detail.beneficiary.id_type")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="contacts" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="contacts"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">
                       {transaction.beneficiary.idType}: {transaction.beneficiary.idNumber}
                     </p>
                   </div>
                 </div>
                 {!transaction.beneficiary.hasIssues && (
-                  <Badge variant="default-medium" className="h-8 px-2 bg-[#e9f9ef] text-sm leading-5">
+                  <Badge
+                    variant="default-medium"
+                    className="h-8 bg-[#e9f9ef] px-2 text-sm leading-5"
+                  >
                     {t("batches:batches.transaction_detail.beneficiary.no_issues")}
                   </Badge>
                 )}
               </Card>
             </div>
-
             {/* payment information section */}
-            <div className="bg-[#f8f8f9] rounded-3xl p-6 flex flex-col gap-6">
-              <div className="flex items-center justify-between h-5">
+            <div className="flex flex-col gap-6 rounded-3xl bg-[#f8f8f9] p-6">
+              <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches:batches.transaction_detail.payment_info.title")}</p>
                 <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={openPaymentDialog}>
                       <Icon symbol="edit" weight={200} />
                       {t("batches:batches.transaction_detail.payment_info.edit")}
                     </Button>
@@ -757,7 +833,10 @@ export const CorrectPaymentPage = () => {
                     <DialogBody className="flex flex-col gap-8">
                       {/* payment amount field */}
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="paymentAmount" className="text-xs text-[#41454c]">
+                        <Label
+                          htmlFor="paymentAmount"
+                          className="text-xs text-[#41454c]"
+                        >
                           {t("batches:batches.transaction_detail.payment_edit_dialog.payment_amount")}
                         </Label>
                         <Input
@@ -767,40 +846,54 @@ export const CorrectPaymentPage = () => {
                           className="h-10"
                         />
                       </div>
-
                       {/* account information card */}
-                      <Card className="bg-[#f9fafb] border-0 rounded-3xl p-4 flex flex-col gap-6">
+                      <Card className={`
+                        flex flex-col gap-6 rounded-3xl border-0 bg-[#f9fafb]
+                        p-4
+                      `}
+                      >
                         <div className="flex flex-col gap-2">
                           <p className="text-xs text-[#6c737f]">
                             {t("batches:batches.transaction_detail.payment_edit_dialog.account_info")}
                           </p>
-                          <div className="flex items-center gap-2 pl-2 h-10">
+                          <div className="flex h-10 items-center gap-2 pl-2">
                             <div className="flex flex-1 items-center gap-2">
-                              <Icon symbol="account_balance" weight={200} className="text-[#384250] size-[24px]" />
-                              <p className="text-sm font-semibold text-[#384250]">
+                              <Icon
+                                symbol="account_balance"
+                                weight={200}
+                                className="size-[24px] text-[#384250]"
+                              />
+                              <p className={`
+                                text-sm font-semibold text-[#384250]
+                              `}
+                              >
                                 {accountType && bank && accountNumber
                                   ? (() => {
-                                      const bankMap: Record<string, string> = {
-                                        bancolombia: "Bancolombia",
-                                        "banco-bogota": "Banco de Bogotá",
-                                        davivienda: "Davivienda",
-                                        bbva: "BBVA Colombia",
-                                        "banco-popular": "Banco Popular Colombia",
-                                        "av-villas": "Banco AV Villas",
-                                        "caja-social": "Banco Caja Social",
-                                        colpatria: "Scotiabank Colpatria",
-                                        agrario: "Banco Agrario de Colombia",
-                                        occidente: "Banco de Occidente Colombia",
-                                        "gnb-sudameris": "Banco GNB Sudameris Colombia",
-                                        citibank: "Citibank Colombia",
-                                      };
-                                      const displayBank = bankMap[bank] || bank.charAt(0).toUpperCase() + bank.slice(1);
-                                      return `${accountType.charAt(0).toUpperCase() + accountType.slice(1)}. ${displayBank} Nº ${accountNumber}`;
-                                    })()
+                                    const bankMap: Record<string, string> = {
+                                      bancolombia: "Bancolombia",
+                                      "banco-bogota": "Banco de Bogotá",
+                                      davivienda: "Davivienda",
+                                      bbva: "BBVA Colombia",
+                                      "banco-popular": "Banco Popular Colombia",
+                                      "av-villas": "Banco AV Villas",
+                                      "caja-social": "Banco Caja Social",
+                                      colpatria: "Scotiabank Colpatria",
+                                      agrario: "Banco Agrario de Colombia",
+                                      occidente: "Banco de Occidente Colombia",
+                                      "gnb-sudameris": "Banco GNB Sudameris Colombia",
+                                      citibank: "Citibank Colombia",
+                                    };
+                                    const displayBank = bankMap[bank] || bank.charAt(0).toUpperCase() + bank.slice(1);
+                                    return `${accountType.charAt(0).toUpperCase() + accountType.slice(1)}. ${displayBank} Nº ${accountNumber}`;
+                                  })()
                                   : `${transaction.payment.accountType}. ${transaction.payment.bank} Nº ${transaction.payment.accountNumber}`}
                               </p>
                             </div>
-                            <Button variant="link" className="text-[#0e9384] h-6 px-0" onClick={handleOpenAccountSelection}>
+                            <Button
+                              variant="link"
+                              className="h-6 px-0 text-[#0e9384]"
+                              onClick={handleOpenAccountSelection}
+                            >
                               {t("batches:batches.transaction_detail.payment_edit_dialog.select_saved_account")}
                             </Button>
                           </div>
@@ -813,8 +906,8 @@ export const CorrectPaymentPage = () => {
                           {t("batches:batches.transaction_detail.payment_edit_dialog.cancel")}
                         </Button>
                       </DialogClose>
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         disabled={!hasPaymentChanges()}
                         onClick={handleSavePayment}
                       >
@@ -824,39 +917,48 @@ export const CorrectPaymentPage = () => {
                   </DialogContent>
                 </Dialog>
               </div>
-
-              <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+              <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches:batches.transaction_detail.payment_info.amount")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="paid" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="paid"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{formatAmount(transaction.payment.amount)}</p>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches:batches.transaction_detail.payment_info.account_type")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="account_balance" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="account_balance"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">
                       {transaction.payment.accountType}. {transaction.payment.bank} Nº {transaction.payment.accountNumber}
                     </p>
                   </div>
                 </div>
                 {transaction.payment.accountMismatch && (
-                  <Badge variant="default-medium" className="h-8 px-2 bg-[#fef5e7] text-sm leading-5">
+                  <Badge
+                    variant="default-medium"
+                    className="h-8 bg-[#fef5e7] px-2 text-sm leading-5"
+                  >
                     {t("batches:batches.transaction_detail.payment_info.account_mismatch")}
                   </Badge>
                 )}
               </Card>
             </div>
-
             {/* payment reference section */}
-            <div className="bg-[#f8f8f9] rounded-3xl p-6 flex flex-col gap-6">
-              <div className="flex items-center justify-between h-5">
+            <div className="flex flex-col gap-6 rounded-3xl bg-[#f8f8f9] p-6">
+              <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches:batches.transaction_detail.payment_reference.title")}</p>
                 <Dialog open={isReferenceDialogOpen} onOpenChange={setIsReferenceDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={openReferenceDialog}>
                       <Icon symbol="edit" weight={200} />
                       {t("batches:batches.transaction_detail.payment_reference.edit")}
                     </Button>
@@ -867,7 +969,10 @@ export const CorrectPaymentPage = () => {
                     </DialogHeader>
                     <DialogBody className="flex flex-col gap-8">
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="referenceNumber" className="text-xs text-[#41454c]">
+                        <Label
+                          htmlFor="referenceNumber"
+                          className="text-xs text-[#41454c]"
+                        >
                           {t("batches:batches.transaction_detail.reference_edit_dialog.reference_number")}
                         </Label>
                         <Input
@@ -884,8 +989,8 @@ export const CorrectPaymentPage = () => {
                           {t("batches:batches.transaction_detail.reference_edit_dialog.cancel")}
                         </Button>
                       </DialogClose>
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         disabled={!hasReferenceChanges()}
                         onClick={handleSaveReference}
                       >
@@ -895,39 +1000,46 @@ export const CorrectPaymentPage = () => {
                   </DialogContent>
                 </Dialog>
               </div>
-
-              <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+              <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches:batches.transaction_detail.payment_reference.reference_number")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="confirmation_number" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="confirmation_number"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{transaction.reference.number || "--"}</p>
                   </div>
                 </div>
                 {transaction.reference.notFound && (
-                  <Badge variant="default-medium" className="h-8 px-2 bg-[#fef5e7] text-sm leading-5">
+                  <Badge
+                    variant="default-medium"
+                    className="h-8 bg-[#fef5e7] px-2 text-sm leading-5"
+                  >
                     {t("batches:batches.transaction_detail.payment_reference.not_found")}
                   </Badge>
                 )}
               </Card>
             </div>
-
             {/* restrictive list section */}
             {transaction.restrictiveList && (
-              <div className="bg-[#e5f3fa] rounded-3xl p-6 flex flex-col gap-6">
-                <div className="flex items-center gap-4 h-5">
+              <div className="flex flex-col gap-6 rounded-3xl bg-[#e5f3fa] p-6">
+                <div className="flex h-5 items-center gap-4">
                   <p className="text-sm text-[#41454c]">{t("batches:batches.transaction_detail.restrictive_list.title")}</p>
                 </div>
-
-                <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+                <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                   <div className="flex flex-col gap-2">
                     <p className="text-xs text-[#41454c]">{t("batches:batches.transaction_detail.restrictive_list.list_name")}</p>
                     <div className="flex items-center gap-2 pl-2">
-                      <Icon symbol="clarify" weight={200} className="text-[#161719] size-[24px]" />
+                      <Icon
+                        symbol="clarify"
+                        weight={200}
+                        className="size-[24px] text-[#161719]"
+                      />
                       <p className="text-sm font-semibold text-[#161719]">{transaction.restrictiveList.listName}</p>
                     </div>
                   </div>
-
                   <div className="flex items-center justify-between">
                     <RiskLevel level={transaction.restrictiveList.riskLevel} />
                     <Button variant="link" className="text-[#0e9384]">
@@ -939,9 +1051,8 @@ export const CorrectPaymentPage = () => {
               </div>
             )}
           </div>
-
           {/* action buttons - NO "Revisar después" button */}
-          <div className="flex items-center gap-6 mt-6">
+          <div className="mt-6 flex items-center gap-6">
             <Button variant="secondary" onClick={handleCancel}>
               {t("transactions:transactions.correct_payment.cancel_button")}
             </Button>
@@ -952,7 +1063,6 @@ export const CorrectPaymentPage = () => {
           </div>
         </Card>
       </PageContainer>
-
       {/* OTP Dialog */}
       <Dialog open={isOtpDialogOpen} onOpenChange={setIsOtpDialogOpen}>
         <DialogContent className="max-w-[610px] gap-12">
@@ -960,22 +1070,20 @@ export const CorrectPaymentPage = () => {
             <DialogTitle>{t("transactions:transactions.otp_dialog.title")}</DialogTitle>
             <DialogDescription>{t("transactions:transactions.otp_dialog.description")}</DialogDescription>
           </DialogHeader>
-          
           <InputOTP
             maxLength={6}
             value={otpCode}
             onChange={setOtpCode}
           >
             <InputOTPGroup className="w-full gap-2">
-              <InputOTPSlot index={0} className="flex-1 h-10" />
-              <InputOTPSlot index={1} className="flex-1 h-10" />
-              <InputOTPSlot index={2} className="flex-1 h-10" />
-              <InputOTPSlot index={3} className="flex-1 h-10" />
-              <InputOTPSlot index={4} className="flex-1 h-10" />
-              <InputOTPSlot index={5} className="flex-1 h-10" />
+              <InputOTPSlot index={0} className="h-10 flex-1" />
+              <InputOTPSlot index={1} className="h-10 flex-1" />
+              <InputOTPSlot index={2} className="h-10 flex-1" />
+              <InputOTPSlot index={3} className="h-10 flex-1" />
+              <InputOTPSlot index={4} className="h-10 flex-1" />
+              <InputOTPSlot index={5} className="h-10 flex-1" />
             </InputOTPGroup>
           </InputOTP>
-
           <DialogFooter className="gap-6">
             <Button
               variant="secondary"
@@ -993,33 +1101,43 @@ export const CorrectPaymentPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Account Selection Dialog */}
       <Dialog open={isAccountSelectionDialogOpen} onOpenChange={setIsAccountSelectionDialogOpen}>
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>{t("batches:batches.transaction_detail.account_selection_dialog.title")}</DialogTitle>
-            <p className="text-sm text-foreground mt-2">
+            <p className="mt-2 text-sm text-foreground">
               {t("batches:batches.transaction_detail.account_selection_dialog.description")}
             </p>
           </DialogHeader>
           <DialogBody className="flex flex-col gap-4">
-            <SelectableCardGroup value={selectedAccount} onValueChange={setSelectedAccount} className="flex flex-col gap-2">
+            <SelectableCardGroup
+              value={selectedAccount}
+              onValueChange={setSelectedAccount}
+              className="flex flex-col gap-2"
+            >
               {savedAccounts.map((account) => (
                 <SelectableCard key={account.id} value={account.id}>
                   <div className="flex flex-col gap-2">
                     <p className="text-xs text-[#6c737f]">
-                      {account.displayAccountType === "Ahorros" 
+                      {account.displayAccountType === "Ahorros"
                         ? t("batches:batches.transaction_detail.account_selection_dialog.savings_account")
                         : t("batches:batches.transaction_detail.account_selection_dialog.checking_account")}
                     </p>
                     <div className="flex items-center gap-2 pl-2">
-                      <Icon symbol="account_balance" weight={200} className="text-[#384250] size-[24px]" />
+                      <Icon
+                        symbol="account_balance"
+                        weight={200}
+                        className="size-[24px] text-[#384250]"
+                      />
                       <p className="text-sm font-semibold text-[#384250]">
                         {account.displayBank} Nº {account.accountNumber}
                       </p>
                       {account.isPrimary && (
-                        <Badge variant="default-medium" className="h-8 px-2 bg-[#f9fafb] text-sm">
+                        <Badge
+                          variant="default-medium"
+                          className="h-8 bg-[#f9fafb] px-2 text-sm"
+                        >
                           {t("batches:batches.transaction_detail.account_selection_dialog.primary")}
                         </Badge>
                       )}
@@ -1028,11 +1146,10 @@ export const CorrectPaymentPage = () => {
                 </SelectableCard>
               ))}
             </SelectableCardGroup>
-
             {/* Add new account button */}
-            <Button 
-              variant="link" 
-              className="text-[#0e9384] h-6 px-0 justify-start"
+            <Button
+              variant="link"
+              className="h-6 justify-start px-0 text-[#0e9384]"
               onClick={handleOpenAddBankAccount}
             >
               <Icon symbol="add" weight={200} />
@@ -1045,8 +1162,8 @@ export const CorrectPaymentPage = () => {
                 {t("batches:batches.transaction_detail.account_selection_dialog.cancel")}
               </Button>
             </DialogClose>
-            <Button 
-              variant="default" 
+            <Button
+              variant="default"
               disabled={!selectedAccount}
               onClick={handleConfirmAccountSelection}
             >
@@ -1055,7 +1172,6 @@ export const CorrectPaymentPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Add Bank Account Dialog */}
       <AddBankAccountDialog
         open={isAddBankAccountDialogOpen}

@@ -1,15 +1,33 @@
 import { isAxiosError, type AxiosResponse } from "axios";
-import type { APIResponse, APIPagination } from "./api.types";
+import type { APIPagination, APIPaginationRaw, APIResponse } from "./api.types";
 import { Pagination } from "@/features/common/services/service-pagination";
 import { ServiceResult } from "@/features/common/services/service-result";
 
+function isRawPagination(
+  pagination: APIPagination | APIPaginationRaw,
+): pagination is APIPaginationRaw {
+  return "totalPages" in pagination;
+}
+
 /**
- * Maps APIPagination to domain Pagination
+ * Maps API pagination (backend or legacy) to domain Pagination.
  */
 export class PaginationMapper {
-  public static toDomain(pagination: APIPagination | null): Pagination | null {
+  public static toDomain(
+    pagination: APIPagination | APIPaginationRaw | null | undefined,
+  ): Pagination | null {
     if (!pagination) {
       return null;
+    }
+
+    if (isRawPagination(pagination)) {
+      return Pagination.builder()
+        .setTotal(pagination.total)
+        .setPages(pagination.totalPages)
+        .setPage(pagination.page)
+        .setNext(pagination.hasNextPage ? pagination.page + 1 : null)
+        .setPrevious(pagination.hasPreviousPage ? pagination.page - 1 : null)
+        .build();
     }
 
     return Pagination.builder()
@@ -22,9 +40,36 @@ export class PaginationMapper {
   }
 }
 
+function extractCode(response: APIResponse<unknown>): string | null {
+  if (response.code) return response.code;
+  if (response.errors?.[0]?.code) return response.errors[0].code;
+  return null;
+}
+
+function extractTraceId(response: APIResponse<unknown>): string | null {
+  if (response.traceId) return response.traceId;
+  if (response.meta?.requestId) return response.meta.requestId;
+  return null;
+}
+
+function buildServiceResult<T>(
+  response: APIResponse<unknown>,
+  data: T | null,
+  pagination: Pagination | null,
+): ServiceResult<T> {
+  return ServiceResult.builder<T>()
+    .setSuccess(response.success)
+    .setMessage(response.message)
+    .setData(data)
+    .setCode(extractCode(response))
+    .setTimestamp(response.timestamp)
+    .setTraceId(extractTraceId(response))
+    .setPagination(pagination)
+    .build();
+}
+
 /**
  * Transforms APIResponse to domain ServiceResult (with mapper - expects data).
- * Throws ServiceResult as exception if success: false or if data is missing
  */
 export async function handleAPIResponse<TDTO, TDomain>(
   response: AxiosResponse<APIResponse<TDTO>>,
@@ -32,102 +77,73 @@ export async function handleAPIResponse<TDTO, TDomain>(
 ): Promise<ServiceResult<TDomain>>;
 
 /**
- * Transforms APIResponse to domain ServiceResult (without mapper - no data expected).
- * Throws ServiceResult as exception if success: false
+ * Transforms APIResponse to domain ServiceResult (list mapper).
+ */
+export async function handleAPIResponse<TDTO, TDomain>(
+  response: AxiosResponse<APIResponse<TDTO[]>>,
+  mapper: (dto: TDTO[]) => TDomain[],
+): Promise<ServiceResult<TDomain[]>>;
+
+/**
+ * Transforms APIResponse to domain ServiceResult (without mapper).
  */
 export async function handleAPIResponse<TDTO>(
   response: AxiosResponse<APIResponse<TDTO>>,
   mapper?: undefined,
 ): Promise<ServiceResult<null>>;
 
-/**
- * Implementation
- */
 export async function handleAPIResponse<TDTO, TDomain = null>(
-  response: AxiosResponse<APIResponse<TDTO>>,
-  mapper?: (dto: TDTO) => TDomain,
-): Promise<ServiceResult<TDomain | null>> {
+  response: AxiosResponse<APIResponse<TDTO | TDTO[]>>,
+  mapper?: ((dto: TDTO) => TDomain) | ((dto: TDTO[]) => TDomain[]),
+): Promise<ServiceResult<TDomain | TDomain[] | null>> {
   const _response = response.data;
+  const pagination = PaginationMapper.toDomain(_response.pagination);
 
-  // If backend responds with success: false, throw error
   if (!_response.success) {
-    throw ServiceResult.builder<TDTO>()
-      .setSuccess(_response.success)
-      .setMessage(_response.message)
-      .setData(_response.data)
-      .setCode(_response.code)
-      .setTimestamp(_response.timestamp)
-      .setTraceId(_response.traceId)
-      .setPagination(PaginationMapper.toDomain(_response.pagination))
-      .build();
+    throw buildServiceResult(_response, _response.data as TDomain | null, pagination);
   }
 
   const dto = _response.data;
 
-  // If a mapper was provided, it means data is EXPECTED
   if (mapper) {
-    if (!dto) {
+    if (dto === null || dto === undefined) {
       throw ServiceResult.builder<TDTO>()
         .setSuccess(false)
         .setMessage("Expected data is unavailable")
         .setCode("data_unavailable")
         .setTimestamp(_response.timestamp)
-        .setTraceId(_response.traceId)
+        .setTraceId(extractTraceId(_response))
         .build();
     }
 
-    return ServiceResult.builder<TDomain>()
-      .setSuccess(_response.success)
-      .setMessage(_response.message)
-      .setData(mapper(dto))
-      .setCode(_response.code)
-      .setTimestamp(_response.timestamp)
-      .setTraceId(_response.traceId)
-      .setPagination(PaginationMapper.toDomain(_response.pagination))
-      .build();
+    const mapped = Array.isArray(dto)
+      ? (mapper as (d: TDTO[]) => TDomain[])(dto)
+      : (mapper as (d: TDTO) => TDomain)(dto as TDTO);
+
+    return buildServiceResult(_response, mapped, pagination);
   }
 
-  // If NO mapper was provided, no data is expected (e.g., DELETE)
-  return ServiceResult.builder<null>()
-    .setSuccess(_response.success)
-    .setMessage(_response.message)
-    .setData(null)
-    .setCode(_response.code)
-    .setTimestamp(_response.timestamp)
-    .setTraceId(_response.traceId)
-    .setPagination(PaginationMapper.toDomain(_response.pagination))
-    .build() as ServiceResult<TDomain | null>;
+  return buildServiceResult<null>(_response, null, pagination);
 }
 
 /**
  * Wrapper for handling Axios HTTP errors.
- * Transforms Axios errors into ServiceResult
- *
- * @param error - Caught error
- * @throws ServiceResult with error information
  */
 export function handleAPIError<TDTO>(error: unknown): never {
-  // If it's already a ServiceResult, let it pass through
   if (error instanceof ServiceResult) {
     throw error;
   }
 
-  // If it's an HTTP error (400, 500, etc.), backend also responds with APIResponse
   if (isAxiosError(error) && error.response?.data) {
     const _error = error.response.data as APIResponse<TDTO>;
 
-    throw ServiceResult.builder<TDTO>()
-      .setSuccess(_error.success)
-      .setMessage(_error.message)
-      .setData(_error.data)
-      .setCode(_error.code)
-      .setTimestamp(_error.timestamp)
-      .setTraceId(_error.traceId)
-      .setPagination(PaginationMapper.toDomain(_error.pagination))
-      .build();
+    throw buildServiceResult(
+      _error,
+      _error.data as TDTO | null,
+      PaginationMapper.toDomain(_error.pagination),
+    );
   }
 
-  // Unexpected error (network, timeout, etc.)
   throw ServiceResult.builder()
     .setSuccess(false)
     .setMessage("Server communication error")

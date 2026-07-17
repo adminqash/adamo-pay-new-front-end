@@ -1,0 +1,96 @@
+import type { PaymentDetailDTO } from "@/features/transactions/api/dtos/payment-detail.dto";
+import type { BatchTransactionDetail } from "@/features/batches/application/entities/batch-transaction-detail.entity";
+import type { CorrectPaymentCommand } from "@/features/transactions/application/commands/payment.commands";
+
+const ID_TYPE_LABELS: Record<string, string> = {
+  cc: "Cédula de ciudadanía",
+  ce: "Cédula de extranjería",
+  nit: "NIT",
+  passport: "Pasaporte",
+  ti: "Tarjeta de identidad",
+  ppt: "PPT",
+};
+
+const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  savings: "Ahorros",
+  checking: "Corriente",
+  ahorros: "Ahorros",
+  corriente: "Corriente",
+};
+
+function formatIdType(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  return ID_TYPE_LABELS[normalized] ?? value;
+}
+
+function formatAccountType(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  return ACCOUNT_TYPE_LABELS[normalized] ?? value;
+}
+
+export class CorrectPaymentMapper {
+  public static toViewModel(detail: PaymentDetailDTO): BatchTransactionDetail {
+    return {
+      id: detail.id,
+      status:
+        detail.status === "rejected"
+          ? "rejected"
+          : detail.status === "returned"
+            ? "returned"
+            : "pending",
+      beneficiary: {
+        fullName: detail.beneficiary.fullName,
+        idType: formatIdType(detail.beneficiary.idType),
+        idNumber: detail.beneficiary.idNumber,
+        hasIssues: false,
+      },
+      payment: {
+        amount: detail.amount,
+        accountType: formatAccountType(detail.destination.accountType),
+        bank: detail.destination.bank,
+        accountNumber: detail.destination.accountNumber,
+        accountMismatch: false,
+      },
+      reference: {
+        number: detail.reference || null,
+        notFound: !detail.reference,
+      },
+      restrictiveList: null,
+    };
+  }
+
+  public static toCorrectPayload(
+    paymentId: string,
+    transaction: BatchTransactionDetail,
+  ): CorrectPaymentCommand {
+    return {
+      paymentId,
+      reference: transaction.reference.number ?? undefined,
+      beneficiarySnapshot: {
+        fullName: transaction.beneficiary.fullName,
+        idType: mapDocumentTypeToCode(transaction.beneficiary.idType),
+        idNumber: transaction.beneficiary.idNumber.replace(/\./g, ""),
+      },
+      destinationSnapshot: {
+        accountType: transaction.payment.accountType,
+        bank: transaction.payment.bank,
+        accountNumber: transaction.payment.accountNumber,
+      },
+      amount: transaction.payment.amount,
+    };
+  }
+}
+
+function mapDocumentTypeToCode(displayType: string): string {
+  const normalizedType = displayType.toLowerCase();
+  if (normalizedType.includes("ciudadanía") || normalizedType.includes("ciudadania")) {
+    return "cc";
+  }
+  if (normalizedType.includes("extranjería") || normalizedType.includes("extranjeria")) {
+    return "ce";
+  }
+  if (normalizedType.includes("pasaporte") || normalizedType.includes("passport")) {
+    return "passport";
+  }
+  return displayType;
+}

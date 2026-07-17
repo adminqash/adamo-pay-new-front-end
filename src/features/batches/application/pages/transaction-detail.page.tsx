@@ -40,7 +40,11 @@ import {
   SelectableCard,
   SelectableCardGroup,
 } from "@adamosuiteservices/ui/selectable-card";
-import { useTransactionDetail } from "../hooks/use-transaction-detail";
+import { useBatchTransactionDetail } from "../hooks/use-transaction-detail";
+import {
+  useUpdateBatchTransaction,
+  useUpdateBatchTransactionStatus,
+} from "../hooks/use-batch-mutations";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import { AddBankAccountDialog } from "@/features/beneficiaries/application/components/add-bank-account-dialog";
 import { useState, useEffect } from "react";
@@ -52,9 +56,15 @@ import { useState, useEffect } from "react";
  */
 export const TransactionDetailPage = () => {
   const { t } = useTranslation(["batches", "transactions"]);
-  const { batchId, transactionId } = useParams<{ batchId: string; transactionId: string }>();
+  const { batchId, transactionId } = useParams<{ batchId: string, transactionId: string }>();
   const navigate = useNavigate();
-  const { transaction: originalTransaction } = useTransactionDetail(transactionId || "1");
+  const {
+    transaction: originalTransaction,
+    isLoading,
+  } = useBatchTransactionDetail(batchId, transactionId);
+
+  const updateBatchTransaction = useUpdateBatchTransaction();
+  const updateBatchTransactionStatus = useUpdateBatchTransactionStatus();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -63,7 +73,9 @@ export const TransactionDetailPage = () => {
 
   // sync with original transaction on mount or id change
   useEffect(() => {
-    setTransaction(originalTransaction);
+    if (originalTransaction) {
+      setTransaction(originalTransaction);
+    }
   }, [originalTransaction]);
 
   // dialog state
@@ -99,13 +111,13 @@ export const TransactionDetailPage = () => {
 
   // saved bank accounts state
   const [savedAccounts, setSavedAccounts] = useState<Array<{
-    id: string;
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    displayBank: string;
-    displayAccountType: string;
-    isPrimary?: boolean;
+    id: string
+    accountType: string
+    bank: string
+    accountNumber: string
+    displayBank: string
+    displayAccountType: string
+    isPrimary?: boolean
   }>>([
     {
       id: "account-1",
@@ -133,14 +145,6 @@ export const TransactionDetailPage = () => {
       displayAccountType: "Corriente",
     },
   ]);
-
-  // mock beneficiary data - TODO: get from actual transaction data
-  const beneficiaryData = {
-    documentType: "cc",
-    documentNumber: transaction.beneficiary.idNumber,
-    firstName: transaction.beneficiary.fullName.split(" ")[0],
-    lastName: transaction.beneficiary.fullName.split(" ").slice(1).join(" "),
-  };
 
   // reference dialog state
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
@@ -193,7 +197,7 @@ export const TransactionDetailPage = () => {
   // load beneficiary data when edit dialog opens
   useEffect(() => {
     if (isEditDialogOpen && transaction) {
-      const nameParts = transaction.beneficiary.fullName.split(" ").filter(part => part.length > 0);
+      const nameParts = transaction.beneficiary.fullName.split(" ").filter((part) => part.length > 0);
       
       // assume Colombian naming convention: up to 2 first names, rest are last names
       let firstName = "";
@@ -259,24 +263,35 @@ export const TransactionDetailPage = () => {
     }
   }, [isReferenceDialogOpen, transaction]);
 
+  if (isLoading || !transaction) {
+    return null;
+  }
+
+  const beneficiaryData = {
+    documentType: "cc",
+    documentNumber: transaction.beneficiary.idNumber,
+    firstName: transaction.beneficiary.fullName.split(" ")[0],
+    lastName: transaction.beneficiary.fullName.split(" ").slice(1).join(" "),
+  };
+
   /**
    * check if beneficiary data has changed
    */
   const hasBeneficiaryChanges = () => {
-    return firstName !== originalFirstName ||
-      lastName !== originalLastName ||
-      documentType !== originalDocumentType ||
-      documentNumber !== originalDocumentNumber;
+    return firstName !== originalFirstName
+      || lastName !== originalLastName
+      || documentType !== originalDocumentType
+      || documentNumber !== originalDocumentNumber;
   };
 
   /**
    * check if payment data has changed
    */
   const hasPaymentChanges = () => {
-    return paymentAmount !== originalPaymentAmount ||
-      accountType !== originalAccountType ||
-      bank !== originalBank ||
-      accountNumber !== originalAccountNumber;
+    return paymentAmount !== originalPaymentAmount
+      || accountType !== originalAccountType
+      || bank !== originalBank
+      || accountNumber !== originalAccountNumber;
   };
 
   /**
@@ -339,52 +354,75 @@ export const TransactionDetailPage = () => {
   /**
    * save beneficiary changes
    */
-  const handleSaveBeneficiary = () => {
+  const handleSaveBeneficiary = async() => {
+    if (!batchId || !transactionId) {
+      return;
+    }
+
     const fullName = `${firstName} ${lastName}`.trim();
     const idType = mapDocumentTypeToDisplay(documentType);
-    
-    setTransaction(prev => ({
-      ...prev,
-      beneficiary: {
-        ...prev.beneficiary,
-        fullName,
-        idType,
-        idNumber: documentNumber,
-      },
-    }));
-    
-    setIsEditDialogOpen(false);
-    ToastManager.show({
-      message: "Cambios guardados exitosamente",
-      variant: "success",
-    });
+
+    try {
+      const result = await updateBatchTransaction.mutateAsync({
+        batchId,
+        transactionId,
+        rawData: {
+          beneficiaryName: fullName,
+          idType: documentType,
+          idNumber: documentNumber,
+        },
+      });
+
+      if (result.data) {
+        setTransaction(result.data);
+      }
+
+      setIsEditDialogOpen(false);
+      ToastManager.show({
+        message: "Cambios guardados exitosamente",
+        variant: "success",
+      });
+    } catch {
+      // error toast handled by mutation meta
+    }
   };
 
   /**
    * save payment changes
    */
-  const handleSavePayment = () => {
-    // parse amount (remove dots and convert to number)
+  const handleSavePayment = async() => {
+    if (!batchId || !transactionId) {
+      return;
+    }
+
     const amount = parseInt(paymentAmount.replace(/\./g, ""), 10);
     const accType = accountType.charAt(0).toUpperCase() + accountType.slice(1);
     const bankDisplay = mapBankToDisplay(bank);
-    
-    setTransaction(prev => ({
-      ...prev,
-      payment: {
-        ...prev.payment,
-        amount: isNaN(amount) ? prev.payment.amount : amount,
-        accountType: accType,
-        bank: bankDisplay,
-        accountNumber,
-      },
-    }));
-    
-    setIsPaymentDialogOpen(false);
-    ToastManager.show({
-      message: "Cambios guardados exitosamente",
-      variant: "success",
-    });
+
+    try {
+      const result = await updateBatchTransaction.mutateAsync({
+        batchId,
+        transactionId,
+        rawData: {
+          amount: isNaN(amount) ? undefined : amount,
+          accountType: accType,
+          bankName: bankDisplay,
+          accountNumber,
+        },
+      });
+
+      if (result.data) {
+        setTransaction(result.data);
+      }
+
+      setIsPaymentDialogOpen(false);
+      ToastManager.show({
+        message: "Cambios guardados exitosamente",
+        variant: "success",
+      });
+    } catch {
+      // error toast handled by mutation meta
+    }
   };
 
   /**
@@ -409,10 +447,10 @@ export const TransactionDetailPage = () => {
    * handle add bank account confirmation
    */
   const handleAddBankAccountConfirm = (data: {
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    isPrimary: boolean;
+    accountType: string
+    bank: string
+    accountNumber: string
+    isPrimary: boolean
   }) => {
     console.log("New bank account added:", data);
     
@@ -433,10 +471,10 @@ export const TransactionDetailPage = () => {
     const newAccountId = `account-${Date.now()}`;
     
     // Add new account to saved accounts
-    setSavedAccounts(prev => {
+    setSavedAccounts((prev) => {
       // If new account is primary, remove primary from all others
       const updatedAccounts = data.isPrimary
-        ? prev.map(acc => ({ ...acc, isPrimary: false }))
+        ? prev.map((acc) => ({ ...acc, isPrimary: false }))
         : prev;
       
       return [
@@ -468,7 +506,7 @@ export const TransactionDetailPage = () => {
    * confirm selected account
    */
   const handleConfirmAccountSelection = () => {
-    const selectedAccountData = savedAccounts.find(acc => acc.id === selectedAccount);
+    const selectedAccountData = savedAccounts.find((acc) => acc.id === selectedAccount);
     
     if (selectedAccountData) {
       // Update form fields (not transaction yet - will save on "Save changes")
@@ -483,38 +521,98 @@ export const TransactionDetailPage = () => {
   /**
    * save reference changes
    */
-  const handleSaveReference = () => {
-    setTransaction(prev => ({
-      ...prev,
-      reference: {
-        ...prev.reference,
-        number: referenceNumber || null,
-        notFound: !referenceNumber,
-      },
-    }));
-    
-    setIsReferenceDialogOpen(false);
-    ToastManager.show({
-      message: "Cambios guardados exitosamente",
-      variant: "success",
-    });
+  const handleSaveReference = async() => {
+    if (!batchId || !transactionId) {
+      return;
+    }
+
+    try {
+      const result = await updateBatchTransaction.mutateAsync({
+        batchId,
+        transactionId,
+        rawData: {
+          reference: referenceNumber || undefined,
+        },
+      });
+
+      if (result.data) {
+        setTransaction(result.data);
+      }
+
+      setIsReferenceDialogOpen(false);
+      ToastManager.show({
+        message: "Cambios guardados exitosamente",
+        variant: "success",
+      });
+    } catch {
+      // error toast handled by mutation meta
+    }
   };
 
   /**
    * handle reject payment confirmation
    */
-  const handleRejectPayment = () => {
-    // TODO: Implement API call to reject payment
-    console.log("Payment rejected:", transactionId);
-    
-    setIsRejectDialogOpen(false);
-    ToastManager.show({
-      message: "Pago rechazado exitosamente",
-      variant: "success",
-    });
-    
-    // Navigate back to batch detail
-    navigate(`/batches/${batchId}`);
+  const handleRejectPayment = async() => {
+    if (!batchId || !transactionId) {
+      return;
+    }
+
+    try {
+      await updateBatchTransactionStatus.mutateAsync({
+        batchId,
+        transactionId,
+        status: "rejected",
+      });
+
+      setIsRejectDialogOpen(false);
+      ToastManager.show({
+        message: "Pago rechazado exitosamente",
+        variant: "success",
+      });
+      navigate(`/batches/${batchId}`);
+    } catch {
+      setIsRejectDialogOpen(false);
+    }
+  };
+
+  const handleApprovePayment = async() => {
+    if (!batchId || !transactionId) {
+      return;
+    }
+
+    try {
+      await updateBatchTransactionStatus.mutateAsync({
+        batchId,
+        transactionId,
+        status: "valid",
+      });
+
+      ToastManager.show({
+        message: "Pago aprobado exitosamente",
+        variant: "success",
+      });
+      navigate(`/batches/${batchId}`);
+    } catch {
+      // error toast handled by mutation meta
+    }
+  };
+
+  const handleReviewLater = async() => {
+    if (!batchId || !transactionId) {
+      return;
+    }
+
+    try {
+      await updateBatchTransactionStatus.mutateAsync({
+        batchId,
+        transactionId,
+        status: "pending",
+      });
+
+      navigate(`/batches/${batchId}`);
+    } catch {
+      // error toast handled by mutation meta
+    }
   };
 
   /**
@@ -565,11 +663,13 @@ export const TransactionDetailPage = () => {
     ];
 
     return (
-      <div className="flex gap-1 w-[100px] p-1 bg-[#f8f8f9] rounded-2xl">
+      <div className="flex w-[100px] gap-1 rounded-2xl bg-[#f8f8f9] p-1">
         {segments.map((active, index) => (
           <div
             key={index}
-            className={`flex-1 h-2 rounded-full border border-[#e2e3e5] ${
+            className={`
+              h-2 flex-1 rounded-full border border-[#e2e3e5]
+              ${
               active
                 ? level === "high"
                   ? "bg-[#ef4444]"
@@ -577,7 +677,8 @@ export const TransactionDetailPage = () => {
                     ? "bg-[#f59e0b]"
                     : "bg-[#22c55e]"
                 : "bg-white"
-            }`}
+            }
+            `}
           />
         ))}
       </div>
@@ -589,19 +690,34 @@ export const TransactionDetailPage = () => {
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to="/batches">{t("batches.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbSeparator className={`
+              hidden
+              md:block
+            `}
+            />
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to={`/batches/${batchId}`}>{t("batches.detail.title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem className="md:hidden">
-              <button onClick={() => navigate(`/batches/${batchId}`)} className="flex h-9 w-9 items-center justify-center">
+              <button
+                onClick={() => navigate(`/batches/${batchId}`)}
+                className="flex h-9 w-9 items-center justify-center"
+              >
                 <BreadcrumbEllipsis />
               </button>
             </BreadcrumbItem>
@@ -615,28 +731,37 @@ export const TransactionDetailPage = () => {
       )}
       <PageContainer className="bg-neutrals-25">
         {/* main content card */}
-        <Card className="rounded-3xl p-6 flex flex-col gap-6">
+        <Card className="flex flex-col gap-6 rounded-3xl p-6">
           {/* payment status header */}
           <div className="flex items-center gap-4">
             <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.payment_status")}</p>
             <Badge 
               variant={getStatusVariant(transaction.status)} 
-              className={`h-8 px-2 text-sm leading-5 ${
-                transaction.status === 'pending' ? 'bg-neutrals-50' : 
-                transaction.status === 'validated' ? 'bg-[#E5F3FA] text-neutrals-700' : 
-                ''
-              }`}
+              className={`
+                h-8 px-2 text-sm leading-5
+                ${
+                transaction.status === "pending" ? "bg-neutrals-50" 
+                : transaction.status === "validated" ? `
+                  bg-[#E5F3FA] text-neutrals-700
+                ` 
+                : ""
+              }
+              `}
             >
               {getStatusLabel()}
             </Badge>
           </div>
 
           {/* 2x2 grid of sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+          <div className={`
+            grid w-full grid-cols-1 gap-4
+            lg:grid-cols-2
+          `}
+          >
             {/* beneficiary section */}
-            <div className="bg-[#f8f8f9] rounded-3xl p-6 flex flex-col gap-6">
+            <div className="flex flex-col gap-6 rounded-3xl bg-[#f8f8f9] p-6">
               {/* header */}
-              <div className="flex items-center justify-between h-5">
+              <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.beneficiary.title")}</p>
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
@@ -653,8 +778,14 @@ export const TransactionDetailPage = () => {
                       {/* form fields */}
                       <div className="flex flex-wrap gap-4">
                         {/* first name */}
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="firstName" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="firstName"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches.transaction_detail.edit_dialog.first_name")}
                           </Label>
                           <Input
@@ -666,8 +797,14 @@ export const TransactionDetailPage = () => {
                         </div>
 
                         {/* last name */}
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="lastName" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="lastName"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches.transaction_detail.edit_dialog.last_name")}
                           </Label>
                           <Input
@@ -679,8 +816,14 @@ export const TransactionDetailPage = () => {
                         </div>
 
                         {/* document type */}
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="documentType" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="documentType"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches.transaction_detail.edit_dialog.document_type")}
                           </Label>
                           <Select value={documentType} onValueChange={setDocumentType}>
@@ -696,8 +839,14 @@ export const TransactionDetailPage = () => {
                         </div>
 
                         {/* document number */}
-                        <div className="flex-1 min-w-[250px] flex flex-col gap-2">
-                          <Label htmlFor="documentNumber" className="text-xs text-[#41454c]">
+                        <div className={`
+                          flex min-w-[250px] flex-1 flex-col gap-2
+                        `}
+                        >
+                          <Label
+                            htmlFor="documentNumber"
+                            className="text-xs text-[#41454c]"
+                          >
                             {t("batches.transaction_detail.edit_dialog.document_number")}
                           </Label>
                           <Input
@@ -728,12 +877,16 @@ export const TransactionDetailPage = () => {
               </div>
 
               {/* content card */}
-              <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+              <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                 {/* full name */}
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.transaction_detail.beneficiary.full_name")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="account_circle" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="account_circle"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{transaction.beneficiary.fullName}</p>
                   </div>
                 </div>
@@ -742,7 +895,11 @@ export const TransactionDetailPage = () => {
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.transaction_detail.beneficiary.id_type")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="contacts" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="contacts"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">
                       {transaction.beneficiary.idType}: {transaction.beneficiary.idNumber}
                     </p>
@@ -751,7 +908,10 @@ export const TransactionDetailPage = () => {
 
                 {/* status badge */}
                 {!transaction.beneficiary.hasIssues && (
-                  <Badge variant="default-medium" className="h-8 px-2 bg-[#e9f9ef] text-sm leading-5">
+                  <Badge
+                    variant="default-medium"
+                    className="h-8 bg-[#e9f9ef] px-2 text-sm leading-5"
+                  >
                     {t("batches.transaction_detail.beneficiary.no_issues")}
                   </Badge>
                 )}
@@ -759,9 +919,9 @@ export const TransactionDetailPage = () => {
             </div>
 
             {/* payment information section */}
-            <div className="bg-[#f8f8f9] rounded-3xl p-6 flex flex-col gap-6">
+            <div className="flex flex-col gap-6 rounded-3xl bg-[#f8f8f9] p-6">
               {/* header */}
-              <div className="flex items-center justify-between h-5">
+              <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.payment_info.title")}</p>
                 <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
                   <DialogTrigger asChild>
@@ -777,7 +937,10 @@ export const TransactionDetailPage = () => {
                     <DialogBody className="flex flex-col gap-8">
                       {/* payment amount field */}
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="paymentAmount" className="text-xs text-[#41454c]">
+                        <Label
+                          htmlFor="paymentAmount"
+                          className="text-xs text-[#41454c]"
+                        >
                           {t("batches.transaction_detail.payment_edit_dialog.payment_amount")}
                         </Label>
                         <Input
@@ -789,21 +952,36 @@ export const TransactionDetailPage = () => {
                       </div>
 
                       {/* account information card */}
-                      <Card className="bg-[#f9fafb] border-0 rounded-3xl p-4 flex flex-col gap-6">
+                      <Card className={`
+                        flex flex-col gap-6 rounded-3xl border-0 bg-[#f9fafb]
+                        p-4
+                      `}
+                      >
                         <div className="flex flex-col gap-2">
                           <p className="text-xs text-[#6c737f]">
                             {t("batches.transaction_detail.payment_edit_dialog.account_info")}
                           </p>
-                          <div className="flex items-center gap-2 pl-2 h-10">
+                          <div className="flex h-10 items-center gap-2 pl-2">
                             <div className="flex flex-1 items-center gap-2">
-                              <Icon symbol="account_balance" weight={200} className="text-[#384250] size-[24px]" />
-                              <p className="text-sm font-semibold text-[#384250]">
+                              <Icon
+                                symbol="account_balance"
+                                weight={200}
+                                className="size-[24px] text-[#384250]"
+                              />
+                              <p className={`
+                                text-sm font-semibold text-[#384250]
+                              `}
+                              >
                                 {accountType && bank && accountNumber
                                   ? `${accountType.charAt(0).toUpperCase() + accountType.slice(1)}. ${mapBankToDisplay(bank)} Nº ${accountNumber}`
                                   : `${transaction.payment.accountType}. ${transaction.payment.bank} Nº ${transaction.payment.accountNumber}`}
                               </p>
                             </div>
-                            <Button variant="link" className="text-[#0e9384] h-6 px-0" onClick={handleOpenAccountSelection}>
+                            <Button
+                              variant="link"
+                              className="h-6 px-0 text-[#0e9384]"
+                              onClick={handleOpenAccountSelection}
+                            >
                               {t("batches.transaction_detail.payment_edit_dialog.select_saved_account")}
                             </Button>
                           </div>
@@ -829,12 +1007,16 @@ export const TransactionDetailPage = () => {
               </div>
 
               {/* content card */}
-              <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+              <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                 {/* amount */}
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.transaction_detail.payment_info.amount")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="paid" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="paid"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{formatAmount(transaction.payment.amount)}</p>
                   </div>
                 </div>
@@ -843,7 +1025,11 @@ export const TransactionDetailPage = () => {
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.transaction_detail.payment_info.account_type")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="account_balance" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="account_balance"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">
                       {transaction.payment.accountType}. {transaction.payment.bank} Nº {transaction.payment.accountNumber}
                     </p>
@@ -852,7 +1038,10 @@ export const TransactionDetailPage = () => {
 
                 {/* warning badge */}
                 {transaction.payment.accountMismatch && (
-                  <Badge variant="default-medium" className="h-8 px-2 bg-[#fef5e7] text-sm leading-5">
+                  <Badge
+                    variant="default-medium"
+                    className="h-8 bg-[#fef5e7] px-2 text-sm leading-5"
+                  >
                     {t("batches.transaction_detail.payment_info.account_mismatch")}
                   </Badge>
                 )}
@@ -860,9 +1049,9 @@ export const TransactionDetailPage = () => {
             </div>
 
             {/* payment reference section */}
-            <div className="bg-[#f8f8f9] rounded-3xl p-6 flex flex-col gap-6">
+            <div className="flex flex-col gap-6 rounded-3xl bg-[#f8f8f9] p-6">
               {/* header */}
-              <div className="flex items-center justify-between h-5">
+              <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.payment_reference.title")}</p>
                 <Dialog open={isReferenceDialogOpen} onOpenChange={setIsReferenceDialogOpen}>
                   <DialogTrigger asChild>
@@ -878,7 +1067,10 @@ export const TransactionDetailPage = () => {
                     <DialogBody className="flex flex-col gap-8">
                       {/* form field */}
                       <div className="flex flex-col gap-2">
-                        <Label htmlFor="referenceNumber" className="text-xs text-[#41454c]">
+                        <Label
+                          htmlFor="referenceNumber"
+                          className="text-xs text-[#41454c]"
+                        >
                           {t("batches.transaction_detail.reference_edit_dialog.reference_number")}
                         </Label>
                         <Input
@@ -908,19 +1100,26 @@ export const TransactionDetailPage = () => {
               </div>
 
               {/* content card */}
-              <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+              <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                 {/* reference number */}
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.transaction_detail.payment_reference.reference_number")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="confirmation_number" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="confirmation_number"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{transaction.reference.number || "--"}</p>
                   </div>
                 </div>
 
                 {/* warning badge */}
                 {transaction.reference.notFound && (
-                  <Badge variant="default-medium" className="h-8 px-2 bg-[#fef5e7] text-sm leading-5">
+                  <Badge
+                    variant="default-medium"
+                    className="h-8 bg-[#fef5e7] px-2 text-sm leading-5"
+                  >
                     {t("batches.transaction_detail.payment_reference.not_found")}
                   </Badge>
                 )}
@@ -929,19 +1128,23 @@ export const TransactionDetailPage = () => {
 
             {/* restrictive list section */}
             {transaction.restrictiveList && (
-              <div className="bg-[#e5f3fa] rounded-3xl p-6 flex flex-col gap-6">
+              <div className="flex flex-col gap-6 rounded-3xl bg-[#e5f3fa] p-6">
                 {/* header */}
-                <div className="flex items-center gap-4 h-5">
+                <div className="flex h-5 items-center gap-4">
                   <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.restrictive_list.title")}</p>
                 </div>
 
                 {/* content card */}
-                <Card className="rounded-3xl p-4 flex flex-col gap-6 border-0">
+                <Card className="flex flex-col gap-6 rounded-3xl border-0 p-4">
                   {/* list name */}
                   <div className="flex flex-col gap-2">
                     <p className="text-xs text-[#41454c]">{t("batches.transaction_detail.restrictive_list.list_name")}</p>
                     <div className="flex items-center gap-2 pl-2">
-                      <Icon symbol="clarify" weight={200} className="text-[#161719] size-[24px]" />
+                      <Icon
+                        symbol="clarify"
+                        weight={200}
+                        className="size-[24px] text-[#161719]"
+                      />
                       <p className="text-sm font-semibold text-[#161719]">{transaction.restrictiveList.listName}</p>
                     </div>
                   </div>
@@ -960,17 +1163,20 @@ export const TransactionDetailPage = () => {
           </div>
 
           {/* action buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-12 mt-6">
+          <div className={`
+            mt-6 flex flex-wrap items-center justify-between gap-12
+          `}
+          >
             <div className="flex items-center gap-6">
               <Button variant="destructive-medium" onClick={() => setIsRejectDialogOpen(true)}>
                 {t("batches.transaction_detail.actions.reject")}
               </Button>
-              <Button variant="default">
+              <Button variant="default" onClick={handleApprovePayment}>
                 <Icon symbol="check" weight={200} />
                 {t("batches.transaction_detail.actions.approve")}
               </Button>
             </div>
-            <Button variant="default">
+            <Button variant="default" onClick={handleReviewLater}>
               <Icon symbol="schedule" weight={200} />
               {t("batches.transaction_detail.actions.review_later")}
             </Button>
@@ -983,12 +1189,16 @@ export const TransactionDetailPage = () => {
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>{t("batches.transaction_detail.account_selection_dialog.title")}</DialogTitle>
-            <p className="text-sm text-foreground mt-2">
+            <p className="mt-2 text-sm text-foreground">
               {t("batches.transaction_detail.account_selection_dialog.description")}
             </p>
           </DialogHeader>
           <DialogBody className="flex flex-col gap-4">
-            <SelectableCardGroup value={selectedAccount} onValueChange={setSelectedAccount} className="flex flex-col gap-2">
+            <SelectableCardGroup
+              value={selectedAccount}
+              onValueChange={setSelectedAccount}
+              className="flex flex-col gap-2"
+            >
               {savedAccounts.map((account) => (
                 <SelectableCard key={account.id} value={account.id}>
                   <div className="flex flex-col gap-2">
@@ -998,12 +1208,19 @@ export const TransactionDetailPage = () => {
                         : t("batches.transaction_detail.account_selection_dialog.checking_account")}
                     </p>
                     <div className="flex items-center gap-2 pl-2">
-                      <Icon symbol="account_balance" weight={200} className="text-[#384250] size-[24px]" />
+                      <Icon
+                        symbol="account_balance"
+                        weight={200}
+                        className="size-[24px] text-[#384250]"
+                      />
                       <p className="text-sm font-semibold text-[#384250]">
                         {account.displayBank} Nº {account.accountNumber}
                       </p>
                       {account.isPrimary && (
-                        <Badge variant="default-medium" className="h-8 px-2 bg-[#f9fafb] text-sm">
+                        <Badge
+                          variant="default-medium"
+                          className="h-8 bg-[#f9fafb] px-2 text-sm"
+                        >
                           {t("batches.transaction_detail.account_selection_dialog.primary")}
                         </Badge>
                       )}
@@ -1016,7 +1233,7 @@ export const TransactionDetailPage = () => {
             {/* Add new account button */}
             <Button 
               variant="link" 
-              className="text-[#0e9384] h-6 px-0 justify-start"
+              className="h-6 justify-start px-0 text-[#0e9384]"
               onClick={handleOpenAddBankAccount}
             >
               <Icon symbol="add" weight={200} />
@@ -1050,7 +1267,11 @@ export const TransactionDetailPage = () => {
 
       {/* Reject Payment Dialog */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] gap-12">
+        <DialogContent className={`
+          gap-12
+          sm:max-w-[600px]
+        `}
+        >
           <DialogHeader>
             <DialogTitle>{t("batches.transaction_detail.reject_dialog.title")}</DialogTitle>
             <DialogDescription>

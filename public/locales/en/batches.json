@@ -175,7 +175,8 @@
         "edit_button": "Edit",
         "total_beneficiaries": "Total beneficiaries",
         "total_to_pay": "Total to pay",
-        "balance_after": "Balance after transaction"
+        "balance_after": "Balance after transaction",
+        "calculating": "Calculating..."
       },
       "actions": {
         "cancel": "Cancel batch",
@@ -194,11 +195,28 @@
         "otp_label": "Verification code",
         "cancel": "Cancel",
         "confirm": "Process batch"
-      }
+      },
+      "upload_status": {
+        "idle": "Waiting for file...",
+        "creating": "Creating batch...",
+        "accepted": "File received. Processing in background...",
+        "uploading": "Uploading file...",
+        "parsing": "Reading file rows...",
+        "ingesting": "Registering beneficiaries in batch...",
+        "completed": "File processed successfully. Review the summary.",
+        "failed": "File processing could not be completed."
+      },
+      "upload_failed": "Could not process the file. Please try uploading again."
+    },
+    "errors": {
+      "upload_failed": "Failed to upload batch file",
+      "template_download_failed": "Failed to download template",
+      "detail_failed": "Failed to load batch"
     },
     "messages": {
       "batch_created": "Batch created successfully",
-      "batch_saved": "Batch saved successfully"
+      "batch_saved": "Batch saved successfully",
+      "template_downloaded": "Template downloaded successfully"
     }
   }
 }

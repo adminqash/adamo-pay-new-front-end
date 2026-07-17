@@ -13,7 +13,9 @@ import {
   BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
 import { useBatchDetail } from "../hooks/use-batch-detail";
-import { useTransactions } from "@/features/transactions/application/hooks/use-transactions";
+import { useBatchTransactions } from "../hooks/use-batch-transactions";
+import { useBatchTimeline } from "../hooks/use-batch-timeline";
+import { buildBatchTransactionListParams } from "../utils/batch-filters.utils";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
 import { Icon } from "@adamosuiteservices/ui/icon";
@@ -66,7 +68,7 @@ import {
   TimelineTime,
 } from "@adamosuiteservices/ui/timeline";
 import type { TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 /**
  * batch detail page
@@ -77,10 +79,30 @@ export const BatchDetailPage = () => {
   const { t } = useTranslation(["batches", "transactions"]);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { batch } = useBatchDetail(id || "1");
-  const { transactions } = useTransactions();
+  const { batch, isLoading: isBatchLoading } = useBatchDetail(id ?? "");
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string[]>(["all"]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+
+  const transactionListParams = useMemo(
+    () => buildBatchTransactionListParams({
+      statusFilter,
+      search: searchQuery,
+      page: currentPage,
+      limit: pageSize,
+    }),
+    [statusFilter, searchQuery, currentPage],
+  );
+
+  const {
+    transactions,
+    totalCount,
+    isLoading: isTransactionsLoading,
+  } = useBatchTransactions(id, transactionListParams);
 
   // export dialog state
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -90,6 +112,9 @@ export const BatchDetailPage = () => {
 
   // timeline dialog state
   const [isTimelineDialogOpen, setIsTimelineDialogOpen] = useState(false);
+  const { timeline } = useBatchTimeline(id, isTimelineDialogOpen);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   /**
    * format currency amount
@@ -128,6 +153,10 @@ export const BatchDetailPage = () => {
     navigate(`/batches/${id}/transactions/${transactionId}`);
   };
 
+  if (isBatchLoading) {
+    return null;
+  }
+
   if (!batch) {
     return null;
   }
@@ -137,13 +166,20 @@ export const BatchDetailPage = () => {
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to="/batches">{t("batches.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem className="md:hidden">
-              <button onClick={() => navigate("/batches")} className="flex h-9 w-9 items-center justify-center">
+              <button
+                onClick={() => navigate("/batches")}
+                className="flex h-9 w-9 items-center justify-center"
+              >
                 <BreadcrumbEllipsis />
               </button>
             </BreadcrumbItem>
@@ -156,16 +192,23 @@ export const BatchDetailPage = () => {
         sidebarTopBarPortal,
       )}
       <PageContainer className="bg-neutrals-25">
-        <Card className="p-6 border-[#e2e3e5] flex flex-col gap-6">
+        <Card className="flex flex-col gap-6 border-[#e2e3e5] p-6">
           {/* batch name + status */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <div className="bg-[#f8f8f9] flex items-center justify-center rounded-full size-[44px]">
+              <div className={`
+                flex size-[44px] items-center justify-center rounded-full
+                bg-[#f8f8f9]
+              `}
+              >
                 <Icon symbol="text_snippet" className="text-[#41454c]" />
               </div>
               <p className="text-sm font-bold text-[#41454c]">{batch.name}</p>
             </div>
-            <Badge variant="default-medium" className="h-8 px-2 bg-[#e5f3fa] text-sm leading-5">
+            <Badge
+              variant="default-medium"
+              className="h-8 bg-[#e5f3fa] px-2 text-sm leading-5"
+            >
               Enviado
             </Badge>
           </div>
@@ -191,36 +234,48 @@ export const BatchDetailPage = () => {
           </div>
 
           {/* info cards */}
-          <div className="bg-[#f8f8f9] rounded-3xl p-6">
+          <div className="rounded-3xl bg-[#f8f8f9] p-6">
             <div className="flex flex-wrap gap-4">
               {/* fecha de lote */}
-              <Card className="flex-1 min-w-[230px] p-4 border-0 rounded-3xl">
+              <Card className="min-w-[230px] flex-1 rounded-3xl border-0 p-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.detail.batch_date")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="calendar_today" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="calendar_today"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{batch.date}</p>
                   </div>
                 </div>
               </Card>
 
               {/* id del lote */}
-              <Card className="flex-1 min-w-[230px] p-4 border-0 rounded-3xl">
+              <Card className="min-w-[230px] flex-1 rounded-3xl border-0 p-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.detail.batch_id")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="confirmation_number" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="confirmation_number"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{batch.batchId}</p>
                   </div>
                 </div>
               </Card>
 
               {/* monto total */}
-              <Card className="flex-1 min-w-[230px] p-4 border-0 rounded-3xl">
+              <Card className="min-w-[230px] flex-1 rounded-3xl border-0 p-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-[#41454c]">{t("batches.detail.total_amount")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="paid" weight={200} className="text-[#161719] size-[24px]" />
+                    <Icon
+                      symbol="paid"
+                      weight={200}
+                      className="size-[24px] text-[#161719]"
+                    />
                     <p className="text-sm font-semibold text-[#161719]">{formatAmount(batch.amount)}</p>
                   </div>
                 </div>
@@ -229,15 +284,18 @@ export const BatchDetailPage = () => {
           </div>
 
           {/* transactions table section */}
-          <div className="bg-white border border-[#e2e3e5] rounded-3xl p-6 flex flex-col gap-6">
+          <div className={`
+            flex flex-col gap-6 rounded-3xl border border-[#e2e3e5] bg-white p-6
+          `}
+          >
             {/* header */}
             <div className="flex flex-wrap items-center gap-6">
-            <div className="flex-1 min-w-[220px]">
+            <div className="min-w-[220px] flex-1">
               <p className="text-sm font-semibold text-[#41454c]">
                 {t("batches.detail.transactions_count", { count: batch.transactions })}
               </p>
             </div>
-            <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-4">
               <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="secondary">
@@ -247,7 +305,7 @@ export const BatchDetailPage = () => {
                 <DialogContent className="sm:max-w-[640px]">
                   <DialogHeader>
                     <DialogTitle>{t("batches.export_dialog.title")}</DialogTitle>
-                    <p className="text-sm text-neutrals-700 mt-2">{t("batches.export_dialog.description")}</p>
+                    <p className="mt-2 text-sm text-neutrals-700">{t("batches.export_dialog.description")}</p>
                   </DialogHeader>
                   <DialogBody className="flex flex-col gap-8">
                     {/* filters */}
@@ -259,7 +317,7 @@ export const BatchDetailPage = () => {
                           exclusiveOption="all"
                           alwaysShowPlaceholder
                           valuePosition="right"
-                            icon="search_activity"
+                          icon="search_activity"
                           options={[
                             { value: "all", label: t("batches.filters.all_status") },
                             { value: "pending", label: t("transactions:transactions.status.pending") },
@@ -288,7 +346,10 @@ export const BatchDetailPage = () => {
                           checked={exportFormatCSV}
                           onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
                         />
-                        <Label htmlFor="detail-csv" className="text-sm text-neutrals-700 cursor-pointer">
+                        <Label
+                          htmlFor="detail-csv"
+                          className="cursor-pointer text-sm text-neutrals-700"
+                        >
                           {t("batches.export_dialog.csv_excel")}
                         </Label>
                       </div>
@@ -298,7 +359,10 @@ export const BatchDetailPage = () => {
                           checked={exportFormatPDF}
                           onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
                         />
-                        <Label htmlFor="detail-pdf" className="text-sm text-neutrals-700 cursor-pointer">
+                        <Label
+                          htmlFor="detail-pdf"
+                          className="cursor-pointer text-sm text-neutrals-700"
+                        >
                           {t("batches.export_dialog.pdf")}
                         </Label>
                       </div>
@@ -320,50 +384,92 @@ export const BatchDetailPage = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="basis-full lg:basis-0 lg:flex-1 lg:min-w-[500px]">
+            <div className={`
+              basis-full
+              lg:min-w-[500px] lg:flex-1 lg:basis-0
+            `}
+            >
               <div className="relative">
                 <Icon
                   symbol="search"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 text-[#898f99]"
+                  className={`
+                    absolute top-1/2 left-2 -translate-y-1/2 text-[#898f99]
+                  `}
                 />
                 <Input
                   placeholder={t("batches.detail.search_placeholder")}
-                  className="h-10 pl-10 border-[#e2e3e5] text-sm"
+                  className="h-10 border-[#e2e3e5] pl-10 text-sm"
+                  value={searchQuery}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    setCurrentPage(1);
+                  }}
                 />
               </div>
             </div>
-          </div>
+            </div>
 
           {/* table */}
           <Table className="rounded-2xl">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.detail.table.date")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.detail.table.beneficiary")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.detail.table.id_number")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.detail.table.amount")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.detail.table.reference")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-[#41454c] uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
                   {t("batches.detail.table.status")}
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.slice(0, 15).map((transaction) => (
+              {!isTransactionsLoading && transactions.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="py-8 text-center text-sm text-[#41454c]"
+                  >
+                    {t("batches.detail.no_transactions", { defaultValue: "No hay transacciones para este lote" })}
+                  </TableCell>
+                </TableRow>
+              )}
+              {transactions.map((transaction) => (
                 <TableRow 
                   key={transaction.id}
                   onClick={() => handleTransactionClick(transaction.id)}
-                  className="cursor-pointer hover:bg-[#f8f8f9] transition-colors"
+                  className={`
+                    cursor-pointer transition-colors
+                    hover:bg-[#f8f8f9]
+                  `}
                 >
                   <TableCell className="text-sm text-[#41454c]">
                     {transaction.date}
@@ -383,11 +489,16 @@ export const BatchDetailPage = () => {
                   <TableCell>
                     <Badge 
                       variant={getStatusVariant(transaction.status)} 
-                      className={`h-8 px-2 text-sm leading-5 ${
-                        transaction.status === 'pending' ? 'bg-neutrals-50' : 
-                        transaction.status === 'validated' ? 'bg-[#E5F3FA] text-neutrals-700' : 
-                        ''
-                      }`}
+                      className={`
+                        h-8 px-2 text-sm leading-5
+                        ${
+                        transaction.status === "pending" ? "bg-neutrals-50" 
+                        : transaction.status === "validated" ? `
+                          bg-[#E5F3FA] text-neutrals-700
+                        ` 
+                        : ""
+                      }
+                      `}
                     >
                       {t(`transactions:transactions.status.${transaction.status}`)}
                     </Badge>
@@ -398,33 +509,46 @@ export const BatchDetailPage = () => {
           </Table>
 
           {/* pagination */}
+          {totalPages > 1 && (
           <Pagination className="justify-start">
             <PaginationContent>
-                <PaginationItem>
-                  <PaginationLink isActive>1</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">2</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">3</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">4</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">13</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#">Siguiente</PaginationNext>
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-        </div>
-      </Card>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+                  const page = index + 1;
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        isActive={page === currentPage}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                {totalPages > 5 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                {totalPages > 5 && (
+                  <PaginationItem>
+                    <PaginationLink onClick={() => setCurrentPage(totalPages)}>
+                      {totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+                {currentPage < totalPages && (
+                  <PaginationItem>
+                    <PaginationNext onClick={() => setCurrentPage(currentPage + 1)}>
+                      Siguiente
+                    </PaginationNext>
+                  </PaginationItem>
+                )}
+            </PaginationContent>
+          </Pagination>
+          )}
+          </div>
+        </Card>
       </PageContainer>
 
       {/* Timeline Sheet */}
@@ -435,6 +559,19 @@ export const BatchDetailPage = () => {
           </SheetHeader>
           <SheetBody className="overflow-y-auto">
             <Timeline>
+              {timeline.length > 0 ? timeline.map((event) => (
+                <TimelineItem key={event.id} status={event.status}>
+                  <TimelineIndicator />
+                  <TimelineContent>
+                    <TimelineTitle>{event.title}</TimelineTitle>
+                    {event.description && (
+                      <TimelineDescription>{event.description}</TimelineDescription>
+                    )}
+                    <TimelineTime>{event.time}</TimelineTime>
+                  </TimelineContent>
+                </TimelineItem>
+              )) : (
+                <>
               <TimelineItem status="complete">
                 <TimelineIndicator />
                 <TimelineContent>
@@ -475,6 +612,8 @@ export const BatchDetailPage = () => {
                   <TimelineTime>15 Marzo 2026. 03:00 PM</TimelineTime>
                 </TimelineContent>
               </TimelineItem>
+                </>
+              )}
             </Timeline>
           </SheetBody>
         </SheetContent>
