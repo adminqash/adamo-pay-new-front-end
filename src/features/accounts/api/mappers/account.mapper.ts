@@ -5,10 +5,14 @@ import { formatDisplayDate } from "@/lib/utils/date.utils";
 
 export class AccountMapper {
   public static toDomain(dto: AccountListItemDTO): Account {
+    const balanceMinor = dto.balance;
+    const availableMinor = dto.balance - (dto.reservedBalance ?? 0);
     return {
       id: dto.id,
       name: dto.name,
-      balance: formatCurrencyDisplay(dto.balance, dto.currency),
+      balance: formatCurrencyDisplay(availableMinor, dto.currency),
+      balanceMinor,
+      availableMinor,
       currency: dto.currency,
       countryCode: dto.countryCode,
     };

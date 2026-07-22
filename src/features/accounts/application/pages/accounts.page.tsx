@@ -38,7 +38,7 @@ import { buildAccountListParams } from "../utils/account-filters.utils";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
-import { parseCurrencyAmount } from "@/lib/utils/currency.utils";
+import { parseCurrencyToMinor } from "@/lib/money/money";
 
 export function AccountsPage() {
   const { t } = useTranslation("accounts");
@@ -168,7 +168,7 @@ export function AccountsPage() {
     transferAccount.mutate({
       fromAccountId: transferFromAccountId,
       toAccountId: transferToAccountId,
-      amount: parseCurrencyAmount(transferAmount),
+      amount: parseCurrencyToMinor(transferAmount),
     }, {
       onSuccess: () => {
         setIsTransferDialogOpen(false);

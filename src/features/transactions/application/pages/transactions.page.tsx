@@ -27,6 +27,7 @@ import { useTransactions } from "../hooks/use-transactions";
 import { useTransactionDetail } from "../hooks/use-transaction-detail";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
 import { buildTransactionListParams } from "../utils/transaction-filters.utils";
+import { formatCurrencyDisplay } from "@/lib/money/money";
 import { Input } from "@adamosuiteservices/ui/input";
 import {
   Sheet,
@@ -358,14 +359,10 @@ export const TransactionsPage = () => {
   };
 
   /**
-   * format currency amount
+   * format currency amount (API amounts are integer minor units)
    */
-  const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 2,
-    }).format(amount);
+  const formatAmount = (amountMinor: number): string => {
+    return formatCurrencyDisplay(amountMinor, "COP");
   };
 
   return (

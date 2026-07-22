@@ -54,7 +54,7 @@ import { buildAccountListParams, buildAccountMovementListParams } from "../utils
 import type { AccountMovement } from "@/features/accounts/application/entities/account.entity";
 import type { DateRange } from "react-day-picker";
 import { PageContainer } from "@/features/common/components/layout/page-container";
-import { parseCurrencyAmount } from "@/lib/utils/currency.utils";
+import { parseCurrencyToMinor } from "@/lib/money/money";
 
 /**
  * custom date range picker component
@@ -310,7 +310,7 @@ export function AccountMovementsPage() {
     transferAccountMutation.mutate({
       fromAccountId: accountId,
       toAccountId: transferToAccountId,
-      amount: parseCurrencyAmount(transferAmount),
+      amount: parseCurrencyToMinor(transferAmount),
     }, {
       onSuccess: () => {
         setIsTransferDialogOpen(false);

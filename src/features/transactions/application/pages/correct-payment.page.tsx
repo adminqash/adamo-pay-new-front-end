@@ -51,6 +51,11 @@ import { CorrectPaymentMapper } from "@/features/transactions/api/mappers/correc
 import { PaymentsService } from "@/features/transactions/api/services/payments.service";
 import { useCorrectPayment } from "@/features/transactions/application/hooks/use-payment-mutations";
 import { queryKeys } from "@/lib/query/query-keys";
+import {
+  formatCurrencyDisplay,
+  minorToMajor,
+  parseCurrencyToMinor,
+} from "@/lib/money/money";
 
 function RiskLevel({ level }: { level: "low" | "medium" | "high" }) {
   const config = {
@@ -260,7 +265,7 @@ export const CorrectPaymentPage = () => {
     const accountTypeCode
       = transaction.payment.accountType.toLowerCase() === "corriente" ? "corriente" : "ahorros";
     const bankCode = mapBankToCode(transaction.payment.bank);
-    const nextPaymentAmount = transaction.payment.amount.toString();
+    const nextPaymentAmount = minorToMajor(transaction.payment.amount);
 
     setPaymentAmount(nextPaymentAmount);
     setAccountType(accountTypeCode);
@@ -386,7 +391,7 @@ export const CorrectPaymentPage = () => {
         ...current,
         payment: {
           ...current.payment,
-          amount: parseFloat(paymentAmount),
+          amount: parseCurrencyToMinor(paymentAmount),
           accountType: accountTypeMap[accountType] || accountType,
           bank: bankMap[bank] || bank,
           accountNumber: accountNumber,
@@ -571,11 +576,7 @@ export const CorrectPaymentPage = () => {
    * format currency amount
    */
   const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 2,
-    }).format(amount);
+    return formatCurrencyDisplay(amount, "COP");
   };
 
   /**

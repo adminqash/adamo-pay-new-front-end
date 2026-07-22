@@ -27,19 +27,29 @@ import {
   DialogFooter,
   DialogClose,
 } from "@adamosuiteservices/ui/dialog";
+import { Badge } from "@adamosuiteservices/ui/badge";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
 import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BeneficiariesService } from "@/features/beneficiaries/api/services/beneficiaries.service";
+import { useBankAccounts } from "@/features/beneficiaries/application/hooks/use-beneficiaries";
+import {
+  mapAccountTypeToFormValue,
+  mapFormAccountTypeToApi,
+} from "@/features/beneficiaries/application/utils/beneficiary-form.utils";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
+import {
+  formatCurrencyDisplay,
+  minorToMajor,
+  parseCurrencyToMinor,
+} from "@/lib/money/money";
 import { useCreatePayment } from "@/features/transactions/application/hooks/use-payment-mutations";
-import { mapFormAccountTypeToApi } from "@/features/beneficiaries/application/utils/beneficiary-form.utils";
 import {
   InputGroup,
   InputGroupAddon,
@@ -84,7 +94,14 @@ type SelectedBeneficiary = {
   accountType: string
   bank: string
   accountNumber: string
+  bankAccountId?: string
 };
+
+function formatAccountLabel(accountType: string, bank: string, accountNumber: string) {
+  const typeLabel = accountType.charAt(0).toUpperCase() + accountType.slice(1);
+  const bankLabel = bank.charAt(0).toUpperCase() + bank.slice(1);
+  return `${typeLabel}. ${bankLabel} Nº ${accountNumber}`;
+}
 
 /**
  * create payment page
@@ -92,7 +109,7 @@ type SelectedBeneficiary = {
  * page for creating a new payment
  */
 export const CreatePaymentPage = () => {
-  const { t } = useTranslation("transactions");
+  const { t } = useTranslation(["transactions", "beneficiaries"]);
   const navigate = useNavigate();
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -101,6 +118,7 @@ export const CreatePaymentPage = () => {
   const [selectedBeneficiary, setSelectedBeneficiary] = useState<SelectedBeneficiary | null>(null);
   const createPayment = useCreatePayment();
   const { accounts, isLoading: isAccountsLoading } = useAccounts({ limit: 20 });
+  const { bankAccounts } = useBankAccounts(selectedBeneficiary?.id ?? "");
 
   const beneficiariesQuery = useQuery({
     queryKey: ["beneficiaries", "recent"],
@@ -124,14 +142,59 @@ export const CreatePaymentPage = () => {
   const [selectedAccount, setSelectedAccount] = useState<string>();
   const [amount, setAmount] = useState("");
 
+  // Beneficiary bank account selection
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>();
+  const [showBankAccountDialog, setShowBankAccountDialog] = useState(false);
+  const [tempSelectedBankAccountId, setTempSelectedBankAccountId] = useState<string>();
+
   // 2FA Dialog state
   const [show2faDialog, setShow2faDialog] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+
+  useEffect(() => {
+    if (!selectedBeneficiary?.id || bankAccounts.length === 0) {
+      return;
+    }
+
+    const currentIsValid = selectedBankAccountId
+      && bankAccounts.some((account) => account.id === selectedBankAccountId);
+
+    if (currentIsValid) {
+      return;
+    }
+
+    const primaryAccount = bankAccounts.find((account) => account.isPrimary) ?? bankAccounts[0];
+    setSelectedBankAccountId(primaryAccount.id);
+    setSelectedBeneficiary((previous) => {
+      if (!previous || previous.id !== selectedBeneficiary.id) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        accountType: primaryAccount.accountType,
+        bank: primaryAccount.bank,
+        accountNumber: primaryAccount.accountNumber,
+        bankAccountId: primaryAccount.id,
+      };
+    });
+  }, [bankAccounts, selectedBeneficiary?.id, selectedBankAccountId]);
+
+  const selectedBankAccount = bankAccounts.find((account) => account.id === selectedBankAccountId);
+  const canSelectAnotherAccount = Boolean(selectedBeneficiary?.id) && bankAccounts.length > 1;
+  const beneficiaryAccountLabel = selectedBeneficiary
+    ? formatAccountLabel(
+      selectedBankAccount?.accountType ?? selectedBeneficiary.accountType,
+      selectedBankAccount?.bank ?? selectedBeneficiary.bank,
+      selectedBankAccount?.accountNumber ?? selectedBeneficiary.accountNumber,
+    )
+    : "";
 
   const handleBeneficiarySelect = async(beneficiary: typeof beneficiaries[number]) => {
     const detailResult = await BeneficiariesService.getById(beneficiary.id);
     const detail = detailResult.data;
 
+    setSelectedBankAccountId(undefined);
     setSelectedBeneficiary({
       id: beneficiary.id,
       name: detail?.fullName ?? beneficiary.name,
@@ -153,6 +216,7 @@ export const CreatePaymentPage = () => {
       bank,
       accountNumber,
     };
+    setSelectedBankAccountId(undefined);
     setSelectedBeneficiary(manualBeneficiary);
     setCurrentStep(2);
   };
@@ -161,13 +225,34 @@ export const CreatePaymentPage = () => {
     setCurrentStep(1);
   };
 
+  const handleOpenBankAccountDialog = () => {
+    setTempSelectedBankAccountId(selectedBankAccountId);
+    setShowBankAccountDialog(true);
+  };
+
+  const handleConfirmBankAccountChange = () => {
+    const account = bankAccounts.find((item) => item.id === tempSelectedBankAccountId);
+    if (!account || !selectedBeneficiary) {
+      return;
+    }
+
+    setSelectedBankAccountId(account.id);
+    setSelectedBeneficiary({
+      ...selectedBeneficiary,
+      accountType: account.accountType,
+      bank: account.bank,
+      accountNumber: account.accountNumber,
+      bankAccountId: account.id,
+    });
+    setShowBankAccountDialog(false);
+  };
+
   const handleUseAll = () => {
     if (selectedAccount) {
       const account = accounts.find((acc) => acc.id === selectedAccount);
       if (account) {
-        // Extract numeric value from balance
-        const numericBalance = account.balance.replace(/[^0-9,]/g, "").replace(",", ".");
-        setAmount(numericBalance);
+        // AmountInput works in major units; API receives minor via parseCurrencyToMinor
+        setAmount(minorToMajor(account.availableMinor));
       }
     }
   };
@@ -176,7 +261,15 @@ export const CreatePaymentPage = () => {
     ? documentType && documentNumber && firstName && lastName && accountType && bank && accountNumber
     : false;
 
-  const isStep2Valid = selectedAccount && amount && parseFloat(amount.replace(",", ".")) > 0;
+  const amountMinor = (() => {
+    try {
+      return amount ? parseCurrencyToMinor(amount) : 0;
+    } catch {
+      return 0;
+    }
+  })();
+
+  const isStep2Valid = Boolean(selectedAccount && amountMinor > 0);
 
   const handleConfirmPayment = async() => {
     if (!selectedBeneficiary || !selectedAccount) {
@@ -201,7 +294,7 @@ export const CreatePaymentPage = () => {
         beneficiaryId = createdBeneficiary.data?.id;
       }
 
-      const parsedAmount = parseFloat(amount.replace(",", "."));
+      const parsedAmount = parseCurrencyToMinor(amount);
 
       await createPayment.mutateAsync({
         beneficiaryId,
@@ -211,8 +304,11 @@ export const CreatePaymentPage = () => {
           idNumber: selectedBeneficiary.docNumber.replace(/\./g, ""),
         },
         sourceAccountId: selectedAccount,
+        destinationBankAccountId: selectedBankAccountId ?? selectedBeneficiary.bankAccountId,
         destinationSnapshot: {
-          accountType: mapFormAccountTypeToApi(selectedBeneficiary.accountType),
+          accountType: mapFormAccountTypeToApi(
+            mapAccountTypeToFormValue(selectedBeneficiary.accountType),
+          ),
           bank: selectedBeneficiary.bank,
           accountNumber: selectedBeneficiary.accountNumber,
         },
@@ -578,10 +674,18 @@ export const CreatePaymentPage = () => {
                       <AmountInputContainer className="gap-2">
                         <AmountInputFlag locale="es-CO" currencySymbol="" />
                         <AmountInput
-                          value={amount ? parseFloat(amount.replace(",", ".")) : undefined}
-                          onValueChange={(value) => setAmount(value !== undefined ? String(value) : "")}
+                          value={amountMinor > 0 ? Number(minorToMajor(amountMinor)) : undefined}
+                          onValueChange={(value) => {
+                            if (value === undefined) {
+                              setAmount("");
+                              return;
+                            }
+                            // AmountInput gives major units; persist as major string for majorToMinor
+                            setAmount(value.toFixed(2));
+                          }}
                           onInput={(e) => {
-                            const rawValue = (e.target as HTMLInputElement).value.replace(/[^0-9,]/g, "").replace(",", ".");
+                            const rawValue = (e.target as HTMLInputElement).value
+                              .replace(/[^0-9,.]/g, "");
                             setAmount(rawValue);
                           }}
                           placeholder={t("transactions.create_payment.amount_placeholder")}
@@ -686,14 +790,17 @@ export const CreatePaymentPage = () => {
                               flex-1 text-sm font-semibold text-foreground
                             `}
                             >
-                              {t("transactions.create_payment.checking_account")}
+                              {beneficiaryAccountLabel}
                             </p>
-                            <Button
-                              variant="link"
-                              className="h-6 p-0 text-primary"
-                            >
-                              {t("transactions.create_payment.select_another")}
-                            </Button>
+                            {canSelectAnotherAccount && (
+                              <Button
+                                variant="link"
+                                className="h-6 p-0 text-primary"
+                                onClick={handleOpenBankAccountDialog}
+                              >
+                                {t("transactions.create_payment.select_another")}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -734,11 +841,7 @@ export const CreatePaymentPage = () => {
                                 text-sm font-semibold text-foreground
                               `}
                               >
-                                {new Intl.NumberFormat("es-CO", {
-                                  style: "decimal",
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                }).format(parseFloat(amount.replace(",", ".")))}
+                                {formatCurrencyDisplay(amountMinor, "COP")}
                               </p>
                             </div>
                           </div>
@@ -793,6 +896,74 @@ export const CreatePaymentPage = () => {
             </Alert>
           )}
         </div>
+        {/* Select Bank Account Dialog */}
+        <Dialog open={showBankAccountDialog} onOpenChange={setShowBankAccountDialog}>
+          <DialogContent className="sm:max-w-[640px]">
+            <DialogHeader>
+              <DialogTitle>{t("transactions.select_account_dialog.title")}</DialogTitle>
+              <DialogDescription>
+                {t("transactions.select_account_dialog.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+              <SelectableCardGroup
+                value={tempSelectedBankAccountId}
+                onValueChange={setTempSelectedBankAccountId}
+                className="w-full"
+              >
+                <div className="flex w-full flex-col gap-2">
+                  {bankAccounts.map((account) => (
+                    <SelectableCard key={account.id} value={account.id}>
+                      <div className="flex h-16 items-center">
+                        <div className="flex flex-1 flex-col gap-2">
+                          <SelectableCardTitle>
+                            {account.accountType}
+                          </SelectableCardTitle>
+                          <div className={`
+                            flex h-10 items-center justify-between gap-2 pl-2
+                          `}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon
+                                symbol="account_balance"
+                                className="text-2xl"
+                              />
+                              <SelectableCardDescription>
+                                {account.bank} Nº {account.accountNumber}
+                              </SelectableCardDescription>
+                            </div>
+                            {account.isPrimary && (
+                              <Badge
+                                variant="waiting-medium"
+                                className="h-8 bg-muted px-2 text-sm leading-5"
+                              >
+                                {t("beneficiaries:beneficiaries.bank_accounts.primary_label")}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </SelectableCard>
+                  ))}
+                </div>
+              </SelectableCardGroup>
+            </DialogBody>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="secondary">
+                  {t("transactions.select_account_dialog.cancel")}
+                </Button>
+              </DialogClose>
+              <Button
+                variant="default"
+                onClick={handleConfirmBankAccountChange}
+                disabled={!tempSelectedBankAccountId}
+              >
+                {t("transactions.select_account_dialog.confirm")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         {/* 2FA Dialog */}
         <Dialog open={show2faDialog} onOpenChange={setShow2faDialog}>
           <DialogContent>
