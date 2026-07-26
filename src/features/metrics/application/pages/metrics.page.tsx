@@ -23,7 +23,8 @@ import {
   TabsTrigger as TabsUnderlineTrigger,
 } from "@adamosuiteservices/ui/tabs-underline";
 import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
-import { format, subDays, startOfDay } from "date-fns";
+import { format, subDays } from "date-fns";
+import { businessTodayAsLocalDate } from "@/lib/utils/date.utils";
 import { es, enUS } from "date-fns/locale";
 import { useMemo, useState as useStateReact, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -79,7 +80,7 @@ const DateRangePicker = ({
   const [selectedOption, setSelectedOption] = useStateReact<string>(() => {
     // calculate initial option based on dateRange
     if (!dateRange.from || !dateRange.to) return "";
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     if (dateRange.from.getTime() === subDays(today, 7).getTime() && dateRange.to.getTime() === today.getTime()) {
       return "7_days";
     }
@@ -109,7 +110,7 @@ const DateRangePicker = ({
 
     // handle preset selection
     setSelectedOption(selectedValue);
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     const daysMap = { "7_days": 7, "30_days": 30, "90_days": 90 };
     const days = daysMap[selectedValue as keyof typeof daysMap];
     if (days) {

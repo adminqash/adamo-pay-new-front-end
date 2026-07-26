@@ -39,7 +39,8 @@ import {
 } from "@adamosuiteservices/ui/sheet";
 import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/popover";
 import type { DateRange } from "react-day-picker";
-import { format, subDays, startOfDay } from "date-fns";
+import { format, subDays } from "date-fns";
+import { businessTodayAsLocalDate } from "@/lib/utils/date.utils";
 import { es, enUS } from "date-fns/locale";
 import { useRef, useState as useStateReact, useState, useMemo } from "react";
 import { Label } from "@adamosuiteservices/ui/label";
@@ -92,7 +93,7 @@ const DateRangePicker = ({
   const [selectedOption, setSelectedOption] = useStateReact<string>(() => {
     // calculate initial option based on dateRange
     if (!dateRange.from || !dateRange.to) return "";
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     if (dateRange.from.getTime() === subDays(today, 7).getTime() && dateRange.to.getTime() === today.getTime()) {
       return "7_days";
     }
@@ -122,7 +123,7 @@ const DateRangePicker = ({
 
     // handle preset selection
     setSelectedOption(selectedValue);
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     const daysMap = { "7_days": 7, "30_days": 30, "90_days": 90 };
     const days = daysMap[selectedValue as keyof typeof daysMap];
     if (days) {
@@ -227,7 +228,7 @@ export const TransactionsPage = () => {
   const [showTimeline, setShowTimeline] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     return {
       from: subDays(today, 30),
       to: today,
@@ -302,7 +303,7 @@ export const TransactionsPage = () => {
    */
   const isDateRangeCustom = () => {
     if (!dateRange.from || !dateRange.to) return false;
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     const defaultFrom = subDays(today, 30);
     return dateRange.from.getTime() !== defaultFrom.getTime() || dateRange.to.getTime() !== today.getTime();
   };
@@ -319,7 +320,7 @@ export const TransactionsPage = () => {
    * reset all filters
    */
   const handleResetFilters = () => {
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     setDateRange({
       from: subDays(today, 30),
       to: today,
