@@ -51,19 +51,6 @@
       "success": "2FA activated successfully"
     }
   },
-  "language": {
-    "title": "Language",
-    "description": "System preferred language:",
-    "current": "English",
-    "change_language": "Change language",
-    "dialog": {
-      "title": "Language",
-      "description": "Select your preferred language:",
-      "cancel": "Cancel",
-      "save": "Change language",
-      "success": "Language changed successfully"
-    }
-  },
   "billing": {
     "title": "Plans and billing",
     "description": "Manage your billing, access your plan and more available plans.",

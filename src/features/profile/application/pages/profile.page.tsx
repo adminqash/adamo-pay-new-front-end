@@ -19,13 +19,6 @@ import {
 import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@adamosuiteservices/ui/select";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { useState, useRef } from "react";
@@ -36,10 +29,8 @@ import { PageTitle } from "@/features/common/components/layout/page-title";
 import { useAvatar } from "@/features/common/contexts/use-avatar";
 
 export function ProfilePage() {
-  const { t, i18n } = useTranslation(["profile"]);
+  const { t } = useTranslation(["profile"]);
   const { avatarUrl, setAvatarUrl, userInitials, userName, userEmail, userRole } = useAvatar();
-  const [isLanguageDialogOpen, setIsLanguageDialogOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [passwordStep, setPasswordStep] = useState(1);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -260,35 +251,6 @@ export function ProfilePage() {
                 </Button>
               </div>
             </Card>
-            {/* Language card */}
-            <Card className={`
-              flex w-full flex-col gap-8 p-6
-              md:w-auto md:flex-[1_1_480px]
-            `}
-            >
-              <div className="flex flex-col gap-4">
-                <div className={`
-                  flex h-14 w-fit items-center gap-3 rounded-full bg-pay-25 px-4
-                  py-4
-                `}
-                >
-                  <Icon symbol="language" weight={200} className="text-pay-500" />
-                </div>
-                <h2 className="text-sm leading-5 font-bold text-foreground">
-                  {t("profile:language.title")}
-                </h2>
-                <p className="text-sm leading-5 text-foreground">
-                  {t("profile:language.description")}
-                  <br />
-                  {t("profile:language.current")}
-                </p>
-              </div>
-              <div className="flex gap-6">
-                <Button variant="secondary" onClick={() => setIsLanguageDialogOpen(true)}>
-                  {t("profile:language.change_language")}
-                </Button>
-              </div>
-            </Card>
             {/* Billing card */}
             <Card className={`
               flex w-full flex-col gap-8 p-6
@@ -323,55 +285,6 @@ export function ProfilePage() {
           </div>
         </Card>
       </PageContainer>
-      {/* Language dialog */}
-      <Dialog open={isLanguageDialogOpen} onOpenChange={setIsLanguageDialogOpen}>
-        <DialogContent className="max-w-[610px] gap-12">
-          <DialogHeader className="gap-2">
-            <DialogTitle className="text-sm font-semibold">
-              {t("profile:language.dialog.title")}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-foreground">
-              {t("profile:language.dialog.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-8">
-            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="es">Español</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter className="gap-6">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setIsLanguageDialogOpen(false);
-                setSelectedLanguage(i18n.language);
-              }}
-            >
-              {t("profile:language.dialog.cancel")}
-            </Button>
-            <Button
-              variant="default"
-              disabled={selectedLanguage === i18n.language}
-              onClick={() => {
-                i18n.changeLanguage(selectedLanguage);
-                setIsLanguageDialogOpen(false);
-                ToastManager.show({
-                  message: t("profile:language.dialog.success"),
-                  variant: "success",
-                });
-              }}
-            >
-              {t("profile:language.dialog.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       {/* Password dialog */}
       <Dialog
         open={isPasswordDialogOpen}

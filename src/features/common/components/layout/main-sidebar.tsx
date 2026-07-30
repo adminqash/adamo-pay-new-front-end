@@ -1,14 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@adamosuiteservices/ui/avatar";
-import { Button } from "@adamosuiteservices/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@adamosuiteservices/ui/collapsible";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@adamosuiteservices/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,21 +7,12 @@ import {
   DropdownMenuTrigger,
 } from "@adamosuiteservices/ui/dropdown-menu";
 import { Icon } from "@adamosuiteservices/ui/icon";
-import { Input } from "@adamosuiteservices/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@adamosuiteservices/ui/select";
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarFooter,
   SidebarInset,
   SidebarTopBar,
   SidebarTrigger,
@@ -44,7 +25,6 @@ import { Link, NavLink, Outlet } from "react-router";
 import type { JSX } from "react";
 import { Logo } from "@/features/common/components/brand/logo";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
-import { useAvatar } from "@/features/common/contexts/use-avatar";
 
 export type SidebarMenuItem = {
   id: string
@@ -56,13 +36,7 @@ export type SidebarMenuItem = {
 
 export function MainSidebar() {
   const { t } = useTranslation(["sidebar"]);
-  const { avatarUrl, userInitials } = useAvatar();
   const [selectedCountry, setSelectedCountry] = useState("CO");
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
-  const [reportTopic, setReportTopic] = useState("");
-  const [reportMessage, setReportMessage] = useState("");
-  const [isNotificationsDropdownOpen, setIsNotificationsDropdownOpen] = useState(false);
-  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   const countries: Record<string, string> = {
     AR: "Argentina",
@@ -166,29 +140,6 @@ export function MainSidebar() {
             })}
           </SidebarMenu>
         </OverlayScrollbarsComponent>
-        <SidebarFooter className="gap-4 pt-4">
-          <SidebarMenuItem asChild>
-            <NavLink to="/profile">
-              <Avatar className="size-10 rounded-lg">
-                <AvatarImage
-                  src={avatarUrl}
-                  alt=""
-                />
-                <AvatarFallback className={`
-                  rounded-lg bg-primary-100 text-sm text-primary
-                `}
-                >
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-              {t("footer.profile")}
-            </NavLink>
-          </SidebarMenuItem>
-          <SidebarMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
-            <Icon symbol="logout" />
-            {t("footer.logout")}
-          </SidebarMenuItem>
-        </SidebarFooter>
       </SidebarContent>
       <SidebarInset>
         <SidebarTopBar className={`
@@ -202,7 +153,7 @@ export function MainSidebar() {
             className="min-w-0 flex-1 overflow-hidden"
           >
           </div>
-          {/* Right - Country Selector + Help + Notifications */}
+          {/* Right - Country Selector */}
           <div className="flex items-center gap-6">
             {/* Country selector - DropdownMenu matching Figma */}
             <DropdownMenu>
@@ -315,151 +266,6 @@ export function MainSidebar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {/* Help dropdown - WhatsApp and report */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className={`
-                    flex size-6 items-center justify-center border-none
-                    bg-transparent p-0 text-pay-500
-                    hover:bg-transparent hover:text-pay-600
-                    focus:outline-none
-                    focus-visible:ring-0 focus-visible:ring-offset-0
-                    focus-visible:outline-none
-                    active:outline-none
-                  `}
-                >
-                  <Icon symbol="help" className="size-6" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-auto min-w-[240px]">
-                <DropdownMenuItem
-                  className={`
-                    h-11 cursor-pointer px-4 py-0
-                    focus:bg-muted focus:outline-none
-                    focus-visible:ring-0
-                  `}
-                >
-                  <span>{t("help.request_whatsapp")}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-neutral-100" />
-                <DropdownMenuItem
-                  onClick={() => setIsReportDialogOpen(true)}
-                  className={`
-                    h-11 cursor-pointer px-4 py-0
-                    focus:bg-muted focus:outline-none
-                    focus-visible:ring-0
-                  `}
-                >
-                  <span>{t("help.report_idea")}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Notifications dropdown */}
-            <DropdownMenu open={isNotificationsDropdownOpen} onOpenChange={setIsNotificationsDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="secondary"
-                  aria-label="Notifications"
-                  className={`
-                    h-10 rounded-[12px] border-0 bg-primary-100 px-3
-                    hover:bg-primary-200
-                    focus:border-0 focus:outline-none
-                    focus-visible:border-0 focus-visible:ring-0
-                    focus-visible:ring-offset-0 focus-visible:outline-none
-                    active:outline-none
-                  `}
-                >
-                  <Icon
-                    symbol="notifications"
-                    className="text-2xl text-secondary-foreground"
-                  />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[360px] p-0">
-                <div className="max-h-[400px] overflow-x-hidden overflow-y-auto">
-                  <DropdownMenuItem
-                    className={`
-                      flex h-auto cursor-pointer flex-col items-start gap-1 px-4
-                      py-3
-                      focus:bg-muted focus:outline-none
-                      focus-visible:ring-0
-                    `}
-                  >
-                    <p className={`
-                      w-full text-sm font-semibold break-words text-neutral-700
-                    `}
-                    >{t("notifications.items.payment_received.title")}
-                    </p>
-                    <p className={`
-                      w-full text-sm break-words text-muted-foreground
-                    `}
-                    >
-                      {t("notifications.items.payment_received.description")}
-                    </p>
-                    <p className="w-full text-xs text-muted-foreground">{t("notifications.items.payment_received.time")}</p>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-neutral-100" />
-                  <DropdownMenuItem
-                    className={`
-                      flex h-auto cursor-pointer flex-col items-start gap-1 px-4
-                      py-3
-                      focus:bg-muted focus:outline-none
-                      focus-visible:ring-0
-                    `}
-                  >
-                    <p className={`
-                      w-full text-sm font-semibold break-words text-neutral-700
-                    `}
-                    >{t("notifications.items.batch_processed.title")}
-                    </p>
-                    <p className={`
-                      w-full text-sm break-words text-muted-foreground
-                    `}
-                    >
-                      {t("notifications.items.batch_processed.description")}
-                    </p>
-                    <p className="w-full text-xs text-muted-foreground">{t("notifications.items.batch_processed.time")}</p>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-neutral-100" />
-                  <DropdownMenuItem
-                    className={`
-                      flex h-auto cursor-pointer flex-col items-start gap-1 px-4
-                      py-3
-                      focus:bg-muted focus:outline-none
-                      focus-visible:ring-0
-                    `}
-                  >
-                    <p className={`
-                      w-full text-sm font-semibold break-words text-neutral-700
-                    `}
-                    >{t("notifications.items.document_approved.title")}
-                    </p>
-                    <p className={`
-                      w-full text-sm break-words text-muted-foreground
-                    `}
-                    >
-                      {t("notifications.items.document_approved.description")}
-                    </p>
-                    <p className="w-full text-xs text-muted-foreground">{t("notifications.items.document_approved.time")}</p>
-                  </DropdownMenuItem>
-                </div>
-                <DropdownMenuSeparator className="bg-neutral-100" />
-                <div className="p-3">
-                  <Button
-                    asChild
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-pay-500"
-                  >
-                    <Link to="/notifications" onClick={() => setIsNotificationsDropdownOpen(false)}>
-                      {t("notifications.view_all")}
-                    </Link>
-                  </Button>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
             {/* Hamburger menu button - mobile/tablet only */}
             <SidebarTrigger className={`
               inline-flex h-10 w-12 items-center justify-center rounded-xl
@@ -473,94 +279,6 @@ export function MainSidebar() {
         </SidebarTopBar>
         <Outlet />
       </SidebarInset>
-      {/* Report Dialog */}
-      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
-        <DialogContent className="max-w-[610px] gap-12">
-          <DialogHeader className="gap-2">
-            <DialogTitle className="text-sm font-semibold">
-              {t("help.dialog.title")}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-foreground">
-              {t("help.dialog.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <Select value={reportTopic} onValueChange={setReportTopic}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder={t("help.dialog.topic_placeholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bug">{t("help.dialog.topics.bug")}</SelectItem>
-                <SelectItem value="feature">{t("help.dialog.topics.feature")}</SelectItem>
-                <SelectItem value="question">{t("help.dialog.topics.question")}</SelectItem>
-                <SelectItem value="other">{t("help.dialog.topics.other")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder={t("help.dialog.message_placeholder")}
-              value={reportMessage}
-              onChange={(e) => setReportMessage(e.target.value)}
-              className="h-10"
-            />
-          </div>
-          <DialogFooter className="gap-6">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setIsReportDialogOpen(false);
-                setReportTopic("");
-                setReportMessage("");
-              }}
-            >
-              {t("help.dialog.cancel")}
-            </Button>
-            <Button
-              variant="default"
-              disabled={!reportTopic || !reportMessage.trim()}
-              onClick={() => {
-                // Handle send message logic here
-                console.log({ reportTopic, reportMessage });
-                setIsReportDialogOpen(false);
-                setReportTopic("");
-                setReportMessage("");
-              }}
-            >
-              {t("help.dialog.send")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* Logout Confirmation Dialog */}
-      <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
-        <DialogContent className={`
-          gap-12
-          sm:max-w-[600px]
-        `}
-        >
-          <DialogHeader>
-            <DialogTitle>{t("logout_dialog.title")}</DialogTitle>
-            <DialogDescription>
-              {t("logout_dialog.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsLogoutDialogOpen(false)}>
-              {t("logout_dialog.cancel")}
-            </Button>
-            <Button
-              variant="default"
-              onClick={() => {
-                // TODO: Implement logout logic
-                console.log("Logout confirmed");
-                setIsLogoutDialogOpen(false);
-              }}
-            >
-              {t("logout_dialog.confirm")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Sidebar>
-
   );
 }

@@ -7,6 +7,10 @@ const ENVSchema = z.object({
   VITE_API_ANALYTICS_URL: z.url().optional(),
   VITE_API_REALTIME_URL: z.url().optional(),
   VITE_API_BEARER_TOKEN: z.string().min(1).optional(),
+  VITE_ADAMO_LANDING_BASE_URL: z.string().optional(),
+  VITE_ID_FRONT_BASE_URL: z.string().optional(),
+  VITE_SIGN_FRONT_BASE_URL: z.string().optional(),
+  VITE_CHECK_FRONT_BASE_URL: z.string().optional(),
 });
 
 const result = ENVSchema.safeParse(import.meta.env);
