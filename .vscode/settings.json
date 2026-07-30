@@ -39,15 +39,14 @@
   "[html]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "[instructions]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
   // TypeScript SDK
   "typescript.tsdk": "node_modules\\typescript\\lib",
   // Spell checking
   "cSpell.language": "en,es-ES",
   "cSpell.words": [
     "adamosuiteservices",
+    "claude",
+    "commitlint",
     "dtos",
     "languagedetector",
     "Localizator",
