@@ -16,3 +16,24 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* The suite header (SuiteHeader) is a full-width bar fixed above the
+   library sidebar layout. Offset the library's fixed sidebar and its sticky
+   top bar so they sit below the header instead of underneath it. */
+:root {
+  --suite-header-height: 3.5rem;
+}
+
+[data-slot="sidebar-inset"] {
+  padding-top: var(--suite-header-height);
+}
+
+[data-slot="sidebar-top-bar"] {
+  top: var(--suite-header-height);
+}
+
+@media (min-width: 1280px) {
+  [data-slot="sidebar-content"] {
+    top: var(--suite-header-height);
+  }
+}

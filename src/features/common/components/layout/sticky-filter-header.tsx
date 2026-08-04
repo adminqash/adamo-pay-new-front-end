@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useElementRect } from "@/features/common/hooks/use-element-rect";
 import { cn } from "@adamosuiteservices/ui/lib";
 
@@ -6,16 +6,16 @@ interface StickyFilterHeaderProps {
   /**
    * content to display in the sticky header
    */
-  children: ReactNode;
+  children: ReactNode
   /**
    * additional CSS classes for the container
    */
-  className?: string;
+  className?: string
   /**
    * spacing offset from the top (in pixels)
    * defaults to 24px which is the standard card padding
    */
-  topSpacing?: number;
+  topSpacing?: number
 }
 
 /**
@@ -39,12 +39,12 @@ interface StickyFilterHeaderProps {
 export function StickyFilterHeader({ 
   children, 
   className,
-  topSpacing = 24 
+  topSpacing = 24, 
 }: StickyFilterHeaderProps) {
   const sidebarTopBarRect = useElementRect("[data-slot='sidebar-top-bar']");
-  
-  // calculate sticky top offset (sidebar height + spacing)
-  const stickyTopOffset = (sidebarTopBarRect?.height ?? 64) + topSpacing;
+
+  // calculate sticky top offset (sidebar bottom edge + spacing)
+  const stickyTopOffset = (sidebarTopBarRect?.bottom ?? 112) + topSpacing;
 
   return (
     <>
@@ -80,7 +80,8 @@ export function StickyFilterHeader({
           pointer-events: none;
           z-index: 1;
         }
-      `}</style>
+      `}
+      </style>
       <div 
         className={cn("sticky-filter-header", className)}
         style={{ top: `${stickyTopOffset}px` }}

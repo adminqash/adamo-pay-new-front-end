@@ -50,12 +50,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # ===================================
-# Generated Documentation
-# ===================================
-# TypeDoc auto-generated API documentation
-docs/
-
-# ===================================
 # Testing & Coverage
 # ===================================
 # Test coverage reports

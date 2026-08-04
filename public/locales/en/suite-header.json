@@ -1,0 +1,57 @@
+{
+  "brand": "Adamo Services",
+  "apps_label": "Adamo products",
+  "help_label": "Help",
+  "notifications_label": "Notifications",
+  "profile_menu_label": "Profile menu",
+  "products": {
+    "id": "User validation",
+    "pay": "Real-time payments",
+    "sign": "Document management and e-signature",
+    "check": "Facial recognition"
+  },
+  "profile": {
+    "myProfile": "My profile",
+    "userManagement": "User management",
+    "language": "Language",
+    "logout": "Log out"
+  },
+  "logout_dialog": {
+    "title": "Confirm logout",
+    "description": "Are you sure you want to log out of your account?",
+    "cancel": "Cancel",
+    "confirm": "Log out"
+  },
+  "language_dialog": {
+    "title": "Change language",
+    "description": "Select the language you want to use the platform in.",
+    "languages": {
+      "es": "Spanish",
+      "en": "English"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
+  "notifications": {
+    "items": {
+      "payment_received": {
+        "title": "Payment received",
+        "description": "A payment of $50,000 COP has been received",
+        "time": "5 minutes ago"
+      },
+      "batch_processed": {
+        "title": "Batch processed",
+        "description": "Batch #1234 has been processed successfully",
+        "time": "1 hour ago"
+      },
+      "document_approved": {
+        "title": "Document approved",
+        "description": "Your document has been approved and is ready to use",
+        "time": "2 hours ago"
+      }
+    },
+    "view_all": "View all notifications"
+  }
+}

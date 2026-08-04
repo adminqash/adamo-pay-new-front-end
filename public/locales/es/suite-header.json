@@ -1,0 +1,57 @@
+{
+  "brand": "Adamo Services",
+  "apps_label": "Productos Adamo",
+  "help_label": "Ayuda",
+  "notifications_label": "Notificaciones",
+  "profile_menu_label": "Menú de perfil",
+  "products": {
+    "id": "Validación de usuarios",
+    "pay": "Pagos en tiempo real",
+    "sign": "Gestión documental y firma electrónica",
+    "check": "Reconocimiento facial"
+  },
+  "profile": {
+    "myProfile": "Mi perfil",
+    "userManagement": "Gestión de usuarios",
+    "language": "Idioma",
+    "logout": "Cerrar sesión"
+  },
+  "logout_dialog": {
+    "title": "Confirmar cierre de sesión",
+    "description": "¿Estás seguro que quieres cerrar sesión?",
+    "cancel": "Cancelar",
+    "confirm": "Cerrar sesión"
+  },
+  "language_dialog": {
+    "title": "Cambiar idioma",
+    "description": "Selecciona el idioma en el que quieres usar la plataforma.",
+    "languages": {
+      "es": "Español",
+      "en": "Inglés"
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "save": "Guardar"
+    }
+  },
+  "notifications": {
+    "items": {
+      "payment_received": {
+        "title": "Pago recibido",
+        "description": "Se ha recibido un pago de $50,000 COP",
+        "time": "Hace 5 minutos"
+      },
+      "batch_processed": {
+        "title": "Lote procesado",
+        "description": "El lote #1234 se ha procesado correctamente",
+        "time": "Hace 1 hora"
+      },
+      "document_approved": {
+        "title": "Documento aprobado",
+        "description": "Tu documento ha sido aprobado y está listo para usar",
+        "time": "Hace 2 horas"
+      }
+    },
+    "view_all": "Ver todas las notificaciones"
+  }
+}
