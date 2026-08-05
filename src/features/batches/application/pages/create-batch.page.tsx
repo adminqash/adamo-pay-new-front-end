@@ -17,6 +17,7 @@ import { Button } from "@adamosuiteservices/ui/button";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import { FileUpload } from "@adamosuiteservices/ui/file-upload";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
+import { getStoredCountryCodeAlpha3 } from "@/lib/country/country-code";
 import { useNavigate, useBlocker, useLocation } from "react-router";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
 import {
@@ -91,7 +92,7 @@ export const CreateBatchPage = () => {
   // balance from accounts summary
   const balance = totalBalance;
   const currency = "COP";
-  const countryCode = "CO";
+  const countryCode = getStoredCountryCodeAlpha3();
   const acceptedExtensions = [".xlsx", ".csv", ".numbers"];
   const maxSizeInMB = 50;
 
@@ -110,7 +111,7 @@ export const CreateBatchPage = () => {
       batchId: crypto.randomUUID(),
       name: file.name.replace(/\.[^.]+$/, ""),
       currency: "cop",
-      countryCode: "CO",
+      countryCode,
     }).then((result) => {
       if (result.data?.id) {
         setBatchId(result.data.id);
