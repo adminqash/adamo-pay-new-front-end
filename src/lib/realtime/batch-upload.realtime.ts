@@ -1,4 +1,4 @@
-import { apiUrls } from "@/lib/env";
+import { connectRealtimeChannel } from "./realtime-connection";
 
 export type BatchUploadProgressState = {
   status:
@@ -26,14 +26,6 @@ export type BatchUploadProgressState = {
 };
 
 type BatchUploadEventHandler = (state: BatchUploadProgressState) => void;
-
-function buildWsUrl(baseUrl: string): string {
-  const url = new URL(baseUrl);
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  const basePath = url.pathname.replace(/\/$/, "");
-  url.pathname = `${basePath}/realtime/ws`;
-  return url.toString();
-}
 
 function resolvePhase(
   eventType: string,
@@ -68,55 +60,11 @@ export function subscribeToBatchUploadEvents(
   batchId: string,
   onUpdate: BatchUploadEventHandler,
 ): () => void {
-  let ws: WebSocket | null = null;
-  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-  let disposed = false;
-  let reconnectAttempts = 0;
-
-  const clearHeartbeat = () => {
-    if (heartbeatTimer) {
-      clearInterval(heartbeatTimer);
-      heartbeatTimer = null;
-    }
-  };
-
-  const connect = () => {
-    if (disposed) {
-      return;
-    }
-
-    const wsUrl = buildWsUrl(apiUrls.realtime);
-    // Session cookies (shared .adamoservices.co domain) ride along on the WS
-    // handshake automatically, same as withCredentials on the axios clients.
-    ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-      reconnectAttempts = 0;
-      ws?.send(
-        JSON.stringify({
-          type: "subscribe",
-          channel: "batches",
-          resourceId: batchId,
-        }),
-      );
-
-      heartbeatTimer = setInterval(() => {
-        if (ws?.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "ping" }));
-        }
-      }, 25_000);
-    };
-
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data as string) as {
-        type?: string
-        eventType?: string
-        resourceId?: string
-        traceId?: string
-        data?: Record<string, unknown>
-      };
-
-      if (message.type !== "event" || message.resourceId !== batchId) {
+  return connectRealtimeChannel({
+    channel: "batches",
+    resourceId: batchId,
+    onEvent: (message) => {
+      if (message.resourceId !== batchId) {
         return;
       }
 
@@ -139,24 +87,8 @@ export function subscribeToBatchUploadEvents(
             ? String(data.message ?? "Batch upload failed")
             : undefined,
       });
-    };
-
-    ws.onclose = () => {
-      clearHeartbeat();
-      if (!disposed && reconnectAttempts < 5) {
-        reconnectAttempts += 1;
-        setTimeout(connect, Math.min(1000 * reconnectAttempts, 5000));
-      }
-    };
-  };
-
-  connect();
-
-  return () => {
-    disposed = true;
-    clearHeartbeat();
-    ws?.close(1000, "UNSUBSCRIBE");
-  };
+    },
+  });
 }
 
 export function mapUploadStatusToProgress(

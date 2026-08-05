@@ -13,6 +13,7 @@ import {
   BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
 import { useBatchDetail } from "../hooks/use-batch-detail";
+import { useBatchesRealtime } from "../hooks/use-batches-realtime";
 import { useBatchTransactions } from "../hooks/use-batch-transactions";
 import { useBatchTimeline } from "../hooks/use-batch-timeline";
 import { buildBatchTransactionListParams } from "../utils/batch-filters.utils";
@@ -80,6 +81,7 @@ export const BatchDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { batch, isLoading: isBatchLoading } = useBatchDetail(id ?? "");
+  useBatchesRealtime(id);
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 

@@ -5,6 +5,7 @@ import { PageTitle } from "@/features/common/components/layout/page-title";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 import { useBatches } from "../hooks/use-batches";
+import { useBatchesRealtime } from "../hooks/use-batches-realtime";
 import { buildBatchListParams } from "../utils/batch-filters.utils";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
@@ -221,6 +222,7 @@ export const BatchesPage = () => {
   );
 
   const { batches, totalCount, refetch } = useBatches(listParams);
+  useBatchesRealtime();
 
   // Show success toast if redirected from create batch
   useEffect(() => {
