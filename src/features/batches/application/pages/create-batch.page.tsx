@@ -40,6 +40,12 @@ import {
   DialogTitle,
 } from "@adamosuiteservices/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
+import {
+  SelectableCard,
+  SelectableCardGroup,
+  SelectableCardTitle,
+  SelectableCardDescription,
+} from "@adamosuiteservices/ui/selectable-card";
 
 /**
  * create batch page
@@ -68,8 +74,9 @@ export const CreateBatchPage = () => {
   const downloadTemplate = useDownloadBatchTemplate();
   const processBatch = useProcessBatch();
   const updateBatch = useUpdateBatch();
-  const { totalBalance } = useAccounts();
+  const { totalBalance, accounts, isLoading: isAccountsLoading } = useAccounts();
   const { batch } = useBatchDetail(batchId ?? "");
+  const [sourceAccountId, setSourceAccountId] = useState<string>();
   const uploadProgress = useBatchUploadProgress(batchId, uploadId);
   
   // Track if we're processing the batch to avoid blocker interference
@@ -294,11 +301,16 @@ export const CreateBatchPage = () => {
    * handle process batch with OTP
    */
   const handleProcessBatch = async() => {
-    if (!batchId) {
+    if (!batchId || !sourceAccountId) {
       return;
     }
 
     try {
+      await updateBatch.mutateAsync({
+        batchId,
+        sourceAccountId,
+      });
+
       await processBatch.mutateAsync({
         batchId,
         totp: otpCode || undefined,
@@ -326,6 +338,7 @@ export const CreateBatchPage = () => {
       await updateBatch.mutateAsync({
         batchId,
         lastAction: "saved_pending",
+        ...(sourceAccountId ? { sourceAccountId } : {}),
       });
 
       isProcessingRef.current = true;
@@ -604,6 +617,56 @@ export const CreateBatchPage = () => {
             </Card>
           )}
 
+          {/* source account selection - only once the batch total is known */}
+          {batchSummary && !batchSummary.isCalculating && (
+            <Card className="flex flex-col gap-4 border-0 bg-[#f9fafb] p-6">
+              <p className="text-sm text-[#384250]">
+                {t("batches.create_batch.source_account.title", {
+                  defaultValue: "Cuenta de origen",
+                })}
+              </p>
+              <SelectableCardGroup
+                value={sourceAccountId}
+                onValueChange={setSourceAccountId}
+                className="w-full"
+              >
+                <div className="flex w-full flex-wrap gap-4">
+                  {!isAccountsLoading && accounts.map((account) => {
+                    const insufficientBalance = account.availableMinor < batchSummary.totalToPay;
+
+                    return (
+                      <SelectableCard
+                        key={account.id}
+                        value={account.id}
+                        disabled={insufficientBalance}
+                        className="min-w-[250px] flex-1"
+                      >
+                        <div className="flex h-16 items-center">
+                          <div className="flex flex-1 flex-col gap-2">
+                            <SelectableCardTitle>{account.name}</SelectableCardTitle>
+                            <div className="flex h-10 items-center gap-2 pl-2">
+                              <Icon symbol="paid" className="text-2xl" />
+                              <SelectableCardDescription>
+                                {account.balance}
+                                {insufficientBalance && (
+                                  <span className="ml-2 text-xs text-[#bf3636]">
+                                    {t("batches.create_batch.source_account.insufficient_balance", {
+                                      defaultValue: "Saldo insuficiente",
+                                    })}
+                                  </span>
+                                )}
+                              </SelectableCardDescription>
+                            </div>
+                          </div>
+                        </div>
+                      </SelectableCard>
+                    );
+                  })}
+                </div>
+              </SelectableCardGroup>
+            </Card>
+          )}
+
           {/* action buttons - only show when file is uploaded */}
           {batchSummary && (
             <div className="mt-8 flex flex-wrap items-center gap-6">
@@ -614,7 +677,7 @@ export const CreateBatchPage = () => {
                 <Button
                   variant="default"
                   onClick={handleConfirmBatch}
-                  disabled={!isUploadReady || uploadProgress.status === "failed"}
+                  disabled={!isUploadReady || uploadProgress.status === "failed" || !sourceAccountId}
                 >
                   <Icon symbol="check" weight={200} />
                   {t("batches.create_batch.actions.confirm")}
