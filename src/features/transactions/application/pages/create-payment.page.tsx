@@ -121,9 +121,14 @@ export const CreatePaymentPage = () => {
   const { accounts, isLoading: isAccountsLoading } = useAccounts({ limit: 20 });
   const { bankAccounts } = useBankAccounts(selectedBeneficiary?.id ?? "");
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   const beneficiariesQuery = useQuery({
-    queryKey: ["beneficiaries", "recent"],
-    queryFn: () => BeneficiariesService.list({ limit: 5 }),
+    queryKey: ["beneficiaries", "recent", searchQuery],
+    queryFn: () => BeneficiariesService.list({
+      limit: 5,
+      search: searchQuery.trim() || undefined,
+    }),
   });
 
   const beneficiaries = beneficiariesQuery.data?.data ?? [];
@@ -396,6 +401,8 @@ export const CreatePaymentPage = () => {
                     </InputGroupAddon>
                     <InputGroupInput
                       placeholder={t("transactions.create_payment.search_placeholder")}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </InputGroup>
                   {/* Recent Beneficiaries */}
