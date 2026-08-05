@@ -44,6 +44,7 @@ import {
 } from "@/features/beneficiaries/application/utils/beneficiary-form.utils";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
+import { getStoredCountryCodeAlpha3 } from "@/lib/country/country-code";
 import {
   formatCurrencyDisplay,
   minorToMajor,
@@ -314,7 +315,7 @@ export const CreatePaymentPage = () => {
         },
         amount: parsedAmount,
         currency: "cop",
-        countryCode: "CO",
+        countryCode: getStoredCountryCodeAlpha3(),
         metadata: {
           saveBeneficiary,
           channel: "web",
