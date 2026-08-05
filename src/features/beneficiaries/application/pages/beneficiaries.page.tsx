@@ -33,6 +33,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { useBeneficiaries, useCreateBeneficiary } from "../hooks/use-beneficiaries";
+import { usePaymentsRealtime } from "@/features/transactions/application/hooks/use-payments-realtime";
 import { buildBeneficiaryListParams } from "../utils/beneficiary-filters.utils";
 import {
   Pagination,
@@ -45,6 +46,8 @@ import {
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
+
+const BENEFICIARIES_QUERY_KEY = ["beneficiaries"];
 
 export function BeneficiariesPage() {
   const { t } = useTranslation("beneficiaries");
@@ -90,6 +93,7 @@ export function BeneficiariesPage() {
     refetch,
     isLoading,
   } = useBeneficiaries(listParams);
+  usePaymentsRealtime({ extraInvalidateKeys: [BENEFICIARIES_QUERY_KEY] });
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 

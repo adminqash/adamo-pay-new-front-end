@@ -1,9 +1,27 @@
 {
   "create": "Create",
   "actions": {
-    "success": "Action completed successfully" 
+    "success": "Action completed successfully"
   },
   "errors": {
     "generic": "An unexpected error occurred"
+  },
+  "realtime": {
+    "toast": {
+      "payment": {
+        "title": "Payment update"
+      },
+      "batch": {
+        "title": "Batch updated"
+      },
+      "status": {
+        "paid": "Payment completed",
+        "rejected": "Payment rejected",
+        "returned": "Payment returned",
+        "completed": "The batch finished processing"
+      },
+      "view_more": "See more",
+      "dismiss": "Dismiss"
+    }
   }
 }

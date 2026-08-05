@@ -10,6 +10,10 @@ import { PageContainer } from "@/features/common/components/layout/page-containe
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { useHome } from "@/features/home/application/hooks/use-home";
+import { usePaymentsRealtime } from "@/features/transactions/application/hooks/use-payments-realtime";
+import { useAccountBalanceRealtime } from "@/features/accounts/application/hooks/use-account-balance-realtime";
+
+const DASHBOARD_QUERY_KEY = ["dashboard"];
 
 export function HomePage() {
   const { t } = useTranslation(["home"]);
@@ -18,6 +22,8 @@ export function HomePage() {
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   const home = useHome();
+  usePaymentsRealtime({ extraInvalidateKeys: [DASHBOARD_QUERY_KEY] });
+  useAccountBalanceRealtime({ extraInvalidateKeys: [DASHBOARD_QUERY_KEY] });
 
   /**
    * navigate to create batch when file is selected

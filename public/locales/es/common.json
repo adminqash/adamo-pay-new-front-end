@@ -1,9 +1,27 @@
 {
   "create": "Crear",
     "actions": {
-    "success": "Acción completada con éxito" 
+    "success": "Acción completada con éxito"
   },
   "errors": {
     "generic": "Ocurrió un error inesperado"
+  },
+  "realtime": {
+    "toast": {
+      "payment": {
+        "title": "Actualización de pago"
+      },
+      "batch": {
+        "title": "Lote actualizado"
+      },
+      "status": {
+        "paid": "Pago completado",
+        "rejected": "Pago rechazado",
+        "returned": "Pago devuelto",
+        "completed": "El lote terminó de procesarse"
+      },
+      "view_more": "Ver más",
+      "dismiss": "Cerrar"
+    }
   }
 }

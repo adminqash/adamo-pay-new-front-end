@@ -60,7 +60,10 @@ import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { CreditCard, type CreditCardData } from "../components/credit-card";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useBeneficiaryDetail, useBeneficiaryTransactions, useUpdateBeneficiary } from "../hooks/use-beneficiaries";
+import { usePaymentsRealtime } from "@/features/transactions/application/hooks/use-payments-realtime";
 import { buildBeneficiaryTransactionListParams } from "../utils/beneficiary-filters.utils";
+
+const BENEFICIARIES_QUERY_KEY = ["beneficiaries"];
 
 export function BeneficiaryDetailPage() {
   const { t } = useTranslation("beneficiaries");
@@ -72,6 +75,7 @@ export function BeneficiaryDetailPage() {
   const [showRightButton, setShowRightButton] = useState(false);
 
   const { beneficiary: fetchedBeneficiary, isLoading: isBeneficiaryLoading, refetch: refetchBeneficiary } = useBeneficiaryDetail(beneficiaryId ?? "");
+  usePaymentsRealtime({ extraInvalidateKeys: [BENEFICIARIES_QUERY_KEY] });
   const updateBeneficiary = useUpdateBeneficiary();
   const beneficiary = fetchedBeneficiary;
 

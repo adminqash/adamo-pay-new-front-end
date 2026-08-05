@@ -2,10 +2,19 @@ import { apiUrls } from "@/lib/env";
 
 export type RealtimeEventMessage = {
   type?: string
+  channel?: string
   eventType?: string
   resourceId?: string
   traceId?: string
   data?: Record<string, unknown>
+};
+
+type Subscriber = (message: RealtimeEventMessage) => void;
+
+type SubscriptionEntry = {
+  channel: string
+  resourceId?: string
+  subscribers: Set<Subscriber>
 };
 
 function buildWsUrl(baseUrl: string): string {
@@ -16,51 +25,82 @@ function buildWsUrl(baseUrl: string): string {
   return url.toString();
 }
 
+function subscriptionKey(channel: string, resourceId?: string): string {
+  return `${channel}:${resourceId ?? ""}`;
+}
+
 /**
- * Low-level websocket connector shared by every realtime feature (batch
- * upload progress, batch status). Handles the subscribe handshake,
- * heartbeat and reconnect-with-backoff; callers just interpret the
- * "event" messages that match their subscription.
+ * Single shared websocket connection for the whole app session, multiplexing
+ * every "batches"/"payments"/"accounts"/... subscription onto one socket
+ * instead of every feature hook opening its own connection. Handles the
+ * subscribe handshake per entry, heartbeat, reconnect-with-backoff, and
+ * re-subscribing everything currently registered after a reconnect.
  */
-export function connectRealtimeChannel(options: {
-  channel: string
-  resourceId?: string
-  onEvent: (message: RealtimeEventMessage) => void
-}): () => void {
-  let ws: WebSocket | null = null;
-  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-  let disposed = false;
-  let reconnectAttempts = 0;
+class RealtimeConnection {
+  private ws: WebSocket | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempts = 0;
+  private readonly entries = new Map<string, SubscriptionEntry>();
 
-  const clearHeartbeat = () => {
-    if (heartbeatTimer) {
-      clearInterval(heartbeatTimer);
-      heartbeatTimer = null;
+  subscribe(
+    channel: string,
+    resourceId: string | undefined,
+    onEvent: Subscriber,
+  ): () => void {
+    const key = subscriptionKey(channel, resourceId);
+    let entry = this.entries.get(key);
+
+    if (!entry) {
+      entry = { channel, resourceId, subscribers: new Set() };
+      this.entries.set(key, entry);
+      this.ensureConnected();
+      this.sendSubscribe(entry);
     }
-  };
 
-  const connect = () => {
-    if (disposed) {
+    entry.subscribers.add(onEvent);
+
+    return () => {
+      const current = this.entries.get(key);
+      if (!current) {
+        return;
+      }
+
+      current.subscribers.delete(onEvent);
+      if (current.subscribers.size === 0) {
+        this.entries.delete(key);
+        this.sendUnsubscribe(current);
+        this.disconnectIfIdle();
+      }
+    };
+  }
+
+  private ensureConnected(): void {
+    if (
+      this.ws
+      && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
 
+    this.connect();
+  }
+
+  private connect(): void {
     const wsUrl = buildWsUrl(apiUrls.realtime);
     // Session cookies (shared .adamoservices.co domain) ride along on the WS
     // handshake automatically, same as withCredentials on the axios clients.
-    ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(wsUrl);
+    this.ws = ws;
 
     ws.onopen = () => {
-      reconnectAttempts = 0;
-      ws?.send(
-        JSON.stringify({
-          type: "subscribe",
-          channel: options.channel,
-          ...(options.resourceId ? { resourceId: options.resourceId } : {}),
-        }),
-      );
+      this.reconnectAttempts = 0;
+      for (const entry of this.entries.values()) {
+        this.sendSubscribe(entry);
+      }
 
-      heartbeatTimer = setInterval(() => {
-        if (ws?.readyState === WebSocket.OPEN) {
+      this.heartbeatTimer = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: "ping" }));
         }
       }, 25_000);
@@ -68,28 +108,91 @@ export function connectRealtimeChannel(options: {
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data as string) as RealtimeEventMessage;
-
       if (message.type !== "event") {
         return;
       }
 
-      options.onEvent(message);
+      const exact = this.entries.get(subscriptionKey(message.channel ?? "", message.resourceId));
+      exact?.subscribers.forEach((fn) => fn(message));
+
+      if (message.resourceId) {
+        // Also deliver to an org-wide (no resourceId) subscriber of the
+        // same channel, if one exists — mirrors the backend gateway's own
+        // fan-out (it broadcasts to both the specific and the channel-wide
+        // subscription key for a resource-scoped event).
+        const orgWide = this.entries.get(subscriptionKey(message.channel ?? "", undefined));
+        orgWide?.subscribers.forEach((fn) => fn(message));
+      }
     };
 
     ws.onclose = () => {
-      clearHeartbeat();
-      if (!disposed && reconnectAttempts < 5) {
-        reconnectAttempts += 1;
-        setTimeout(connect, Math.min(1000 * reconnectAttempts, 5000));
+      if (this.heartbeatTimer) {
+        clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = null;
+      }
+      this.ws = null;
+
+      if (this.entries.size > 0 && this.reconnectAttempts < 10) {
+        this.reconnectAttempts += 1;
+        this.reconnectTimer = setTimeout(
+          () => this.connect(),
+          Math.min(1000 * this.reconnectAttempts, 5000),
+        );
       }
     };
-  };
+  }
 
-  connect();
+  private sendSubscribe(entry: SubscriptionEntry): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(
+        JSON.stringify({
+          type: "subscribe",
+          channel: entry.channel,
+          ...(entry.resourceId ? { resourceId: entry.resourceId } : {}),
+        }),
+      );
+    }
+  }
 
-  return () => {
-    disposed = true;
-    clearHeartbeat();
-    ws?.close(1000, "UNSUBSCRIBE");
-  };
+  private sendUnsubscribe(entry: SubscriptionEntry): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(
+        JSON.stringify({
+          type: "unsubscribe",
+          channel: entry.channel,
+          ...(entry.resourceId ? { resourceId: entry.resourceId } : {}),
+        }),
+      );
+    }
+  }
+
+  private disconnectIfIdle(): void {
+    if (this.entries.size > 0) {
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.ws?.close(1000, "IDLE");
+    this.ws = null;
+  }
+}
+
+const sharedConnection = new RealtimeConnection();
+
+/**
+ * Subscribes to one realtime channel (optionally scoped to a resourceId) on
+ * the shared connection. Every feature hook (batch upload progress, batch
+ * status, payment status, account balance, ...) goes through this — they
+ * share a single websocket instead of each opening their own.
+ */
+export function connectRealtimeChannel(options: {
+  channel: string
+  resourceId?: string
+  onEvent: Subscriber
+}): () => void {
+  return sharedConnection.subscribe(options.channel, options.resourceId, options.onEvent);
 }

@@ -51,6 +51,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useNavigate } from "react-router";
 import { useAccount, useAccountMovements, useAccounts, useDeleteAccount, useTransferAccount, useUpdateAccount } from "../hooks/use-accounts";
+import { useAccountBalanceRealtime } from "../hooks/use-account-balance-realtime";
 import { buildAccountListParams, buildAccountMovementListParams } from "../utils/account-filters.utils";
 import type { AccountMovement } from "@/features/accounts/application/entities/account.entity";
 import type { DateRange } from "react-day-picker";
@@ -236,6 +237,7 @@ export function AccountMovementsPage() {
     pages: totalPages,
     isLoading: isMovementsLoading,
   } = useAccountMovements(accountId ?? "", movementListParams);
+  useAccountBalanceRealtime({ accountId });
 
   const { accounts: transferAccounts } = useAccounts(buildAccountListParams({ page: 1, limit: 100 }));
   const { account: fetchedAccount, refetch: refetchAccount } = useAccount(accountId ?? "");

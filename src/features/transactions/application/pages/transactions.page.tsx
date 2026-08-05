@@ -25,6 +25,7 @@ import { PageTitle } from "@/features/common/components/layout/page-title";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 import { useTransactions } from "../hooks/use-transactions";
 import { useTransactionDetail } from "../hooks/use-transaction-detail";
+import { usePaymentsRealtime } from "../hooks/use-payments-realtime";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
 import { buildTransactionListParams } from "../utils/transaction-filters.utils";
 import { formatCurrencyDisplay } from "@/lib/money/money";
@@ -275,6 +276,7 @@ export const TransactionsPage = () => {
   );
 
   const { transactions, totalCount, refetch } = useTransactions(listParams);
+  usePaymentsRealtime();
   const { detail: transactionDetail } = useTransactionDetail(
     selectedTransactionId,
     isSheetOpen,

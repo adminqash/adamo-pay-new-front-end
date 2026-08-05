@@ -34,6 +34,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { useAccounts, useCreateAccount, useDeleteAccount, useTransferAccount, useUpdateAccount } from "../hooks/use-accounts";
+import { useAccountBalanceRealtime } from "../hooks/use-account-balance-realtime";
 import { buildAccountListParams } from "../utils/account-filters.utils";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { PageContainer } from "@/features/common/components/layout/page-container";
@@ -68,6 +69,7 @@ export function AccountsPage() {
   const { accounts, totalBalance: fetchedTotalBalance, refetch } = useAccounts(
     buildAccountListParams({ page: 1, limit: 100 }),
   );
+  useAccountBalanceRealtime();
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
   const deleteAccount = useDeleteAccount();

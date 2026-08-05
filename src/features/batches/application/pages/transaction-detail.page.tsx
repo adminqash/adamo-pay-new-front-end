@@ -41,6 +41,7 @@ import {
   SelectableCardGroup,
 } from "@adamosuiteservices/ui/selectable-card";
 import { useBatchTransactionDetail } from "../hooks/use-transaction-detail";
+import { useBatchesRealtime } from "../hooks/use-batches-realtime";
 import {
   useUpdateBatchTransaction,
   useUpdateBatchTransactionStatus,
@@ -62,6 +63,7 @@ export const TransactionDetailPage = () => {
     transaction: originalTransaction,
     isLoading,
   } = useBatchTransactionDetail(batchId, transactionId);
+  useBatchesRealtime(batchId);
 
   const updateBatchTransaction = useUpdateBatchTransaction();
   const updateBatchTransactionStatus = useUpdateBatchTransactionStatus();
