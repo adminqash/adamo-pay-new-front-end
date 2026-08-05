@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance } from "axios";
 import i18next from "i18next";
-import { attachRequestInterceptors, attachResponseInterceptors } from "./interceptors";
+import { attachRequestInterceptors } from "./interceptors";
+import { attachRefreshInterceptor } from "./refresh-interceptor";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -17,7 +18,7 @@ export function createApiClient(baseURL: string): AxiosInstance {
   });
 
   attachRequestInterceptors(instance);
-  attachResponseInterceptors(instance);
+  attachRefreshInterceptor(instance);
 
   return instance;
 }

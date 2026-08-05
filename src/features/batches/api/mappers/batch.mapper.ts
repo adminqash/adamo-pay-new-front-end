@@ -1,6 +1,7 @@
 import type { BatchListItemDTO } from "@/features/batches/api/dtos/batch.dto";
 import type { Batch, BatchStatus } from "@/features/batches/application/entities/batch.entity";
 import { formatDisplayDate } from "@/lib/utils/date.utils";
+import { minorToMajor } from "@/lib/money/money";
 
 function mapStatus(status: string): BatchStatus {
   if (status === "pending" || status === "processing" || status === "completed") {
@@ -19,7 +20,9 @@ export class BatchMapper {
       date: formatDisplayDate(dto.createdAt),
       name: dto.name,
       transactions: dto.summary?.totalItems ?? 0,
-      amount: dto.summary?.totalAmount ?? 0,
+      // API amounts are integer minor units; this entity's `amount` is
+      // consumed as a major-unit number by Intl.NumberFormat in the pages.
+      amount: Number(minorToMajor(dto.summary?.totalAmount ?? 0)),
       batchId: dto.batchId,
       status: mapStatus(dto.status),
     };

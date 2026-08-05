@@ -2,8 +2,9 @@ import i18next from "i18next";
 import type { ServiceResult } from "@/features/common/services/service-result";
 import type { APIResponse } from "@/lib/api/api.types";
 import type { AxiosResponse } from "axios";
+import { redirectToLogin } from "@/features/auth/api/services/auth-redirect";
 import { handleAPIError, handleAPIResponse } from "@/lib/api/api.utils";
-import { apiUrls, env } from "@/lib/env";
+import { apiUrls } from "@/lib/env";
 
 export type BatchUploadAcceptedDTO = {
   uploadId: string
@@ -47,17 +48,11 @@ export class BatchUploadService {
   public static GET_UPLOAD_STATUS_KEY = "get_upload_status_key";
 
   private static authHeaders(requestId?: string): Record<string, string> {
-    const headers: Record<string, string> = {
+    return {
       Accept: "application/json",
       "Accept-Language": i18next.language,
       "X-Request-ID": requestId ?? crypto.randomUUID(),
     };
-
-    if (env.VITE_API_BEARER_TOKEN) {
-      headers.Authorization = `Bearer ${env.VITE_API_BEARER_TOKEN}`;
-    }
-
-    return headers;
   }
 
   public static async upload(
@@ -77,6 +72,10 @@ export class BatchUploadService {
       });
 
       const payload = (await response.json()) as APIResponse<BatchUploadAcceptedDTO>;
+
+      if (response.status === 401) {
+        redirectToLogin();
+      }
 
       if (!response.ok) {
         throw payload;
@@ -115,6 +114,10 @@ export class BatchUploadService {
       });
 
       const payload = (await response.json()) as APIResponse<BatchUploadStatusDTO>;
+
+      if (response.status === 401) {
+        redirectToLogin();
+      }
 
       if (!response.ok) {
         throw payload;

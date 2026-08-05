@@ -17,20 +17,25 @@ Each plugin ships **auto-invoking skills**: once the plugin is enabled, the rele
 
 These are things the plugins can't know about this codebase.
 
-### Four backends, four axios clients
+### Five backends, five axios clients
 
 `src/lib/api/api.ts` exports one client per microservice — pick the one that owns the endpoint:
 
 | Client              | Owns                                                       |
 | ------------------- | ---------------------------------------------------------- |
-| `coreApi`           | payments, batches, accounts, dashboard, documents, profile |
+| `coreApi`           | payments, batches, accounts, dashboard, documents          |
 | `beneficiariesApi`  | beneficiaries                                              |
 | `analyticsApi`      | metrics, reports                                           |
 | `realtimeApi`       | WebSocket gateway, batch uploads                           |
+| `authApi`           | SSO/identity: `user/profile`, `auth/authorize`, `auth/refresh` (adamo-services-identity-microservice) |
 
 The bare `api` export is **deprecated** — it aliases `coreApi` for services written before the split. Never reach for it in new code.
 
 Each client is built by `createApiClient` in `src/lib/api/api.config.ts` and reads its base URL from `apiUrls` in `src/lib/env.ts`. In development, `vite.config.ts` proxies `/api/core`, `/api/beneficiaries`, `/api/analytics` and `/api/realtime` to the corresponding local ports.
+
+### Auth is SSO-only, no static token
+
+There is no bearer token in this app. Every client sends the suite's httpOnly session cookies (`withCredentials: true`); `src/lib/api/refresh-interceptor.ts` (attached to all 5 clients in `createApiClient`) silently refreshes an expired access token via `authApi`'s `/auth/refresh` and retries the original request, or redirects to the SSO login (`src/features/auth/api/services/auth-redirect.ts`) on any other 401. `src/features/auth/application/contexts/auth.context.tsx` (`AuthProvider`/`useAuth`) gates the whole app on `getProfile` + `auth/authorize` at bootstrap — see that file for the `allowedProducts` / redirect rules. `authApi` talks to a *different* response envelope than the other four clients (no `success` field, flat `errors: string[]`) — see `src/features/auth/api/services/identity-response.ts`, don't reuse `apiGet`/`apiGetRaw` from `http.service.ts` against it.
 
 ### Lint and type-check rules are relaxed on purpose
 

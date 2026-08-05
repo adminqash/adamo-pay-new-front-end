@@ -19,10 +19,15 @@ jobs:
     env:
       NODE_VERSION: "20"
       AWS_REGION: sa-east-1
-
       S3_BUCKET: ${{ github.ref_name == 'main' && secrets.S3_BUCKET_PROD || secrets.S3_BUCKET_DEV }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ github.ref_name == 'main' && secrets.CLOUDFRONT_DIST_ID_PROD || secrets.CLOUDFRONT_DIST_ID_DEV }}
-      VITE_API_BASE_URL: ${{ github.ref_name == 'main' && (secrets.VITE_API_BASE_URL_PROD || secrets.VITE_API_BASE_URL) || (secrets.VITE_API_BASE_URL_DEV || secrets.VITE_API_BASE_URL) }}
+      VITE_API_BASE_URL: ${{ github.ref_name == 'main' && secrets.VITE_API_BASE_URL_PROD || secrets.VITE_API_BASE_URL_DEV }}
+      VITE_API_REALTIME_URL: ${{ github.ref_name == 'main' && secrets.VITE_API_REALTIME_URL_PROD || secrets.VITE_API_REALTIME_URL_DEV }}
+      VITE_ADAMO_API_BASE_URL: ${{ github.ref_name == 'main' && secrets.VITE_ADAMO_API_BASE_URL_PROD || secrets.VITE_ADAMO_API_BASE_URL_DEV }}
+      VITE_ADAMO_LANDING_BASE_URL: ${{ github.ref_name == 'main' && secrets.VITE_ADAMO_LANDING_BASE_URL_PROD || secrets.VITE_ADAMO_LANDING_BASE_URL_DEV }}
+      VITE_ID_FRONT_BASE_URL: ${{ github.ref_name == 'main' && secrets.VITE_ID_FRONT_BASE_URL_PROD || secrets.VITE_ID_FRONT_BASE_URL_DEV }}
+      VITE_SIGN_FRONT_BASE_URL: ${{ github.ref_name == 'main' && secrets.VITE_SIGN_FRONT_BASE_URL_PROD || secrets.VITE_SIGN_FRONT_BASE_URL_DEV }}
+      VITE_CHECK_FRONT_BASE_URL: ${{ github.ref_name == 'main' && secrets.VITE_CHECK_FRONT_BASE_URL_PROD || secrets.VITE_CHECK_FRONT_BASE_URL_DEV }}
 
       VITE_MODE: ${{ github.ref_name == 'main' && 'production' || 'development' }}
 
@@ -51,10 +56,8 @@ jobs:
 
           if [ "${VITE_MODE}" = "production" ]; then
             ENV_FILE=".env.production"
-            ENV_NAME="production"
           else
             ENV_FILE=".env.development"
-            ENV_NAME="development"
           fi
 
           rm -f "${ENV_FILE}"
@@ -64,22 +67,48 @@ jobs:
             exit 1
           fi
 
-          cat >> "${ENV_FILE}" << EOF
-          VITE_ENVIRONMENT=${ENV_NAME}
-          VITE_SECRET=${{ github.ref_name == 'main' && secrets.VITE_SECRET_PROD || secrets.VITE_SECRET_DEV }}
-          VITE_API_BASE_URL=${VITE_API_BASE_URL}
-          EOF
+          echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" >> "${ENV_FILE}"
+
+          if [ -z "${VITE_ADAMO_API_BASE_URL}" ]; then
+            echo "Missing VITE_ADAMO_API_BASE_URL secret. Configure VITE_ADAMO_API_BASE_URL_DEV/PROD or VITE_ADAMO_API_BASE_URL." >&2
+            exit 1
+          fi
+
+          echo "VITE_ADAMO_API_BASE_URL=${VITE_ADAMO_API_BASE_URL}" >> "${ENV_FILE}"
+
+          # Optional vars — only written when the secret is actually configured, so an
+          # unset one doesn't ship an empty string (the VITE_API_*_URL overrides fail
+          # zod's url() validation on empty, and an empty suite-header link is just noise).
+          if [ -n "${VITE_API_CORE_URL}" ]; then
+            echo "VITE_API_CORE_URL=${VITE_API_CORE_URL}" >> "${ENV_FILE}"
+          fi
+          if [ -n "${VITE_API_BENEFICIARIES_URL}" ]; then
+            echo "VITE_API_BENEFICIARIES_URL=${VITE_API_BENEFICIARIES_URL}" >> "${ENV_FILE}"
+          fi
+          if [ -n "${VITE_API_ANALYTICS_URL}" ]; then
+            echo "VITE_API_ANALYTICS_URL=${VITE_API_ANALYTICS_URL}" >> "${ENV_FILE}"
+          fi
+          if [ -n "${VITE_API_REALTIME_URL}" ]; then
+            echo "VITE_API_REALTIME_URL=${VITE_API_REALTIME_URL}" >> "${ENV_FILE}"
+          fi
+          if [ -n "${VITE_ADAMO_LANDING_BASE_URL}" ]; then
+            echo "VITE_ADAMO_LANDING_BASE_URL=${VITE_ADAMO_LANDING_BASE_URL}" >> "${ENV_FILE}"
+          fi
+          if [ -n "${VITE_ID_FRONT_BASE_URL}" ]; then
+            echo "VITE_ID_FRONT_BASE_URL=${VITE_ID_FRONT_BASE_URL}" >> "${ENV_FILE}"
+          fi
+          if [ -n "${VITE_SIGN_FRONT_BASE_URL}" ]; then
+            echo "VITE_SIGN_FRONT_BASE_URL=${VITE_SIGN_FRONT_BASE_URL}" >> "${ENV_FILE}"
+          fi
+          if [ -n "${VITE_CHECK_FRONT_BASE_URL}" ]; then
+            echo "VITE_CHECK_FRONT_BASE_URL=${VITE_CHECK_FRONT_BASE_URL}" >> "${ENV_FILE}"
+          fi
 
           echo "======================================"
-          echo "Variables being set in ${ENV_FILE}:"
+          echo "Variables being set in ${ENV_FILE} (masked):"
           echo "======================================"
-          echo "VITE_ENVIRONMENT=${ENV_NAME}"
-          echo "VITE_SECRET=***"
-          echo "VITE_API_BASE_URL=***"
-          echo "======================================"
-          echo ""
-          echo "Created ${ENV_FILE} (masked):"
           cat "${ENV_FILE}" | sed -E 's/=.*$/=***/g'
+          echo "======================================"
 
       - name: Build
         run: |

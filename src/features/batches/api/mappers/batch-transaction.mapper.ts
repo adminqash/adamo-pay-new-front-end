@@ -1,6 +1,7 @@
 import type { BatchTransactionDTO } from "@/features/batches/api/dtos/batch-transaction.dto";
 import type { Transaction, TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
 import { formatDisplayDate } from "@/lib/utils/date.utils";
+import { minorToMajor } from "@/lib/money/money";
 
 function mapStatus(status: string): TransactionStatus {
   switch (status) {
@@ -22,9 +23,11 @@ function mapStatus(status: string): TransactionStatus {
 
 export class BatchTransactionMapper {
   public static toDomain(dto: BatchTransactionDTO): Transaction {
-    const amount = dto.rawData.amount
-      ?? dto.parsedData?.amount
-      ?? 0;
+    // API amounts are integer minor units; `Transaction.amount` is consumed
+    // as a major-unit number by the batch detail table's formatter.
+    const amount = Number(
+      minorToMajor(dto.rawData.amount ?? dto.parsedData?.amount ?? 0),
+    );
 
     return {
       id: dto.paymentId ?? dto.id,

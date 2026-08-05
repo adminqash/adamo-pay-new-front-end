@@ -1,4 +1,9 @@
 export const queryKeys = {
+  auth: {
+    all: ["auth"] as const,
+    profile: ["auth", "profile"] as const,
+    authorize: ["auth", "authorize"] as const,
+  },
   dashboard: {
     summary: ["dashboard", "summary"] as const,
     balance: ["dashboard", "balance"] as const,

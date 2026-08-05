@@ -21,10 +21,16 @@ import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import type { JSX } from "react";
 import { Logo } from "@/features/common/components/brand/logo";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
+import {
+  ALPHA2_TO_ALPHA3,
+  ALPHA3_TO_ALPHA2,
+  COUNTRY_CODE_STORAGE_KEY,
+  getStoredCountryCodeAlpha3,
+} from "@/lib/country/country-code";
 
 export type SidebarMenuItem = {
   id: string
@@ -34,9 +40,19 @@ export type SidebarMenuItem = {
   menu?: SidebarMenuItem[]
 };
 
+function isPathActive(pathname: string, path: string) {
+  if (path === "/") {
+    return pathname === "/";
+  }
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
 export function MainSidebar() {
   const { t } = useTranslation(["sidebar"]);
-  const [selectedCountry, setSelectedCountry] = useState("CO");
+  const { pathname } = useLocation();
+  const [selectedCountry, setSelectedCountry] = useState(
+    () => ALPHA3_TO_ALPHA2[getStoredCountryCodeAlpha3()] ?? "CO",
+  );
 
   const countries: Record<string, string> = {
     AR: "Argentina",
@@ -44,6 +60,11 @@ export function MainSidebar() {
     CO: "Colombia",
     MX: "México",
   };
+
+  function selectCountry(alpha2: string) {
+    setSelectedCountry(alpha2);
+    localStorage.setItem(COUNTRY_CODE_STORAGE_KEY, ALPHA2_TO_ALPHA3[alpha2]);
+  }
 
   const menu: SidebarMenuItem[] = [
     { id: "home",
@@ -101,10 +122,12 @@ export function MainSidebar() {
           <SidebarMenu>
             {menu.map((item) => {
               if (item.menu && item.menu.length > 0) {
+                const isParentActive = item.menu.some((subItem) => isPathActive(pathname, subItem.path));
+
                 return (
                   <Collapsible key={item.id}>
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuItem key={item.id} className="w-[stretch]">
+                      <SidebarMenuItem key={item.id} className="w-[stretch]" isActive={isParentActive}>
                         {item.icon}
                         {item.label}
                         <Icon symbol="arrow_drop_down" className="ml-auto" />
@@ -112,7 +135,7 @@ export function MainSidebar() {
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-1 pl-4">
                       <SidebarMenu className="my-0">{item.menu.map((item) => (
-                        <SidebarMenuItem key={item.id} asChild>
+                        <SidebarMenuItem key={item.id} asChild isActive={isPathActive(pathname, item.path)}>
                           <NavLink
                             to={item.path}
                           >
@@ -128,7 +151,7 @@ export function MainSidebar() {
               }
 
               return (
-                <SidebarMenuItem key={item.id} asChild>
+                <SidebarMenuItem key={item.id} asChild isActive={isPathActive(pathname, item.path)}>
                   <NavLink
                     to={item.path}
                   >
@@ -183,7 +206,7 @@ export function MainSidebar() {
               <DropdownMenuContent align="end" className="w-[200px] p-0">
                 <DropdownMenuItem
                   onClick={() => {
-                    setSelectedCountry("AR");
+                    selectCountry("AR");
                     ToastManager.show({
                       message: "País cambiado a Argentina",
                       variant: "success",
@@ -204,7 +227,7 @@ export function MainSidebar() {
                 <DropdownMenuSeparator className="bg-neutral-100" />
                 <DropdownMenuItem
                   onClick={() => {
-                    setSelectedCountry("BR");
+                    selectCountry("BR");
                     ToastManager.show({
                       message: "País cambiado a Brasil",
                       variant: "success",
@@ -225,7 +248,7 @@ export function MainSidebar() {
                 <DropdownMenuSeparator className="bg-neutral-100" />
                 <DropdownMenuItem
                   onClick={() => {
-                    setSelectedCountry("CO");
+                    selectCountry("CO");
                     ToastManager.show({
                       message: "País cambiado a Colombia",
                       variant: "success",
@@ -246,7 +269,7 @@ export function MainSidebar() {
                 <DropdownMenuSeparator className="bg-neutral-100" />
                 <DropdownMenuItem
                   onClick={() => {
-                    setSelectedCountry("MX");
+                    selectCountry("MX");
                     ToastManager.show({
                       message: "País cambiado a México",
                       variant: "success",

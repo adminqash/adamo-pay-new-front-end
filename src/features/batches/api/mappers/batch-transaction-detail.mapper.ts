@@ -6,6 +6,7 @@ import type {
   BatchTransactionDetail,
   BatchTransactionDetailStatus,
 } from "@/features/batches/application/entities/batch-transaction-detail.entity";
+import { minorToMajor } from "@/lib/money/money";
 
 const ID_TYPE_LABELS: Record<string, string> = {
   cc: "Cédula de ciudadanía",
@@ -112,7 +113,11 @@ export class BatchTransactionDetailMapper {
   public static toDomain(dto: BatchTransactionDTO): BatchTransactionDetail {
     const validationErrors = dto.validationErrors ?? [];
     const reference = dto.rawData.reference?.trim() ?? "";
-    const amount = dto.rawData.amount ?? dto.parsedData?.amount ?? 0;
+    // API amounts are integer minor units; `payment.amount` is consumed as a
+    // major-unit number by Intl.NumberFormat on the transaction detail page.
+    const amount = Number(
+      minorToMajor(dto.rawData.amount ?? dto.parsedData?.amount ?? 0),
+    );
 
     return {
       id: dto.paymentId ?? dto.id,

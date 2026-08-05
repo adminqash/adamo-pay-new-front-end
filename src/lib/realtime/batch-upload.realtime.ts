@@ -1,4 +1,4 @@
-import { apiUrls, env } from "@/lib/env";
+import { apiUrls } from "@/lib/env";
 
 export type BatchUploadProgressState = {
   status:
@@ -86,13 +86,9 @@ export function subscribeToBatchUploadEvents(
     }
 
     const wsUrl = buildWsUrl(apiUrls.realtime);
-    if (env.VITE_API_BEARER_TOKEN) {
-      const url = new URL(wsUrl);
-      url.searchParams.set("access_token", env.VITE_API_BEARER_TOKEN);
-      ws = new WebSocket(url.toString());
-    } else {
-      ws = new WebSocket(wsUrl);
-    }
+    // Session cookies (shared .adamoservices.co domain) ride along on the WS
+    // handshake automatically, same as withCredentials on the axios clients.
+    ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       reconnectAttempts = 0;
