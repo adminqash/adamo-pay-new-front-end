@@ -4,7 +4,7 @@ import { useElementRect } from "@/features/common/hooks/use-element-rect";
 export function PageLoader() {
   const sidebarTopBarRect = useElementRect("[data-slot='sidebar-top-bar']");
 
-  const topOffset = sidebarTopBarRect?.height ?? 64;
+  const topOffset = sidebarTopBarRect?.bottom ?? 112;
 
   return (
     <div

@@ -1,4 +1,4 @@
-import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import { Badge } from "@adamosuiteservices/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -9,15 +9,7 @@ import {
   BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
 import { Button } from "@adamosuiteservices/ui/button";
-import { Badge } from "@adamosuiteservices/ui/badge";
-import { Icon } from "@adamosuiteservices/ui/icon";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@adamosuiteservices/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@adamosuiteservices/ui/dropdown-menu";
+import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import {
   Dialog,
   DialogTrigger,
@@ -28,18 +20,37 @@ import {
   DialogFooter,
   DialogClose,
 } from "@adamosuiteservices/ui/dialog";
-import { Checkbox } from "@adamosuiteservices/ui/checkbox";
-import { Label } from "@adamosuiteservices/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@adamosuiteservices/ui/dropdown-menu";
+import { Icon } from "@adamosuiteservices/ui/icon";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
+import { Label } from "@adamosuiteservices/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@adamosuiteservices/ui/table";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useNavigate } from "react-router";
-import { useState } from "react";
-import { PageContainer } from "@/features/common/components/layout/page-container";
 import { AddBankAccountDialog } from "../components/add-bank-account-dialog";
-import { EditBankAccountDialog } from "../components/edit-bank-account-dialog";
 import { DeleteBankAccountDialog } from "../components/delete-bank-account-dialog";
+import { EditBankAccountDialog } from "../components/edit-bank-account-dialog";
+import { useBankAccounts, useBeneficiaryDetail, useCreateBankAccount, useDeleteBankAccount, useSetPrimaryBankAccount, useUpdateBankAccount } from "../hooks/use-beneficiaries";
+import { mapAccountTypeToFormValue, mapBankNameToSlug } from "../utils/beneficiary-form.utils";
+import type { BankAccount } from "../entities/beneficiary.entity";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+} from "@adamosuiteservices/ui/pagination";
+import { PageContainer } from "@/features/common/components/layout/page-container";
 
 export function BankAccountsPage() {
   const { t } = useTranslation("beneficiaries");
@@ -52,68 +63,58 @@ export function BankAccountsPage() {
   const [otpCode, setOtpCode] = useState("");
   const [otpAction, setOtpAction] = useState<"add" | "edit" | "delete">("edit");
   const [pendingEditData, setPendingEditData] = useState<{
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    isPrimary: boolean;
+    accountType: string
+    bank: string
+    accountNumber: string
+    isPrimary: boolean
   } | null>(null);
   const [pendingAddData, setPendingAddData] = useState<{
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    isPrimary: boolean;
+    accountType: string
+    bank: string
+    accountNumber: string
+    isPrimary: boolean
   } | null>(null);
-  const [accountToEdit, setAccountToEdit] = useState<{ id: string; bank: string; accountType: string; accountNumber: string; isPrimary: boolean } | null>(null);
-  const [accountToDelete, setAccountToDelete] = useState<{ id: string; bank: string; accountNumber: string } | null>(null);
+  const [accountToEdit, setAccountToEdit] = useState<{ id: string, bank: string, accountType: string, accountNumber: string, isPrimary: boolean } | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<{ id: string, bank: string, accountNumber: string } | null>(null);
 
   // export dialog state
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [exportFormatCSV, setExportFormatCSV] = useState(false);
   const [exportFormatPDF, setExportFormatPDF] = useState(false);
 
-  // bank accounts state - mutable to reflect changes
-  const [bankAccounts, setBankAccounts] = useState([
-    {
-      id: "1",
-      bank: "Davivienda",
-      accountType: "Corriente",
-      accountNumber: "0034-39923-43401",
-      isPrimary: false,
-    },
-    {
-      id: "2",
-      bank: "Davivienda",
-      accountType: "Ahorros",
-      accountNumber: "002-83336-90116",
-      isPrimary: true,
-    },
-    {
-      id: "3",
-      bank: "BBVA",
-      accountType: "Ahorros",
-      accountNumber: "3949-01329-93211",
-      isPrimary: false,
-    },
-    {
-      id: "4",
-      bank: "Cobre",
-      accountType: "Ahorros",
-      accountNumber: "1111-83421-03027",
-      isPrimary: false,
-    },
-  ]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+
+  const bankAccountListParams = useMemo(
+    () => ({ page: currentPage, limit: pageSize }),
+    [currentPage],
+  );
+
+  const {
+    bankAccounts: fetchedBankAccounts,
+    totalCount,
+    refetch,
+    isLoading,
+  } = useBankAccounts(beneficiaryId ?? "", bankAccountListParams);
+
+  const { beneficiary } = useBeneficiaryDetail(beneficiaryId ?? "");
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const createBankAccount = useCreateBankAccount();
+  const updateBankAccount = useUpdateBankAccount();
+  const deleteBankAccount = useDeleteBankAccount();
+  const setPrimaryBankAccount = useSetPrimaryBankAccount();
+
+  const bankAccounts = fetchedBankAccounts;
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
-  // TODO: Fetch bank accounts data using beneficiaryId from API
-  console.log("Managing bank accounts for beneficiary:", beneficiaryId);
-
-  // TODO: Replace with actual beneficiary data from API
   const beneficiaryData = {
-    documentType: "cc",
-    documentNumber: "129.330.220",
-    firstName: "Juan Carlos",
-    lastName: "Gutierrez Díaz",
+    documentType: beneficiary?.identificationDocument.type ?? "cc",
+    documentNumber: beneficiary?.identificationDocument.number ?? "",
+    firstName: beneficiary?.fullName.split(" ")[0] ?? "",
+    lastName: beneficiary?.fullName.split(" ").slice(1).join(" ") ?? "",
   };
 
   const handleEdit = (accountId: string) => {
@@ -121,8 +122,8 @@ export function BankAccountsPage() {
     if (account) {
       setAccountToEdit({
         id: account.id,
-        bank: account.bank,
-        accountType: account.accountType,
+        bank: mapBankNameToSlug(account.bank),
+        accountType: mapAccountTypeToFormValue(account.accountType),
         accountNumber: account.accountNumber,
         isPrimary: account.isPrimary,
       });
@@ -131,10 +132,10 @@ export function BankAccountsPage() {
   };
 
   const confirmEdit = (data: {
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    isPrimary: boolean;
+    accountType: string
+    bank: string
+    accountNumber: string
+    isPrimary: boolean
   }) => {
     // Store pending data and open OTP dialog
     setPendingEditData(data);
@@ -147,10 +148,10 @@ export function BankAccountsPage() {
   };
 
   const confirmAdd = (data: {
-    accountType: string;
-    bank: string;
-    accountNumber: string;
-    isPrimary: boolean;
+    accountType: string
+    bank: string
+    accountNumber: string
+    isPrimary: boolean
   }) => {
     // Store pending data and open OTP dialog
     setPendingAddData(data);
@@ -163,117 +164,69 @@ export function BankAccountsPage() {
   };
 
   const handleOtpSubmit = () => {
+    if (!beneficiaryId) {
+      return;
+    }
+
     if (otpAction === "add" && pendingAddData) {
-      console.log("Add account:", pendingAddData);
-      
-      // Generate new account ID
-      const newId = (bankAccounts.length + 1).toString();
-      
-      // Create new account
-      const newAccount = {
-        id: newId,
-        accountType: pendingAddData.accountType.charAt(0).toUpperCase() + pendingAddData.accountType.slice(1),
-        bank: pendingAddData.bank.charAt(0).toUpperCase() + pendingAddData.bank.slice(1),
+      createBankAccount.mutate({
+        beneficiaryId,
+        accountType: pendingAddData.accountType,
+        bank: pendingAddData.bank,
         accountNumber: pendingAddData.accountNumber,
         isPrimary: pendingAddData.isPrimary,
-      };
-      
-      // Add to bank accounts state
-      setBankAccounts((prevAccounts) => {
-        if (pendingAddData.isPrimary) {
-          // If new account is primary, remove primary from others
-          return [
-            ...prevAccounts.map((account) => ({ ...account, isPrimary: false })),
-            newAccount,
-          ];
-        }
-        return [...prevAccounts, newAccount];
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setPendingAddData(null);
+          void refetch();
+        },
       });
-      
-      // Show success toast
-      ToastManager.show({
-        message: t("beneficiaries.bank_accounts.add_success"),
-        variant: "success",
-      });
-      
-      // Reset states
-      setPendingAddData(null);
     } else if (otpAction === "edit" && accountToEdit && pendingEditData) {
-      console.log("Edit account:", accountToEdit.id, pendingEditData);
-      
-      // Update bank accounts state
-      setBankAccounts((prevAccounts) => {
-        return prevAccounts.map((account) => {
-          if (account.id === accountToEdit.id) {
-            // Update the edited account
-            return {
-              ...account,
-              accountType: pendingEditData.accountType.charAt(0).toUpperCase() + pendingEditData.accountType.slice(1),
-              bank: pendingEditData.bank.charAt(0).toUpperCase() + pendingEditData.bank.slice(1),
-              accountNumber: pendingEditData.accountNumber,
-              isPrimary: pendingEditData.isPrimary,
-            };
-          } else if (pendingEditData.isPrimary && account.isPrimary) {
-            // If the edited account is set as primary, remove primary from others
-            return { ...account, isPrimary: false };
-          }
-          return account;
-        });
+      updateBankAccount.mutate({
+        beneficiaryId,
+        bankAccountId: accountToEdit.id,
+        accountType: pendingEditData.accountType,
+        bank: pendingEditData.bank,
+        accountNumber: pendingEditData.accountNumber,
+        isPrimary: pendingEditData.isPrimary,
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setAccountToEdit(null);
+          setPendingEditData(null);
+          void refetch();
+        },
       });
-      
-      // Show success toast
-      ToastManager.show({
-        message: t("beneficiaries.bank_accounts.edit_success"),
-        variant: "success",
-      });
-      
-      // Reset states
-      setAccountToEdit(null);
-      setPendingEditData(null);
     } else if (otpAction === "delete" && accountToDelete) {
-      console.log("Delete account:", accountToDelete.id);
-      
-      // Remove account from state
-      setBankAccounts((prevAccounts) => 
-        prevAccounts.filter((account) => account.id !== accountToDelete.id)
-      );
-      
-      // Show success toast
-      ToastManager.show({
-        message: t("beneficiaries.bank_accounts.delete_success"),
-        variant: "success",
+      deleteBankAccount.mutate({
+        beneficiaryId,
+        bankAccountId: accountToDelete.id,
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setAccountToDelete(null);
+          void refetch();
+        },
       });
-      
-      // Reset states
-      setAccountToDelete(null);
     }
-    
-    // Close OTP dialog and reset
+
     setIsOtpDialogOpen(false);
     setOtpCode("");
   };
 
   const handleSetPrimary = (accountId: string) => {
-    console.log("Set as primary:", accountId);
-    
-    // Update bank accounts state
-    setBankAccounts((prevAccounts) => {
-      return prevAccounts.map((account) => {
-        if (account.id === accountId) {
-          // Set this account as primary
-          return { ...account, isPrimary: true };
-        } else if (account.isPrimary) {
-          // Remove primary from the previous primary account
-          return { ...account, isPrimary: false };
-        }
-        return account;
-      });
-    });
-    
-    // Show success toast
-    ToastManager.show({
-      message: t("beneficiaries.bank_accounts.set_primary_success"),
-      variant: "success",
+    if (!beneficiaryId) {
+      return;
+    }
+
+    setPrimaryBankAccount.mutate({
+      beneficiaryId,
+      bankAccountId: accountId,
+    }, {
+      onSuccess: () => {
+        void refetch();
+      },
     });
   };
 
@@ -306,19 +259,34 @@ export function BankAccountsPage() {
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to="/beneficiaries">{t("beneficiaries.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbSeparator className={`
+              hidden
+              md:block
+            `}
+            />
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to={`/beneficiaries/${beneficiaryId}`}>{t("beneficiaries.detail.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem className="md:hidden">
-              <button onClick={() => navigate(`/beneficiaries/${beneficiaryId}`)} className="flex h-9 w-9 items-center justify-center">
+              <button
+                onClick={() => navigate(`/beneficiaries/${beneficiaryId}`)}
+                className="flex h-9 w-9 items-center justify-center"
+              >
                 <BreadcrumbEllipsis />
               </button>
             </BreadcrumbItem>
@@ -331,15 +299,21 @@ export function BankAccountsPage() {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <div className="bg-white border border-border rounded-3xl p-6 flex flex-col gap-6">
+        <div className={`
+          flex flex-col gap-6 rounded-3xl border border-border bg-white p-6
+        `}
+        >
           {/* Header */}
           <div className="flex flex-wrap items-center gap-6">
-            <div className="flex-1 min-w-[220px]">
+            <div className="min-w-[220px] flex-1">
               <p className="text-sm font-semibold text-foreground">
-                {t("beneficiaries.bank_accounts.title", { count: bankAccounts.length })}
+                {t("beneficiaries.bank_accounts.title", { count: totalCount })}
               </p>
             </div>
-            <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-4">
+              <Button variant="secondary" size="icon" onClick={() => refetch()}>
+                <Icon symbol="refresh" weight={200} />
+              </Button>
               <Button variant="default" size="default" onClick={() => setIsAddDialogOpen(true)}>
                 {t("beneficiaries.bank_accounts.add_button")}
               </Button>
@@ -352,7 +326,7 @@ export function BankAccountsPage() {
                 <DialogContent className="sm:max-w-[640px]">
                   <DialogHeader>
                     <DialogTitle>{t("beneficiaries.bank_accounts.export_dialog.title")}</DialogTitle>
-                    <p className="text-sm text-foreground mt-2">{t("beneficiaries.bank_accounts.export_dialog.description")}</p>
+                    <p className="mt-2 text-sm text-foreground">{t("beneficiaries.bank_accounts.export_dialog.description")}</p>
                   </DialogHeader>
                   <DialogBody className="flex flex-col gap-8">
                     {/* file type checkboxes */}
@@ -364,7 +338,10 @@ export function BankAccountsPage() {
                           checked={exportFormatCSV}
                           onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
                         />
-                        <Label htmlFor="csv" className="text-sm text-foreground cursor-pointer">
+                        <Label
+                          htmlFor="csv"
+                          className="cursor-pointer text-sm text-foreground"
+                        >
                           {t("beneficiaries.bank_accounts.export_dialog.csv_excel")}
                         </Label>
                       </div>
@@ -374,7 +351,10 @@ export function BankAccountsPage() {
                           checked={exportFormatPDF}
                           onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
                         />
-                        <Label htmlFor="pdf" className="text-sm text-foreground cursor-pointer">
+                        <Label
+                          htmlFor="pdf"
+                          className="cursor-pointer text-sm text-foreground"
+                        >
                           {t("beneficiaries.bank_accounts.export_dialog.pdf")}
                         </Label>
                       </div>
@@ -386,8 +366,8 @@ export function BankAccountsPage() {
                         {t("beneficiaries.bank_accounts.export_dialog.cancel")}
                       </Button>
                     </DialogClose>
-                    <Button 
-                      variant="default" 
+                    <Button
+                      variant="default"
                       disabled={!exportFormatCSV && !exportFormatPDF}
                     >
                       {t("beneficiaries.bank_accounts.export_dialog.export")}
@@ -397,30 +377,62 @@ export function BankAccountsPage() {
               </Dialog>
             </div>
           </div>
-
           {/* Table */}
           <Table className="rounded-2xl">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-semibold text-foreground uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-foreground uppercase
+                `}
+                >
                   {t("beneficiaries.bank_accounts.table.bank")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-foreground uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-foreground uppercase
+                `}
+                >
                   {t("beneficiaries.bank_accounts.table.account_type")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-foreground uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-foreground uppercase
+                `}
+                >
                   {t("beneficiaries.bank_accounts.table.account_number")}
                 </TableHead>
-                <TableHead className="text-xs font-semibold text-foreground uppercase">
+                <TableHead className={`
+                  text-xs font-semibold text-foreground uppercase
+                `}
+                >
                   {t("beneficiaries.bank_accounts.table.label")}
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {bankAccounts.map((account) => (
+              {isLoading && bankAccounts.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-sm text-muted-foreground"
+                  >
+                    {t("beneficiaries.loading", { defaultValue: "Cargando..." })}
+                  </TableCell>
+                </TableRow>
+              ) : bankAccounts.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-sm text-muted-foreground"
+                  >
+                    {t("beneficiaries.bank_accounts.empty", { defaultValue: "No hay cuentas bancarias" })}
+                  </TableCell>
+                </TableRow>
+              ) : bankAccounts.map((account) => (
                 <TableRow
                   key={account.id}
-                  className="hover:bg-muted transition-colors"
+                  className={`
+                    transition-colors
+                    hover:bg-muted
+                  `}
                 >
                   <TableCell className="text-sm text-foreground">
                     {account.bank}
@@ -434,17 +446,30 @@ export function BankAccountsPage() {
                   <TableCell className="text-sm text-foreground">
                     <div className="flex items-center justify-between">
                       {account.isPrimary && (
-                        <Badge variant="waiting-medium" className="h-8 px-2 text-sm leading-5 bg-muted">
+                        <Badge
+                          variant="waiting-medium"
+                          className="h-8 bg-muted px-2 text-sm leading-5"
+                        >
                           {t("beneficiaries.bank_accounts.primary_label")}
                         </Badge>
                       )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button 
-                            className="ml-auto border-none bg-transparent p-0 hover:bg-transparent focus:outline-none focus-visible:outline-none active:bg-transparent"
-                            style={{ WebkitTapHighlightColor: 'transparent' }}
+                          <button
+                            className={`
+                              ml-auto border-none bg-transparent p-0
+                              hover:bg-transparent
+                              focus:outline-none
+                              focus-visible:outline-none
+                              active:bg-transparent
+                            `}
+                            style={{ WebkitTapHighlightColor: "transparent" }}
                           >
-                            <Icon symbol="more_vert" weight={200} className="text-foreground" />
+                            <Icon
+                              symbol="more_vert"
+                              weight={200}
+                              className="text-foreground"
+                            />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[250px]">
@@ -470,15 +495,51 @@ export function BankAccountsPage() {
               ))}
             </TableBody>
           </Table>
+          {totalPages > 1 && (
+            <Pagination className="justify-start">
+              <PaginationContent>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+                  const page = index + 1;
+                  return (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        isActive={page === currentPage}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                {totalPages > 5 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                {totalPages > 5 && (
+                  <PaginationItem>
+                    <PaginationLink onClick={() => setCurrentPage(totalPages)}>
+                      {totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+                {currentPage < totalPages && (
+                  <PaginationItem>
+                    <PaginationNext onClick={() => setCurrentPage(currentPage + 1)}>
+                      {t("beneficiaries.pagination.next", { defaultValue: "Siguiente" })}
+                    </PaginationNext>
+                  </PaginationItem>
+                )}
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
-
         <AddBankAccountDialog
           open={isAddDialogOpen}
           onOpenChange={setIsAddDialogOpen}
           beneficiaryData={beneficiaryData}
           onConfirm={confirmAdd}
         />
-
         <EditBankAccountDialog
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
@@ -486,7 +547,6 @@ export function BankAccountsPage() {
           accountData={accountToEdit || undefined}
           onConfirm={confirmEdit}
         />
-
         <DeleteBankAccountDialog
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
@@ -494,7 +554,6 @@ export function BankAccountsPage() {
           accountNumber={accountToDelete?.accountNumber || ""}
           onConfirm={confirmDelete}
         />
-
         {/* OTP confirmation dialog */}
         <Dialog open={isOtpDialogOpen} onOpenChange={setIsOtpDialogOpen}>
           <DialogContent className="max-w-[610px] gap-12">
@@ -502,37 +561,35 @@ export function BankAccountsPage() {
               <DialogTitle>
                 {otpAction === "add"
                   ? t("beneficiaries.bank_accounts.otp_dialog.add_title")
-                  : otpAction === "edit" 
-                  ? t("beneficiaries.bank_accounts.otp_dialog.edit_title")
-                  : t("beneficiaries.bank_accounts.otp_dialog.delete_title")}
+                  : otpAction === "edit"
+                    ? t("beneficiaries.bank_accounts.otp_dialog.edit_title")
+                    : t("beneficiaries.bank_accounts.otp_dialog.delete_title")}
               </DialogTitle>
               <p className="text-sm text-foreground">
                 {otpAction === "add"
                   ? t("beneficiaries.bank_accounts.otp_dialog.add_description")
                   : otpAction === "edit"
-                  ? t("beneficiaries.bank_accounts.otp_dialog.edit_description")
-                  : t("beneficiaries.bank_accounts.otp_dialog.delete_description")}
+                    ? t("beneficiaries.bank_accounts.otp_dialog.edit_description")
+                    : t("beneficiaries.bank_accounts.otp_dialog.delete_description")}
               </p>
             </DialogHeader>
-
             <InputOTP
               maxLength={6}
               value={otpCode}
               onChange={setOtpCode}
             >
               <InputOTPGroup className="w-full gap-2">
-                <InputOTPSlot index={0} className="flex-1 h-10" />
-                <InputOTPSlot index={1} className="flex-1 h-10" />
-                <InputOTPSlot index={2} className="flex-1 h-10" />
-                <InputOTPSlot index={3} className="flex-1 h-10" />
-                <InputOTPSlot index={4} className="flex-1 h-10" />
-                <InputOTPSlot index={5} className="flex-1 h-10" />
+                <InputOTPSlot index={0} className="h-10 flex-1" />
+                <InputOTPSlot index={1} className="h-10 flex-1" />
+                <InputOTPSlot index={2} className="h-10 flex-1" />
+                <InputOTPSlot index={3} className="h-10 flex-1" />
+                <InputOTPSlot index={4} className="h-10 flex-1" />
+                <InputOTPSlot index={5} className="h-10 flex-1" />
               </InputOTPGroup>
             </InputOTP>
-
             <DialogFooter className="gap-6">
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 onClick={() => {
                   setIsOtpDialogOpen(false);
                   setOtpCode("");
@@ -543,8 +600,8 @@ export function BankAccountsPage() {
               >
                 {t("beneficiaries.bank_accounts.otp_dialog.cancel")}
               </Button>
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 onClick={handleOtpSubmit}
                 disabled={otpCode.length !== 6}
               >

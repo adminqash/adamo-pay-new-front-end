@@ -65,7 +65,7 @@
     "header": {
       "count": "{{count}} Movimientos",
       "export_data": "Exportar datos",
-      "search_placeholder": "Buscar por fecha/ tipo de movimiento o monto"
+      "search_placeholder": "Buscar por descripción, referencia, monto, tipo, beneficiario, cuenta o ID"
     },
     "export_dialog": {
       "title": "Exportar datos",

@@ -1,4 +1,9 @@
-import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import {
+  AmountInputContainer,
+  AmountInputFlag,
+  AmountInput,
+  AmountInputAction,
+} from "@adamosuiteservices/ui/amount-input";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -9,11 +14,10 @@ import {
   BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
 import { Button } from "@adamosuiteservices/ui/button";
+import { Calendar } from "@adamosuiteservices/ui/calendar";
 import { Card } from "@adamosuiteservices/ui/card";
-import { Icon } from "@adamosuiteservices/ui/icon";
-import { Input } from "@adamosuiteservices/ui/input";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext } from "@adamosuiteservices/ui/pagination";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@adamosuiteservices/ui/table";
+import { Checkbox } from "@adamosuiteservices/ui/checkbox";
+import { Combobox } from "@adamosuiteservices/ui/combobox";
 import {
   Dialog,
   DialogTrigger,
@@ -31,27 +35,27 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@adamosuiteservices/ui/dropdown-menu";
-import { Checkbox } from "@adamosuiteservices/ui/checkbox";
-import { Label } from "@adamosuiteservices/ui/label";
-import { Combobox } from "@adamosuiteservices/ui/combobox";
+import { Icon } from "@adamosuiteservices/ui/icon";
+import { Input } from "@adamosuiteservices/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
-import { 
-  AmountInputContainer,
-  AmountInputFlag,
-  AmountInput,
-  AmountInputAction,
-} from "@adamosuiteservices/ui/amount-input";
-import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { Label } from "@adamosuiteservices/ui/label";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext } from "@adamosuiteservices/ui/pagination";
 import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/popover";
-import { Calendar } from "@adamosuiteservices/ui/calendar";
-import type { DateRange } from "react-day-picker";
-import { format, subDays, startOfDay } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@adamosuiteservices/ui/table";
+import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import { format, subDays } from "date-fns";
+import { businessTodayAsLocalDate } from "@/lib/utils/date.utils";
 import { es, enUS } from "date-fns/locale";
+import { useState, useRef, useState as useStateReact, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useNavigate } from "react-router";
-import { useState, useRef, useState as useStateReact } from "react";
+import { useAccount, useAccountMovements, useAccounts, useDeleteAccount, useTransferAccount, useUpdateAccount } from "../hooks/use-accounts";
+import { buildAccountListParams, buildAccountMovementListParams } from "../utils/account-filters.utils";
+import type { AccountMovement } from "@/features/accounts/application/entities/account.entity";
+import type { DateRange } from "react-day-picker";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { parseCurrencyToMinor } from "@/lib/money/money";
 
 /**
  * custom date range picker component
@@ -64,25 +68,25 @@ const DateRangePicker = ({
   className,
   currentLanguage,
 }: {
-  dateRange: DateRange;
-  onDateRangeChange: (range: DateRange) => void;
+  dateRange: DateRange
+  onDateRangeChange: (range: DateRange) => void
   labels: {
-    last7Days: string;
-    last30Days: string;
-    last90Days: string;
-    custom: string;
-    placeholder: string;
-    cancel: string;
-    apply: string;
-  };
-  className?: string;
-  currentLanguage: string;
+    last7Days: string
+    last30Days: string
+    last90Days: string
+    custom: string
+    placeholder: string
+    cancel: string
+    apply: string
+  }
+  className?: string
+  currentLanguage: string
 }) => {
   const comboboxRef = useRef<HTMLElement | null>(null);
   const [selectedOption, setSelectedOption] = useStateReact<string>(() => {
     // calculate initial option based on dateRange
     if (!dateRange.from || !dateRange.to) return "";
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     if (dateRange.from.getTime() === subDays(today, 7).getTime() && dateRange.to.getTime() === today.getTime()) {
       return "7_days";
     }
@@ -112,7 +116,7 @@ const DateRangePicker = ({
 
     // handle preset selection
     setSelectedOption(selectedValue);
-    const today = startOfDay(new Date());
+    const today = businessTodayAsLocalDate();
     const daysMap = { "7_days": 7, "30_days": 30, "90_days": 90 };
     const days = daysMap[selectedValue as keyof typeof daysMap];
     if (days) {
@@ -204,9 +208,43 @@ export function AccountMovementsPage() {
   const { accountId } = useParams<{ accountId: string }>();
   const navigate = useNavigate();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const pageSize = 15;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const movementListParams = useMemo(
+    () => buildAccountMovementListParams({
+      page: currentPage,
+      limit: pageSize,
+      search: debouncedSearchQuery,
+    }),
+    [currentPage, debouncedSearchQuery],
+  );
+
+  const {
+    movements,
+    totalCount,
+    pages: totalPages,
+    isLoading: isMovementsLoading,
+  } = useAccountMovements(accountId ?? "", movementListParams);
+
+  const { accounts: transferAccounts } = useAccounts(buildAccountListParams({ page: 1, limit: 100 }));
+  const { account: fetchedAccount, refetch: refetchAccount } = useAccount(accountId ?? "");
+  const updateAccount = useUpdateAccount();
+  const deleteAccount = useDeleteAccount();
+  const transferAccountMutation = useTransferAccount();
+
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
-  // edit name dialog state
   const [isEditNameDialogOpen, setIsEditNameDialogOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
   const [isOtpDialogOpen, setIsOtpDialogOpen] = useState(false);
@@ -266,20 +304,22 @@ export function AccountMovementsPage() {
    * handle transfer confirm
    */
   const handleTransferConfirm = () => {
-    console.log("Transfer from:", accountId);
-    console.log("Transfer to:", transferToAccountId);
-    console.log("Amount:", transferAmount);
+    if (!accountId || !transferToAccountId) {
+      return;
+    }
 
-    setIsTransferDialogOpen(false);
-    
-    ToastManager.show({
-      message: t("accounts.messages.transfer_success"),
-      variant: "success",
+    transferAccountMutation.mutate({
+      fromAccountId: accountId,
+      toAccountId: transferToAccountId,
+      amount: parseCurrencyToMinor(transferAmount),
+    }, {
+      onSuccess: () => {
+        setIsTransferDialogOpen(false);
+        setTransferToAccountId(null);
+        setTransferAmount("");
+        void refetchAccount();
+      },
     });
-
-    // reset transfer form
-    setTransferToAccountId(null);
-    setTransferAmount("");
   };
 
   /**
@@ -295,36 +335,27 @@ export function AccountMovementsPage() {
    * handle OTP submit - confirms name change or account deletion
    */
   const handleOtpSubmit = () => {
-    console.log("OTP submitted:", otpCode);
-    
-    if (otpAction === "edit") {
-      console.log("New account name:", newAccountName);
-
-      // Update account name in state
-      setAccountsData((prevData) => ({
-        ...prevData,
-        [accountId || "1"]: {
-          ...prevData[accountId || "1"],
-          name: newAccountName,
+    if (otpAction === "edit" && accountId) {
+      updateAccount.mutate({
+        accountId,
+        name: newAccountName,
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          void refetchAccount();
         },
-      }));
-
-      ToastManager.show({
-        message: t("accounts.messages.name_updated"),
-        variant: "success",
       });
-    } else if (otpAction === "delete") {
-      console.log("Deleting account:", accountId);
-
-      ToastManager.show({
-        message: t("accounts.messages.account_deleted"),
-        variant: "success",
+    } else if (otpAction === "delete" && accountId) {
+      deleteAccount.mutate({
+        accountId,
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setTimeout(() => {
+            navigate("/accounts");
+          }, 500);
+        },
       });
-
-      // Navigate back to accounts page
-      setTimeout(() => {
-        navigate("/accounts");
-      }, 500);
     }
 
     setIsOtpDialogOpen(false);
@@ -339,61 +370,37 @@ export function AccountMovementsPage() {
     setOtpCode("");
   };
 
-  // datos de ejemplo - reemplazar con hook real que obtenga la cuenta por id
-  const [accountsData, setAccountsData] = useState<Record<string, { name: string; balance: string; currency: string }>>({
-    "1": {
-      name: "Cuenta principal",
-      balance: "$90.784.510,46",
-      currency: "COP",
-    },
-    "2": {
-      name: "Cuenta de nómina",
-      balance: "$61.002.031,71",
-      currency: "COP",
-    },
-    "3": {
-      name: "Cuenta de ahorros",
-      balance: "$39.002.031,71",
-      currency: "COP",
-    },
-  });
-
-  const account = accountsData[accountId || "1"] || {
-    name: "Cuenta desconocida",
+  const account = fetchedAccount ?? {
+    id: accountId ?? "",
+    name: t("accounts.unknown_account", { defaultValue: "Cuenta desconocida" }),
     balance: "$0,00",
     currency: "COP",
+    countryCode: "CO",
   };
 
-  const movements = [
-    { date: "10/12/2025", type: "Débito", amount: "$22.350.000,00" },
-    { date: "11/15/2025", type: "Débito", amount: "$18.750.000,00" },
-    { date: "12/01/2025", type: "Débito", amount: "$27.900.000,00" },
-    { date: "01/20/2026", type: "Crédito", amount: "$15.500.000,00" },
-    { date: "02/15/2026", type: "Crédito", amount: "$20.000.000,00" },
-    { date: "03/10/2026", type: "Crédito", amount: "$23.750.000,00" },
-    { date: "04/05/2026", type: "Débito", amount: "$19.300.000,00" },
-    { date: "05/25/2026", type: "Débito", amount: "$25.500.000,00" },
-    { date: "06/30/2026", type: "Crédito", amount: "$30.000.000,00" },
-    { date: "07/18/2026", type: "Débito", amount: "$28.150.000,00" },
-    { date: "08/12/2026", type: "Débito", amount: "$16.800.000,00" },
-    { date: "09/09/2026", type: "Débito", amount: "$22.900.000,00" },
-    { date: "10/30/2026", type: "Débito", amount: "$21.250.000,00" },
-    { date: "11/21/2026", type: "Crédito", amount: "$24.900.000,00" },
-    { date: "12/14/2026", type: "Débito", amount: "$29.000.000,00" },
-  ];
+  if (!accountId) {
+    return null;
+  }
 
   return (
     <>
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to="/accounts">{t("accounts.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem className="md:hidden">
-              <button onClick={() => navigate("/accounts")} className="flex h-9 w-9 items-center justify-center">
+              <button
+                onClick={() => navigate("/accounts")}
+                className="flex h-9 w-9 items-center justify-center"
+              >
                 <BreadcrumbEllipsis />
               </button>
             </BreadcrumbItem>
@@ -406,15 +413,22 @@ export function AccountMovementsPage() {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <Card className="p-6 flex flex-col gap-6">
+        <Card className="flex flex-col gap-6 p-6">
           {/* account header card */}
-          <Card className="bg-gradient-to-r from-[#e5f3fa] to-white border-0 p-6">
+          <Card className={`
+            border-0 bg-gradient-to-r from-[#e5f3fa] to-white p-6
+          `}
+          >
             <div className="flex flex-col gap-4">
-              <div className="text-sm text-foreground font-bold leading-5">
+              <div className="text-sm leading-5 font-bold text-foreground">
                 {account.name}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="inline-flex items-center gap-3 bg-white rounded-full px-4 py-4 h-14">
+                <div className={`
+                  inline-flex h-14 items-center gap-3 rounded-full bg-white px-4
+                  py-4
+                `}
+                >
                   <span className="text-sm font-bold text-foreground">
                     {account.balance}
                   </span>
@@ -423,7 +437,7 @@ export function AccountMovementsPage() {
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-8">
-                  <Button 
+                  <Button
                     variant="default"
                     onClick={handleOpenTransferDialog}
                   >
@@ -432,11 +446,21 @@ export function AccountMovementsPage() {
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button 
-                        className="border-none bg-transparent p-0 hover:bg-transparent focus:outline-none focus-visible:outline-none active:bg-transparent"
-                        style={{ WebkitTapHighlightColor: 'transparent' }}
+                      <button
+                        className={`
+                          border-none bg-transparent p-0
+                          hover:bg-transparent
+                          focus:outline-none
+                          focus-visible:outline-none
+                          active:bg-transparent
+                        `}
+                        style={{ WebkitTapHighlightColor: "transparent" }}
                       >
-                        <Icon symbol="more_vert" weight={200} className="text-foreground" />
+                        <Icon
+                          symbol="more_vert"
+                          weight={200}
+                          className="text-foreground"
+                        />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -458,17 +482,16 @@ export function AccountMovementsPage() {
               </div>
             </div>
           </Card>
-
           {/* movements table */}
-          <Card className="p-6 flex flex-col gap-6">
+          <Card className="flex flex-col gap-6 p-6">
             {/* header with search */}
-            <div className="flex flex-wrap gap-6 items-center">
-              <div className="flex-1 min-w-[220px]">
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="min-w-[220px] flex-1">
                 <p className="text-sm font-semibold text-foreground">
-                  {t("movements.header.count", { count: 143 })}
+                  {t("movements.header.count", { count: totalCount })}
                 </p>
               </div>
-              <div className="flex gap-4 items-center">
+              <div className="flex items-center gap-4">
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="secondary">
@@ -478,7 +501,7 @@ export function AccountMovementsPage() {
                   <DialogContent className="sm:max-w-[640px]">
                     <DialogHeader>
                       <DialogTitle>{t("movements.export_dialog.title")}</DialogTitle>
-                      <p className="text-sm text-foreground mt-2">{t("movements.export_dialog.description")}</p>
+                      <p className="mt-2 text-sm text-foreground">{t("movements.export_dialog.description")}</p>
                     </DialogHeader>
                     <DialogBody className="flex flex-col gap-8">
                       {/* filters */}
@@ -501,7 +524,6 @@ export function AccountMovementsPage() {
                             currentLanguage={i18n.language}
                           />
                         </div>
-
                         {/* type filter */}
                         <div className="flex-1">
                           <Combobox
@@ -525,7 +547,6 @@ export function AccountMovementsPage() {
                           />
                         </div>
                       </div>
-
                       {/* file type checkboxes */}
                       <div className="flex items-center gap-8">
                         <p className="text-sm text-foreground">{t("movements.export_dialog.file_type_label")}</p>
@@ -535,7 +556,10 @@ export function AccountMovementsPage() {
                             checked={exportFormatCSV}
                             onCheckedChange={(checked) => setExportFormatCSV(checked as boolean)}
                           />
-                          <Label htmlFor="movements-csv" className="text-sm text-foreground cursor-pointer">
+                          <Label
+                            htmlFor="movements-csv"
+                            className="cursor-pointer text-sm text-foreground"
+                          >
                             {t("movements.export_dialog.csv_excel")}
                           </Label>
                         </div>
@@ -545,7 +569,10 @@ export function AccountMovementsPage() {
                             checked={exportFormatPDF}
                             onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
                           />
-                          <Label htmlFor="movements-pdf" className="text-sm text-foreground cursor-pointer">
+                          <Label
+                            htmlFor="movements-pdf"
+                            className="cursor-pointer text-sm text-foreground"
+                          >
                             {t("movements.export_dialog.pdf")}
                           </Label>
                         </div>
@@ -557,8 +584,8 @@ export function AccountMovementsPage() {
                           {t("movements.export_dialog.cancel")}
                         </Button>
                       </DialogClose>
-                      <Button 
-                        variant="default" 
+                      <Button
+                        variant="default"
                         disabled={!exportFormatCSV && !exportFormatPDF}
                       >
                         {t("movements.export_dialog.export")}
@@ -567,77 +594,100 @@ export function AccountMovementsPage() {
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="basis-full lg:basis-0 lg:flex-1 lg:min-w-[500px]">
+              <div className={`
+                basis-full
+                lg:min-w-[500px] lg:flex-1 lg:basis-0
+              `}
+              >
                 <div className="relative">
-                  <Icon symbol="search" className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Icon
+                    symbol="search"
+                    className={`
+                      absolute top-1/2 left-2 -translate-y-1/2
+                      text-muted-foreground
+                    `}
+                  />
                   <Input
                     placeholder={t("movements.header.search_placeholder")}
                     className="pl-10"
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      setCurrentPage(1);
+                    }}
                   />
                 </div>
               </div>
             </div>
-
             {/* table */}
             <Table className="rounded-2xl">
               <TableHeader>
-                  <TableRow className="bg-muted">
-                    <TableHead className="text-xs font-semibold text-foreground">FECHA</TableHead>
-                    <TableHead className="text-xs font-semibold text-foreground">TIPO DE MOVIMIENTO</TableHead>
-                    <TableHead className="text-xs font-semibold text-foreground">MONTO</TableHead>
+                <TableRow className="bg-muted">
+                  <TableHead className="text-xs font-semibold text-foreground">FECHA</TableHead>
+                  <TableHead className="text-xs font-semibold text-foreground">TIPO DE MOVIMIENTO</TableHead>
+                  <TableHead className="text-xs font-semibold text-foreground">MONTO</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!isMovementsLoading && movements.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="py-8 text-center text-sm text-foreground"
+                    >
+                      {t("movements.empty", { defaultValue: "No hay movimientos para esta cuenta" })}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {movements.map((movement, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="text-sm text-foreground">{movement.date}</TableCell>
-                      <TableCell className="text-sm text-foreground">{movement.type}</TableCell>
-                      <TableCell className="text-sm text-foreground">{movement.amount}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                )}
+                {movements.map((movement: AccountMovement) => (
+                  <TableRow key={movement.id}>
+                    <TableCell className="text-sm text-foreground">{movement.date}</TableCell>
+                    <TableCell className="text-sm text-foreground">{movement.type}</TableCell>
+                    <TableCell className="text-sm text-foreground">{movement.amount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
             </Table>
-
             {/* pagination */}
-            <Pagination className="justify-start">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationLink href="#" isActive>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">
-                    2
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">
-                    3
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">
-                    4
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">
-                    13
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+            {totalPages > 1 && (
+              <Pagination className="justify-start">
+                <PaginationContent>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+                    const page = index + 1;
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === currentPage}
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  {totalPages > 5 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  {totalPages > 5 && (
+                    <PaginationItem>
+                      <PaginationLink onClick={() => setCurrentPage(totalPages)}>
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+                  {currentPage < totalPages && (
+                    <PaginationItem>
+                      <PaginationNext onClick={() => setCurrentPage(currentPage + 1)} />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
+            )}
           </Card>
         </Card>
       </PageContainer>
-
       {/* Edit Name Dialog */}
       <Dialog open={isEditNameDialogOpen} onOpenChange={setIsEditNameDialogOpen}>
         <DialogContent className="sm:max-w-[640px]">
@@ -673,7 +723,6 @@ export function AccountMovementsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* OTP Confirmation Dialog */}
       <Dialog open={isOtpDialogOpen} onOpenChange={setIsOtpDialogOpen}>
         <DialogContent className="max-w-[610px] gap-12">
@@ -685,22 +734,20 @@ export function AccountMovementsPage() {
               {otpAction === "edit" ? t("accounts.otp_dialog.description") : t("accounts.otp_dialog.delete_description")}
             </p>
           </DialogHeader>
-          
           <InputOTP
             maxLength={6}
             value={otpCode}
             onChange={setOtpCode}
           >
             <InputOTPGroup className="w-full gap-2">
-              <InputOTPSlot index={0} className="flex-1 h-10" />
-              <InputOTPSlot index={1} className="flex-1 h-10" />
-              <InputOTPSlot index={2} className="flex-1 h-10" />
-              <InputOTPSlot index={3} className="flex-1 h-10" />
-              <InputOTPSlot index={4} className="flex-1 h-10" />
-              <InputOTPSlot index={5} className="flex-1 h-10" />
+              <InputOTPSlot index={0} className="h-10 flex-1" />
+              <InputOTPSlot index={1} className="h-10 flex-1" />
+              <InputOTPSlot index={2} className="h-10 flex-1" />
+              <InputOTPSlot index={3} className="h-10 flex-1" />
+              <InputOTPSlot index={4} className="h-10 flex-1" />
+              <InputOTPSlot index={5} className="h-10 flex-1" />
             </InputOTPGroup>
           </InputOTP>
-
           <DialogFooter className="gap-6">
             <Button
               variant="secondary"
@@ -718,10 +765,13 @@ export function AccountMovementsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Delete Account Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[640px] gap-12">
+        <DialogContent className={`
+          gap-12
+          sm:max-w-[640px]
+        `}
+        >
           <DialogHeader>
             <DialogTitle>{t("accounts.delete_dialog.title")}</DialogTitle>
             <p className="text-sm text-foreground">
@@ -743,14 +793,13 @@ export function AccountMovementsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Transfer Dialog */}
       <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>
-              {t("accounts.transfer_dialog.title", { 
-                accountName: account.name || "" 
+              {t("accounts.transfer_dialog.title", {
+                accountName: account.name || "",
               })}
             </DialogTitle>
             <DialogDescription>
@@ -760,7 +809,10 @@ export function AccountMovementsPage() {
           <DialogBody className="flex flex-col gap-6">
             {/* amount */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="transfer-amount" className="text-xs text-foreground">
+              <Label
+                htmlFor="transfer-amount"
+                className="text-xs text-foreground"
+              >
                 {t("accounts.transfer_dialog.amount")}
               </Label>
               <AmountInputContainer className="gap-2">
@@ -777,7 +829,7 @@ export function AccountMovementsPage() {
                 <AmountInputAction
                   onClick={() => {
                     // Extract numeric value from balance (e.g., "$90.784.510,46" -> "90784510.46")
-                    const numericBalance = account.balance.replace(/[^0-9,]/g, '').replace('.', '').replace(',', '.');
+                    const numericBalance = account.balance.replace(/[^0-9,]/g, "").replace(".", "").replace(",", ".");
                     setTransferAmount(numericBalance);
                   }}
                 >
@@ -788,7 +840,6 @@ export function AccountMovementsPage() {
                 {t("accounts.transfer_dialog.available_balance")}: {account.balance}
               </p>
             </div>
-
             {/* to account */}
             <Combobox
               alwaysShowPlaceholder
@@ -800,10 +851,10 @@ export function AccountMovementsPage() {
               labels={{
                 placeholder: t("accounts.transfer_dialog.to_account"),
               }}
-              options={Object.entries(accountsData)
-                .filter(([id]) => id !== accountId)
-                .map(([id, acc]) => ({
-                  value: id,
+              options={transferAccounts
+                .filter((acc) => acc.id !== accountId)
+                .map((acc) => ({
+                  value: acc.id,
                   label: acc.name,
                   supportiveText: `${acc.balance} ${acc.currency}`,
                 }))}

@@ -1,76 +1,48 @@
-import { Card } from "@adamosuiteservices/ui/card";
 import { Badge } from "@adamosuiteservices/ui/badge";
+import { Card } from "@adamosuiteservices/ui/card";
 import { useTranslation } from "react-i18next";
 
 interface BankData {
-  name: string;
-  responseTime: number;
-  transactions: number;
-  variant: "success-medium" | "warning-medium" | "destructive-medium";
+  name: string
+  responseTime: number
+  transactions: number
+  variant: "success-medium" | "warning-medium" | "destructive-medium"
 }
 
 interface TopBanksChartProps {
-  _filterPeriod?: string;
+  _filterPeriod?: string
+  banks?: BankData[]
 }
 
-/**
- * top banks chart component
- * 
- * displays top 5 banks with lowest response time
- */
-export function TopBanksChart({ _filterPeriod = "today" }: TopBanksChartProps = {}) {
+export function TopBanksChart({ banks = [] }: TopBanksChartProps = {}) {
   const { t } = useTranslation("metrics");
-
-  // Mock data - will be replaced with real data later
-  const banksData: BankData[] = [
-    { 
-      name: "Bancolombia", 
-      responseTime: 2.3, 
-      transactions: 1322,
-      variant: "success-medium"
-    },
-    { 
-      name: "Cobre", 
-      responseTime: 2.8, 
-      transactions: 1108,
-      variant: "success-medium"
-    },
-    { 
-      name: "BBVA", 
-      responseTime: 9.7, 
-      transactions: 977,
-      variant: "success-medium"
-    },
-    { 
-      name: "Davivienda", 
-      responseTime: 19.5, 
-      transactions: 2401,
-      variant: "warning-medium"
-    },
-    { 
-      name: "Santander", 
-      responseTime: 33.1, 
-      transactions: 311,
-      variant: "destructive-medium"
-    },
-  ];
-
   return (
-    <Card className="flex flex-col gap-2 border-0 p-4 rounded-3xl w-full">
-      {banksData.map((bank) => (
-        <Card 
+    <Card className="flex w-full flex-col gap-2 rounded-3xl border-0 p-4">
+      {banks.map((bank) => (
+        <Card
           key={bank.name}
-          className="flex flex-col items-start p-4 rounded-2xl bg-neutral-50 border-0"
+          className={`
+            flex flex-col items-start rounded-2xl border-0 bg-neutral-50 p-4
+          `}
         >
-          <div className="flex h-16 items-center w-full">
-            <div className="flex flex-1 flex-col gap-0 items-start justify-center">
-              <div className="flex flex-col gap-2 items-start w-full">
-                <p className="text-xs font-semibold text-neutral-700 w-full">
+          <div className="flex h-16 w-full items-center">
+            <div className={`
+              flex flex-1 flex-col items-start justify-center gap-0
+            `}
+            >
+              <div className="flex w-full flex-col items-start gap-2">
+                <p className="w-full text-xs font-semibold text-neutral-700">
                   {bank.name}
                 </p>
-                <div className="flex gap-2 h-10 items-center justify-center pl-2 w-full">
-                  <div className="flex flex-1 gap-2 h-8 items-center">
-                    <Badge variant={bank.variant} className="h-8 px-2 rounded-xl">
+                <div className={`
+                  flex h-10 w-full items-center justify-center gap-2 pl-2
+                `}
+                >
+                  <div className="flex h-8 flex-1 items-center gap-2">
+                    <Badge
+                      variant={bank.variant}
+                      className="h-8 rounded-xl px-2"
+                    >
                       {bank.responseTime} {t("metrics.top_banks.minutes")}
                     </Badge>
                     <p className="text-xs text-neutral-400">

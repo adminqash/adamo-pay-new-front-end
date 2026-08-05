@@ -1,128 +1,119 @@
-# Documentation
+# ADAMO Pay — frontend
 
-This guide is designed to train new developers on the project's architecture, patterns, and best practices.
+React 19 + TypeScript + Vite SPA for real-time integrated payments, organized by feature with a layered `api/`/`application/` structure per feature.
+
+## Prerequisites
+
+- **Node.js** ≥ 20
+- **npm** ≥ 9
+
+## Installation
+
+```bash
+npm install
+cp .env.example .env   # then fill in the values
+```
+
+## Running
+
+```bash
+npm run dev        # dev server, exposed on the LAN (--host)
+npm run build      # type-check + production build
+npm run build:qa   # build in development mode
+npm run build:prod # build in production mode
+npm run preview    # preview the production build
+npm run lint       # ESLint
+npm run lint:fix   # ESLint --fix
+```
+
+## Backends
+
+The app talks to four microservices. Each one has its own axios client in [`src/lib/api/api.ts`](src/lib/api/api.ts), built by `createApiClient` and pointed at a base URL resolved in [`src/lib/env.ts`](src/lib/env.ts):
+
+| Client             | Owns                                                       | Variable                     | Local port |
+| ------------------ | ---------------------------------------------------------- | ---------------------------- | ---------- |
+| `coreApi`          | payments, batches, accounts, dashboard, documents, profile | `VITE_API_CORE_URL`          | 3600       |
+| `beneficiariesApi` | beneficiaries                                              | `VITE_API_BENEFICIARIES_URL` | 3601       |
+| `analyticsApi`     | metrics, reports                                           | `VITE_API_ANALYTICS_URL`     | 3602       |
+| `realtimeApi`      | WebSocket gateway, batch uploads                           | `VITE_API_REALTIME_URL`      | 3603       |
+
+The bare `api` export is **deprecated** — it aliases `coreApi` for services written before the split. Use the named client in new code.
+
+Only `VITE_API_BASE_URL` is required; the four per-service variables are optional and each falls back to it, so a single-host backend needs just the base URL. All of them are validated as **absolute** URLs by the zod schema in [`src/lib/env.ts`](src/lib/env.ts) — a bare path fails at startup.
+
+Pointed straight at the microservices, each one has to send back permissive CORS headers in development. To route everything through the dev server's origin instead, [`vite.config.ts`](vite.config.ts) proxies `/api/core`, `/api/beneficiaries`, `/api/analytics` and `/api/realtime` (this last one with WebSocket upgrade) to the ports above — set the variables to the proxy URLs, absolute as always:
+
+```bash
+VITE_API_CORE_URL=http://localhost:5173/api/core
+```
+
+Override the proxy targets with the `VITE_DEV_PROXY_*_TARGET` variables; see [`.env.example`](.env.example). Restart `npm run dev` after changing any of them.
 
 ## Architecture
 
-- **Domain-Driven Design (DDD)**: Feature-based modules with clear separation between Infrastructure (API) and Domain (Application) layers
-- **Service Layer Pattern**: Services as "Black Boxes" that encapsulate API communication
-- **Command Pattern**: Decoupling UI from API structure through Command interfaces
-- **Data Fetching**: React Query for server state management with global error handling
-- **Component Library**: Adamo UI (`@adamosuiteservices/ui`) - 45+ production-ready components (see `node_modules/@adamosuiteservices/ui/llm.txt` for complete list)
+Feature-based: each feature lives in `src/features/<name>/`, split into `api/` (DTOs, mappers, services) and `application/` (entities, commands, hooks, components, pages). Shared pieces live in `src/features/common/`; cross-cutting infrastructure (axios, React Query, i18n, money, realtime, env) in `src/lib/`. `@/` aliases `src/`.
 
-## Tech stack
-
-- **Runtime**: Browser (Modern ES6+)
-- **Framework**: React 19 + TypeScript
-- **Router**: React Router v7
-- **State Management**: React Query
-- **UI Library**: Adamo UI (`@adamosuiteservices/ui`) - 45+ production-ready components
-- **Styling**: TailwindCSS v4
-- **Form Handling**: React Hook Form + Zod
-- **Validation**: Zod (schemas & environment variables)
-- **HTTP Client**: Axios
-- **i18n**: i18next + react-i18next (internationalization with English and Spanish support)
-- **Build Tool**: Vite
-- **Documentation**: TypeDoc (auto-generated API docs)
-- **Code Quality**: ESLint + Husky + lint-staged
-- **Dev Tools**: React Query Devtools, React Compiler (Babel plugin)
-
-## Infrastructure
-
-- **React Query Global Configuration**: Automatic loading indicators, success/error messages via metadata
-- **Global Components**: `GlobalQueryLoader`, `RefetchProgressBar`, `PageLoader`
-- **Mappers**: Separation between DTO ↔ Entity layers
-- **Service Result Pattern**: Standardized response structure with pagination, error codes, and trace IDs
-- **Error Handling**: Centralized error management with `handleAPIError` and `handleAPIResponse` utilities
-
-## Design patterns
-
-- **Service Layer**: Black Box pattern for API communication
-- **Command Pattern**: Use case input encapsulation for API requests
-- **Mapper Pattern**: DTO to Entity transformations
-- **Hook Pattern**: Custom React hooks as primary interface to Services
-- **Repository Pattern**: Services abstract data source details
-
-## Best practices
-
-- **Component Library**: ALWAYS check `node_modules/@adamosuiteservices/ui/llm.txt` before creating components
-- **Type Safety**: Full TypeScript with strict mode
-- **Never call APIs directly**: Always use Hooks, never Services directly in components
-- **DTOs stay in Infrastructure**: Use Mappers to convert DTOs to Domain Entities
-- **Clean Entity Names**: Domain entities use clean names (`User`, `Document`), not `UserDTO`
-- **Services are Black Boxes**: Inputs are Commands, Outputs are Entities
-- **Code Splitting**: Lazy loading for routes and heavy components
-- **Responsive Design**: Mobile-first approach with TailwindCSS
-- **Internationalization**: All user-facing text must be translated
-- **Text Conventions**: Use lowercase for titles, messages, comments, and documentation (avoid Title Case unless necessary)
-
-## Project structure
-
-```bash
+```text
 src/
-├── features/           # Feature-based modules
-│   ├── [feature]/
-│   │   ├── api/       # Infrastructure layer (Services, DTOs, Mappers)
-│   │   └── application/ # Domain layer (Entities, Hooks, Components, Pages)
-│   └── common/        # Shared components and utilities
-├── lib/               # Shared libraries (i18n, axios, query client)
-├── assets/            # Global static assets
-└── router.tsx         # Application routes
+├── features/
+│   ├── <feature>/
+│   │   ├── api/           # infrastructure — DTOs, mappers, services
+│   │   └── application/   # domain + UI — entities, commands, hooks, components, pages
+│   └── common/            # shared components, contexts, hooks, services
+├── lib/                   # axios, react query, i18n, money, realtime, env
+├── assets/
+└── router.tsx
 ```
 
-## Commands
+Translations live in `public/locales/<lng>/<ns>.json` and are fetched at runtime by `i18next-http-backend`; a new namespace also has to be added to the `ns` array in [`src/lib/i18n/i18n.config.ts`](src/lib/i18n/i18n.config.ts).
+
+`index.html` sets `<html data-theme="pay">`, which selects the `@adamosuiteservices/ui` product theme — see that package's `docs/colors-and-tokens.md` for how theming works.
+
+## Commits and branches
+
+Both are enforced by git hooks, so a violation fails the commit instead of surfacing in review.
+
+**Commit messages** follow [conventional commits](https://www.conventionalcommits.org/), lower-case, no trailing period, and **written in English** — [`commitlint.config.js`](commitlint.config.js) rejects Spanish characters and common Spanish words.
+
+```text
+feat: add beneficiary bulk import
+fix(batches): keep the pager visible while refetching
+```
+
+**Branch names** follow `<type>/<kebab-case-description>`, with the same type list. `main`, `dev` and `test` are exempt.
+
+```text
+feat/beneficiary-bulk-import
+fix/batch-pager-flicker
+```
+
+## Documentation for AI agents & contributors
+
+Architecture, patterns, and code conventions come from the team's **Claude Code plugins** in the `adamo-marketplace` — not from files in this repo. Each plugin's skills are self-describing (their `description` says when they apply) and **auto-invoke** on a matching task once the plugin is enabled, so there's nothing to open or copy. [`CLAUDE.md`](CLAUDE.md) holds only what's specific to this project: the four API clients, the deliberately relaxed lint rules, and other local divergences.
+
+- **`frontend-architecture`** — the core patterns and conventions (required); includes the `component-library` skill for `@adamosuiteservices/ui`.
+- **`authentication`** — opt-in; enable when the project adds login / permission-gated routes.
+
+### Enabling the plugins
+
+This repo commits [`.claude/settings.json`](.claude/settings.json), which registers the marketplace and enables `frontend-architecture` automatically — just clone the repo, open it in Claude Code, and trust the workspace. A marketplace hosted on GitHub may prompt a one-time install per plugin the first time; it stays enabled afterward.
+
+Add the opt-in plugins to a project when you need them:
 
 ```bash
-npm install        # Install dependencies
-npm run dev        # Start development server (Vite)
-npm run build      # Build for production
-npm run preview    # Preview production build
-npm run lint       # Run ESLint
-npm run lint:fix   # Run ESLint and fix issues
-npm run docs       # Generate TypeDoc documentation
-npm run docs:serve # Generate and serve TypeDoc documentation
+claude plugin install authentication@adamo-marketplace
 ```
 
-## Documentation
+### Component library
 
-⚠️ **CRITICAL**: It is supremely important to keep the following up to date:
+`@adamosuiteservices/ui` ships its own AI-facing docs inside the installed package — check them before building any UI element from scratch:
 
-- **Technical Documentation** (`documentation/` folder): Update markdown files when architecture, patterns, or infrastructure changes
-- **GitHub Copilot Instructions** (`.github/copilot-instructions.md`): Keep AI context synchronized with current codebase patterns and conventions
-- **JSDoc Comments**: Maintain JSDoc comments in all TypeScript files for TypeDoc generation
+- `node_modules/@adamosuiteservices/ui/llm.txt` — the full component list
+- `node_modules/@adamosuiteservices/ui/docs/ai-guide.md`
+- `node_modules/@adamosuiteservices/ui/docs/components/<component>.md`
 
-Outdated documentation leads to inconsistent code, misunderstandings, and technical debt. When you change the codebase, update the docs immediately.
+## Deployment
 
-### TypeDoc - Auto-Generated API Documentation
+[`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml) builds and ships to S3 + CloudFront on every push to `main` (production) and `develop` (development), then reports the result to Telegram.
 
-**IMPORTANT**: Use TypeDoc (`npm run docs:serve`) to:
-
-- 🔍 **Search existing code**: Find components, hooks, services, types, and interfaces before creating new ones
-- 📚 **Discover functionality**: Browse all available features, use cases, and utilities
-- ♻️ **Avoid code duplication**: Check if functionality already exists before implementing
-- 🧭 **Navigate codebase**: Understand relationships between modules and dependencies
-- 📖 **Onboard new developers**: Comprehensive auto-generated reference from JSDoc comments
-
-**Always check TypeDoc before writing new code** to avoid reinventing the wheel.
-
-### Architecture and patterns documentation
-
-- [Project Structure](documentation/project-structure.md) - Feature-based folder layout, file naming conventions, and component organization
-- [Service Architecture & Data Fetching](documentation/service-architecture.md) - Black Box Services, Hook implementation, Command pattern, and global error handling
-- [Component Library](documentation/component-library.md) - Adamo UI usage guide, conventions, patterns, and best practices
-- [Internationalization](documentation/internationalization.md) - i18next configuration, translation file structure, and usage patterns
-- [Lazy Loading](documentation/lazy-loading.md) - Code splitting strategies for routes and components
-
-## Quick rules
-
-1. **Check llm.txt first**: ALWAYS consult `node_modules/@adamosuiteservices/ui/llm.txt` before creating components.
-2. **Never call APIs directly** in components. Use Hooks.
-3. **Never expose DTOs** to components. Use Mappers to convert to Entities.
-4. **Domain Entities** should have clean names (`User`), not infrastructure names (`UserDTO`).
-5. **Services are Black Boxes**: Inputs are Commands, Outputs are Entities.
-6. **Use Adamo UI components**: The library has 45+ components - don't recreate them.
-7. **Individual imports only**: Use `@adamosuiteservices/ui/button`, never barrel imports.
-8. **Never use `adm:` prefix**: It's internal to the component library.
-9. **All text must be translated**: No hardcoded strings in components.
-10. **Use TailwindCSS**: Avoid inline styles and CSS modules.
-11. **Lazy load routes**: Use React.lazy for page components.
+The workflow writes only `VITE_API_BASE_URL` into the build's env file, so every client falls back to that single host in deployed environments. Splitting them per microservice means adding the `VITE_API_*_URL` secrets to the workflow.

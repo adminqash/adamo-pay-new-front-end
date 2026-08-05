@@ -1,9 +1,10 @@
-import { useTranslation } from "react-i18next";
-import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
-import { createPortal } from "react-dom";
-import { Link, useNavigate } from "react-router";
-import { useState } from "react";
-import { PageContainer } from "@/features/common/components/layout/page-container";
+import { Alert, AlertTitle, AlertDescription } from "@adamosuiteservices/ui/alert";
+import {
+  AmountInputContainer,
+  AmountInputFlag,
+  AmountInput,
+  AmountInputAction,
+} from "@adamosuiteservices/ui/amount-input";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -13,9 +14,42 @@ import {
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
 } from "@adamosuiteservices/ui/breadcrumb";
-import { Card } from "@adamosuiteservices/ui/card";
 import { Button } from "@adamosuiteservices/ui/button";
+import { Card } from "@adamosuiteservices/ui/card";
+import { Checkbox } from "@adamosuiteservices/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+  DialogClose,
+} from "@adamosuiteservices/ui/dialog";
+import { Badge } from "@adamosuiteservices/ui/badge";
+import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
+import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import { useTranslation } from "react-i18next";
+import { createPortal } from "react-dom";
+import { Link, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { BeneficiariesService } from "@/features/beneficiaries/api/services/beneficiaries.service";
+import { useBankAccounts } from "@/features/beneficiaries/application/hooks/use-beneficiaries";
+import {
+  mapAccountTypeToFormValue,
+  mapFormAccountTypeToApi,
+} from "@/features/beneficiaries/application/utils/beneficiary-form.utils";
+import { PageContainer } from "@/features/common/components/layout/page-container";
+import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
+import {
+  formatCurrencyDisplay,
+  minorToMajor,
+  parseCurrencyToMinor,
+} from "@/lib/money/money";
+import { useCreatePayment } from "@/features/transactions/application/hooks/use-payment-mutations";
 import {
   InputGroup,
   InputGroupAddon,
@@ -28,8 +62,6 @@ import {
   InputOTPSlot,
 } from "@adamosuiteservices/ui/input-otp";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { Icon } from "@adamosuiteservices/ui/icon";
-import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -37,24 +69,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@adamosuiteservices/ui/select";
-import { Alert, AlertTitle, AlertDescription } from "@adamosuiteservices/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogBody,
-  DialogFooter,
-  DialogClose,
-} from "@adamosuiteservices/ui/dialog";
-import { ToastManager } from "@adamosuiteservices/ui/toaster";
-import {
-  AmountInputContainer,
-  AmountInputFlag,
-  AmountInput,
-  AmountInputAction,
-} from "@adamosuiteservices/ui/amount-input";
 import {
   SelectableCard,
   SelectableCardGroup,
@@ -70,18 +84,48 @@ import {
 } from "@adamosuiteservices/ui/timeline";
 
 /**
+ * selected beneficiary for payment flow
+ */
+type SelectedBeneficiary = {
+  id?: string
+  name: string
+  docType: string
+  docNumber: string
+  accountType: string
+  bank: string
+  accountNumber: string
+  bankAccountId?: string
+};
+
+function formatAccountLabel(accountType: string, bank: string, accountNumber: string) {
+  const typeLabel = accountType.charAt(0).toUpperCase() + accountType.slice(1);
+  const bankLabel = bank.charAt(0).toUpperCase() + bank.slice(1);
+  return `${typeLabel}. ${bankLabel} Nº ${accountNumber}`;
+}
+
+/**
  * create payment page
- * 
+ *
  * page for creating a new payment
  */
 export const CreatePaymentPage = () => {
-  const { t } = useTranslation("transactions");
+  const { t } = useTranslation(["transactions", "beneficiaries"]);
   const navigate = useNavigate();
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   // Step state
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedBeneficiary, setSelectedBeneficiary] = useState<typeof beneficiaries[0] | null>(null);
+  const [selectedBeneficiary, setSelectedBeneficiary] = useState<SelectedBeneficiary | null>(null);
+  const createPayment = useCreatePayment();
+  const { accounts, isLoading: isAccountsLoading } = useAccounts({ limit: 20 });
+  const { bankAccounts } = useBankAccounts(selectedBeneficiary?.id ?? "");
+
+  const beneficiariesQuery = useQuery({
+    queryKey: ["beneficiaries", "recent"],
+    queryFn: () => BeneficiariesService.list({ limit: 5 }),
+  });
+
+  const beneficiaries = beneficiariesQuery.data?.data ?? [];
 
   // Step 1 states
   const [showManualForm, setShowManualForm] = useState(false);
@@ -98,37 +142,81 @@ export const CreatePaymentPage = () => {
   const [selectedAccount, setSelectedAccount] = useState<string>();
   const [amount, setAmount] = useState("");
 
+  // Beneficiary bank account selection
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>();
+  const [showBankAccountDialog, setShowBankAccountDialog] = useState(false);
+  const [tempSelectedBankAccountId, setTempSelectedBankAccountId] = useState<string>();
+
   // 2FA Dialog state
   const [show2faDialog, setShow2faDialog] = useState(false);
   const [otpCode, setOtpCode] = useState("");
 
-  // TODO: Replace with actual accounts data from API
-  const accounts = [
-    { id: "principal", name: t("transactions.create_payment.account_principal"), balance: "124.400.321,52 COP" },
-    { id: "payroll", name: t("transactions.create_payment.account_payroll"), balance: "45.000.000,00 COP" },
-    { id: "savings", name: t("transactions.create_payment.account_savings"), balance: "15.000.000,00 COP" },
-  ];
+  useEffect(() => {
+    if (!selectedBeneficiary?.id || bankAccounts.length === 0) {
+      return;
+    }
 
-  // TODO: Replace with actual recent beneficiaries data from API
-  const beneficiaries = [
-    { id: 1, name: "Juan Carlos Gutierrez Díaz", docType: "Cédula de ciudadanía", docNumber: "112.393.994" },
-    { id: 2, name: "María Fernanda López", docType: "Cédula de ciudadanía", docNumber: "91.234.567" },
-    { id: 3, name: "Andrés Felipe Martínez", docType: "Cédula de ciudadanía", docNumber: "53.456.789" },
-  ];
+    const currentIsValid = selectedBankAccountId
+      && bankAccounts.some((account) => account.id === selectedBankAccountId);
 
-  const handleBeneficiarySelect = (beneficiary: typeof beneficiaries[0]) => {
-    setSelectedBeneficiary(beneficiary);
+    if (currentIsValid) {
+      return;
+    }
+
+    const primaryAccount = bankAccounts.find((account) => account.isPrimary) ?? bankAccounts[0];
+    setSelectedBankAccountId(primaryAccount.id);
+    setSelectedBeneficiary((previous) => {
+      if (!previous || previous.id !== selectedBeneficiary.id) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        accountType: primaryAccount.accountType,
+        bank: primaryAccount.bank,
+        accountNumber: primaryAccount.accountNumber,
+        bankAccountId: primaryAccount.id,
+      };
+    });
+  }, [bankAccounts, selectedBeneficiary?.id, selectedBankAccountId]);
+
+  const selectedBankAccount = bankAccounts.find((account) => account.id === selectedBankAccountId);
+  const canSelectAnotherAccount = Boolean(selectedBeneficiary?.id) && bankAccounts.length > 1;
+  const beneficiaryAccountLabel = selectedBeneficiary
+    ? formatAccountLabel(
+      selectedBankAccount?.accountType ?? selectedBeneficiary.accountType,
+      selectedBankAccount?.bank ?? selectedBeneficiary.bank,
+      selectedBankAccount?.accountNumber ?? selectedBeneficiary.accountNumber,
+    )
+    : "";
+
+  const handleBeneficiarySelect = async(beneficiary: typeof beneficiaries[number]) => {
+    const detailResult = await BeneficiariesService.getById(beneficiary.id);
+    const detail = detailResult.data;
+
+    setSelectedBankAccountId(undefined);
+    setSelectedBeneficiary({
+      id: beneficiary.id,
+      name: detail?.fullName ?? beneficiary.name,
+      docType: detail?.identificationDocument.type ?? "cc",
+      docNumber: detail?.identificationDocument.number ?? beneficiary.idNumber,
+      accountType: detail?.bankAccount.type ?? "corriente",
+      bank: detail?.bankAccount.bank ?? "",
+      accountNumber: detail?.bankAccount.number ?? "",
+    });
     setCurrentStep(2);
   };
 
   const handleContinueStep1 = () => {
-    // Create beneficiary from manual form
-    const manualBeneficiary = {
-      id: 0,
-      name: `${firstName} ${lastName}`,
+    const manualBeneficiary: SelectedBeneficiary = {
+      name: `${firstName} ${lastName}`.trim(),
       docType: documentType,
       docNumber: documentNumber,
+      accountType,
+      bank,
+      accountNumber,
     };
+    setSelectedBankAccountId(undefined);
     setSelectedBeneficiary(manualBeneficiary);
     setCurrentStep(2);
   };
@@ -137,35 +225,107 @@ export const CreatePaymentPage = () => {
     setCurrentStep(1);
   };
 
+  const handleOpenBankAccountDialog = () => {
+    setTempSelectedBankAccountId(selectedBankAccountId);
+    setShowBankAccountDialog(true);
+  };
+
+  const handleConfirmBankAccountChange = () => {
+    const account = bankAccounts.find((item) => item.id === tempSelectedBankAccountId);
+    if (!account || !selectedBeneficiary) {
+      return;
+    }
+
+    setSelectedBankAccountId(account.id);
+    setSelectedBeneficiary({
+      ...selectedBeneficiary,
+      accountType: account.accountType,
+      bank: account.bank,
+      accountNumber: account.accountNumber,
+      bankAccountId: account.id,
+    });
+    setShowBankAccountDialog(false);
+  };
+
   const handleUseAll = () => {
     if (selectedAccount) {
-      const account = accounts.find(acc => acc.id === selectedAccount);
+      const account = accounts.find((acc) => acc.id === selectedAccount);
       if (account) {
-        // Extract numeric value from balance
-        const numericBalance = account.balance.replace(/[^0-9,]/g, '').replace(',', '.');
-        setAmount(numericBalance);
+        // AmountInput works in major units; API receives minor via parseCurrencyToMinor
+        setAmount(minorToMajor(account.availableMinor));
       }
     }
   };
 
-  const isStep1Valid = showManualForm 
+  const isStep1Valid = showManualForm
     ? documentType && documentNumber && firstName && lastName && accountType && bank && accountNumber
     : false;
-  
-  const isStep2Valid = selectedAccount && amount && parseFloat(amount.replace(',', '.')) > 0;
 
-  const handleConfirmPayment = () => {
-    // Close dialog
-    setShow2faDialog(false);
-    
-    // Show success toast
-    ToastManager.show({
-      message: t("transactions.messages.payment_created"),
-      variant: "success",
-    });
-    
-    // Navigate to transactions
-    navigate("/transactions");
+  const amountMinor = (() => {
+    try {
+      return amount ? parseCurrencyToMinor(amount) : 0;
+    } catch {
+      return 0;
+    }
+  })();
+
+  const isStep2Valid = Boolean(selectedAccount && amountMinor > 0);
+
+  const handleConfirmPayment = async() => {
+    if (!selectedBeneficiary || !selectedAccount) {
+      return;
+    }
+
+    try {
+      let beneficiaryId = selectedBeneficiary.id;
+
+      if (!beneficiaryId && saveBeneficiary) {
+        const [first, ...rest] = selectedBeneficiary.name.split(" ").filter(Boolean);
+        const createdBeneficiary = await BeneficiariesService.create({
+          documentType: selectedBeneficiary.docType,
+          documentNumber: selectedBeneficiary.docNumber.replace(/\./g, ""),
+          firstName: first ?? selectedBeneficiary.name,
+          lastName: rest.join(" "),
+          accountType: selectedBeneficiary.accountType,
+          bank: selectedBeneficiary.bank,
+          accountNumber: selectedBeneficiary.accountNumber,
+          isMainAccount: true,
+        });
+        beneficiaryId = createdBeneficiary.data?.id;
+      }
+
+      const parsedAmount = parseCurrencyToMinor(amount);
+
+      await createPayment.mutateAsync({
+        beneficiaryId,
+        beneficiarySnapshot: {
+          fullName: selectedBeneficiary.name,
+          idType: selectedBeneficiary.docType,
+          idNumber: selectedBeneficiary.docNumber.replace(/\./g, ""),
+        },
+        sourceAccountId: selectedAccount,
+        destinationBankAccountId: selectedBankAccountId ?? selectedBeneficiary.bankAccountId,
+        destinationSnapshot: {
+          accountType: mapFormAccountTypeToApi(
+            mapAccountTypeToFormValue(selectedBeneficiary.accountType),
+          ),
+          bank: selectedBeneficiary.bank,
+          accountNumber: selectedBeneficiary.accountNumber,
+        },
+        amount: parsedAmount,
+        currency: "cop",
+        countryCode: "CO",
+        metadata: {
+          saveBeneficiary,
+          channel: "web",
+        },
+      });
+
+      setShow2faDialog(false);
+      navigate("/transactions");
+    } catch {
+      setShow2faDialog(false);
+    }
   };
 
   return (
@@ -173,13 +333,20 @@ export const CreatePaymentPage = () => {
       {sidebarTopBarPortal && createPortal(
         <Breadcrumb>
           <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem className="hidden md:block">
+            <BreadcrumbItem className={`
+              hidden
+              md:block
+            `}
+            >
               <BreadcrumbLink asChild>
                 <Link to="/transactions">{t("transactions.page_title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbItem className="md:hidden">
-              <button onClick={() => navigate("/transactions")} className="flex h-9 w-9 items-center justify-center">
+              <button
+                onClick={() => navigate("/transactions")}
+                className="flex h-9 w-9 items-center justify-center"
+              >
                 <BreadcrumbEllipsis />
               </button>
             </BreadcrumbItem>
@@ -213,245 +380,566 @@ export const CreatePaymentPage = () => {
             </TimelineContent>
           </TimelineItem>
         </Timeline>
-
         {/* Main Card */}
         <div className="flex flex-col gap-6">
-        <Card className="p-6 border-border flex flex-col gap-12">
-          {currentStep === 1 && (
-            <>
-              <div className="flex flex-col gap-6">
-                {/* Description */}
-                <p className="text-sm text-black">{t("transactions.create_payment.description")}</p>
-
-            {/* Search Input */}
-            <InputGroup>
-              <InputGroupAddon>
-                <Icon symbol="search" className="text-lg" />
-              </InputGroupAddon>
-              <InputGroupInput
-                placeholder={t("transactions.create_payment.search_placeholder")}
-              />
-            </InputGroup>
-
-            {/* Recent Beneficiaries */}
-            <Card className="p-6 bg-muted border-0 flex flex-col gap-6">
-              <p className="text-sm text-foreground">
-                {t("transactions.create_payment.recent_beneficiaries")}
-              </p>
-              <div className="flex flex-wrap gap-4">
-                {beneficiaries.map((beneficiary) => (
-                  <Card
-                    key={beneficiary.id}
-                    className="flex-1 min-w-[250px] bg-background border-0 p-4 cursor-pointer hover:bg-muted transition-colors"
-                    onClick={() => handleBeneficiarySelect(beneficiary)}
-                  >
-                    <div className="flex flex-col gap-2 h-16">
-                      <p className="text-xs text-foreground-secondary">
-                        {beneficiary.docType}: {beneficiary.docNumber}
-                      </p>
-                      <div className="flex items-center gap-2 pl-2 h-10">
-                        <Icon symbol="account_circle" weight={200} className="text-foreground text-2xl" />
-                        <p className="text-sm font-semibold text-foreground">{beneficiary.name}</p>
-                      </div>
+          <Card className="flex flex-col gap-12 border-border p-6">
+            {currentStep === 1 && (
+              <>
+                <div className="flex flex-col gap-6">
+                  {/* Description */}
+                  <p className="text-sm text-black">{t("transactions.create_payment.description")}</p>
+                  {/* Search Input */}
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <Icon symbol="search" className="text-lg" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      placeholder={t("transactions.create_payment.search_placeholder")}
+                    />
+                  </InputGroup>
+                  {/* Recent Beneficiaries */}
+                  <Card className="flex flex-col gap-6 border-0 bg-muted p-6">
+                    <p className="text-sm text-foreground">
+                      {t("transactions.create_payment.recent_beneficiaries")}
+                    </p>
+                    <div className="flex flex-wrap gap-4">
+                      {beneficiaries.map((beneficiary) => (
+                        <Card
+                          key={beneficiary.id}
+                          className={`
+                            min-w-[250px] flex-1 cursor-pointer border-0
+                            bg-background p-4 transition-colors
+                            hover:bg-muted
+                          `}
+                          onClick={() => handleBeneficiarySelect(beneficiary)}
+                        >
+                          <div className="flex h-16 flex-col gap-2">
+                            <p className="text-xs text-foreground-secondary">
+                              {beneficiary.idNumber}
+                            </p>
+                            <div className="flex h-10 items-center gap-2 pl-2">
+                              <Icon
+                                symbol="account_circle"
+                                weight={200}
+                                className="text-2xl text-foreground"
+                              />
+                              <p className={`
+                                text-sm font-semibold text-foreground
+                              `}
+                              >{beneficiary.name}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
                     </div>
                   </Card>
-                ))}
-              </div>
-            </Card>
-
-            {/* Toggle Manual Entry */}
-            <Button
-              variant="link"
-              className="h-6 px-0 w-fit"
-              onClick={() => setShowManualForm(!showManualForm)}
-            >
-              {t("transactions.create_payment.toggle_manual")}
-              <Icon symbol={showManualForm ? "expand_less" : "expand_more"} className="size-6" />
-            </Button>
-
-            {/* Manual Entry Form */}
-            {showManualForm && (
-              <Card className="p-4 bg-muted border-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Document Type */}
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="documentType" className="text-xs text-foreground">
-                      {t("transactions.create_payment.document_type")}
-                    </Label>
-                    <Select value={documentType} onValueChange={setDocumentType}>
-                      <SelectTrigger className="h-10 w-full bg-background">
-                        <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cc">Cédula de ciudadanía</SelectItem>
-                        <SelectItem value="ce">Cédula de extranjería</SelectItem>
-                        <SelectItem value="passport">Pasaporte</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Document Number */}
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="documentNumber" className="text-xs text-foreground">
-                      {t("transactions.create_payment.document_number")}
-                    </Label>
-                    <Input
-                      id="documentNumber"
-                      value={documentNumber}
-                      onChange={(e) => setDocumentNumber(e.target.value)}
-                      placeholder={t("transactions.create_payment.input_number_placeholder")}
-                      className="h-10 bg-background"
+                  {/* Toggle Manual Entry */}
+                  <Button
+                    variant="link"
+                    className="h-6 w-fit px-0"
+                    onClick={() => setShowManualForm(!showManualForm)}
+                  >
+                    {t("transactions.create_payment.toggle_manual")}
+                    <Icon
+                      symbol={showManualForm ? "expand_less" : "expand_more"}
+                      className="size-6"
                     />
-                  </div>
-
-                  {/* First Name */}
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="firstName" className="text-xs text-foreground">
-                      {t("transactions.create_payment.first_name")}
-                    </Label>
-                    <Input
-                      id="firstName"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder={t("transactions.create_payment.input_name_placeholder")}
-                      className="h-10 bg-background"
-                    />
-                  </div>
-
-                  {/* Last Name */}
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="lastName" className="text-xs text-foreground">
-                      {t("transactions.create_payment.last_name")}
-                    </Label>
-                    <Input
-                      id="lastName"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder={t("transactions.create_payment.input_lastname_placeholder")}
-                      className="h-10 bg-background"
-                    />
-                  </div>
-
-                  {/* Account Type */}
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="accountType" className="text-xs text-foreground">
-                      {t("transactions.create_payment.account_type")}
-                    </Label>
-                    <Select value={accountType} onValueChange={setAccountType}>
-                      <SelectTrigger className="h-10 w-full bg-background">
-                        <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="corriente">Corriente</SelectItem>
-                        <SelectItem value="ahorros">Ahorros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Bank */}
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="bank" className="text-xs text-foreground">
-                      {t("transactions.create_payment.bank")}
-                    </Label>
-                    <Select value={bank} onValueChange={setBank}>
-                      <SelectTrigger className="h-10 w-full bg-background">
-                        <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="davivienda">Davivienda</SelectItem>
-                        <SelectItem value="bancolombia">Bancolombia</SelectItem>
-                        <SelectItem value="bbva">BBVA</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Account Number - Full Width */}
-                  <div className="col-span-full flex flex-col gap-2">
-                    <Label htmlFor="accountNumber" className="text-xs text-foreground">
-                      {t("transactions.create_payment.account_number")}
-                    </Label>
-                    <Input
-                      id="accountNumber"
-                      value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
-                      placeholder={t("transactions.create_payment.input_number_placeholder")}
-                      className="h-10 bg-background"
-                    />
-                  </div>
-
-                  {/* Save Beneficiary Checkbox - Full Width */}
-                  <div className="col-span-full flex items-center gap-3">
-                    <Checkbox
-                      id="saveBeneficiary"
-                      checked={saveBeneficiary}
-                      onCheckedChange={(checked) => setSaveBeneficiary(checked as boolean)}
-                    />
-                    <Label htmlFor="saveBeneficiary" className="text-sm text-foreground cursor-pointer">
-                      {t("transactions.create_payment.save_beneficiary")}
-                    </Label>
-                  </div>
+                  </Button>
+                  {/* Manual Entry Form */}
+                  {showManualForm && (
+                    <Card className="border-0 bg-muted p-4">
+                      <div className={`
+                        grid grid-cols-1 gap-4
+                        md:grid-cols-2
+                      `}
+                      >
+                        {/* Document Type */}
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            htmlFor="documentType"
+                            className="text-xs text-foreground"
+                          >
+                            {t("transactions.create_payment.document_type")}
+                          </Label>
+                          <Select value={documentType} onValueChange={setDocumentType}>
+                            <SelectTrigger className="h-10 w-full bg-background">
+                              <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cc">Cédula de ciudadanía</SelectItem>
+                              <SelectItem value="ce">Cédula de extranjería</SelectItem>
+                              <SelectItem value="passport">Pasaporte</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {/* Document Number */}
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            htmlFor="documentNumber"
+                            className="text-xs text-foreground"
+                          >
+                            {t("transactions.create_payment.document_number")}
+                          </Label>
+                          <Input
+                            id="documentNumber"
+                            value={documentNumber}
+                            onChange={(e) => setDocumentNumber(e.target.value)}
+                            placeholder={t("transactions.create_payment.input_number_placeholder")}
+                            className="h-10 bg-background"
+                          />
+                        </div>
+                        {/* First Name */}
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            htmlFor="firstName"
+                            className="text-xs text-foreground"
+                          >
+                            {t("transactions.create_payment.first_name")}
+                          </Label>
+                          <Input
+                            id="firstName"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            placeholder={t("transactions.create_payment.input_name_placeholder")}
+                            className="h-10 bg-background"
+                          />
+                        </div>
+                        {/* Last Name */}
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            htmlFor="lastName"
+                            className="text-xs text-foreground"
+                          >
+                            {t("transactions.create_payment.last_name")}
+                          </Label>
+                          <Input
+                            id="lastName"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            placeholder={t("transactions.create_payment.input_lastname_placeholder")}
+                            className="h-10 bg-background"
+                          />
+                        </div>
+                        {/* Account Type */}
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            htmlFor="accountType"
+                            className="text-xs text-foreground"
+                          >
+                            {t("transactions.create_payment.account_type")}
+                          </Label>
+                          <Select value={accountType} onValueChange={setAccountType}>
+                            <SelectTrigger className="h-10 w-full bg-background">
+                              <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="corriente">Corriente</SelectItem>
+                              <SelectItem value="ahorros">Ahorros</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {/* Bank */}
+                        <div className="flex flex-col gap-2">
+                          <Label
+                            htmlFor="bank"
+                            className="text-xs text-foreground"
+                          >
+                            {t("transactions.create_payment.bank")}
+                          </Label>
+                          <Select value={bank} onValueChange={setBank}>
+                            <SelectTrigger className="h-10 w-full bg-background">
+                              <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="davivienda">Davivienda</SelectItem>
+                              <SelectItem value="bancolombia">Bancolombia</SelectItem>
+                              <SelectItem value="bbva">BBVA</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {/* Account Number - Full Width */}
+                        <div className="col-span-full flex flex-col gap-2">
+                          <Label
+                            htmlFor="accountNumber"
+                            className="text-xs text-foreground"
+                          >
+                            {t("transactions.create_payment.account_number")}
+                          </Label>
+                          <Input
+                            id="accountNumber"
+                            value={accountNumber}
+                            onChange={(e) => setAccountNumber(e.target.value)}
+                            placeholder={t("transactions.create_payment.input_number_placeholder")}
+                            className="h-10 bg-background"
+                          />
+                        </div>
+                        {/* Save Beneficiary Checkbox - Full Width */}
+                        <div className="col-span-full flex items-center gap-3">
+                          <Checkbox
+                            id="saveBeneficiary"
+                            checked={saveBeneficiary}
+                            onCheckedChange={(checked) => setSaveBeneficiary(checked as boolean)}
+                          />
+                          <Label
+                            htmlFor="saveBeneficiary"
+                            className="cursor-pointer text-sm text-foreground"
+                          >
+                            {t("transactions.create_payment.save_beneficiary")}
+                          </Label>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
                 </div>
-              </Card>
+                {/* Action Buttons */}
+                <div className="flex gap-6">
+                  <Button variant="secondary" onClick={() => navigate("/transactions")}>
+                    {t("transactions.create_payment.cancel")}
+                  </Button>
+                  <Button
+                    variant="default"
+                    disabled={!isStep1Valid}
+                    onClick={handleContinueStep1}
+                  >
+                    {t("transactions.create_payment.continue")}
+                  </Button>
+                </div>
+              </>
             )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-6">
-            <Button variant="secondary" onClick={() => navigate("/transactions")}>
-              {t("transactions.create_payment.cancel")}
-            </Button>
-            <Button 
-              variant="default" 
-              disabled={!isStep1Valid}
-              onClick={handleContinueStep1}
-            >
-              {t("transactions.create_payment.continue")}
-            </Button>
-          </div>
-        </>
-      )}
-
-      {currentStep === 2 && selectedBeneficiary && (
-        <>
-          <div className="flex flex-col gap-4">
-            {/* Beneficiary Section */}
-            <Card className="p-4 bg-muted border-0">
-              <div className="flex items-center h-16">
-                <div className="flex-1 flex flex-col gap-2">
-                  <p className="text-xs text-foreground-secondary">
-                    {t("transactions.create_payment.beneficiary_label")}
-                  </p>
-                  <div className="flex items-center gap-2 pl-2 h-10">
-                    <Icon symbol="account_circle" className="text-foreground text-2xl" />
-                    <p className="text-sm font-semibold text-foreground">{selectedBeneficiary.name}</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleEditBeneficiary}>
-                  <Icon symbol="edit" className="size-6" />
-                  {t("transactions.create_payment.edit")}
-                </Button>
-              </div>
-            </Card>
-
-            {/* Source Account Section */}
-            <Card className="p-4 bg-muted border-0 flex flex-col gap-4">
-              <p className="text-xs text-foreground">
-                {t("transactions.create_payment.source_account_label")}
-              </p>
-              <SelectableCardGroup value={selectedAccount} onValueChange={setSelectedAccount} className="w-full">
-                <div className="flex flex-wrap gap-4 w-full">
-                  {accounts.map((account) => (
-                    <SelectableCard
-                      key={account.id}
-                      value={account.id}
-                      className="flex-1 min-w-[250px]"
+            {currentStep === 2 && selectedBeneficiary && (
+              <>
+                <div className="flex flex-col gap-4">
+                  {/* Beneficiary Section */}
+                  <Card className="border-0 bg-muted p-4">
+                    <div className="flex h-16 items-center">
+                      <div className="flex flex-1 flex-col gap-2">
+                        <p className="text-xs text-foreground-secondary">
+                          {t("transactions.create_payment.beneficiary_label")}
+                        </p>
+                        <div className="flex h-10 items-center gap-2 pl-2">
+                          <Icon
+                            symbol="account_circle"
+                            className="text-2xl text-foreground"
+                          />
+                          <p className="text-sm font-semibold text-foreground">{selectedBeneficiary.name}</p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleEditBeneficiary}>
+                        <Icon symbol="edit" className="size-6" />
+                        {t("transactions.create_payment.edit")}
+                      </Button>
+                    </div>
+                  </Card>
+                  {/* Source Account Section */}
+                  <Card className="flex flex-col gap-4 border-0 bg-muted p-4">
+                    <p className="text-xs text-foreground">
+                      {t("transactions.create_payment.source_account_label")}
+                    </p>
+                    <SelectableCardGroup
+                      value={selectedAccount}
+                      onValueChange={setSelectedAccount}
+                      className="w-full"
                     >
-                      <div className="flex items-center h-16">
-                        <div className="flex-1 flex flex-col gap-2">
-                          <SelectableCardTitle>{account.name}</SelectableCardTitle>
-                          <div className="flex items-center gap-2 pl-2 h-10">
-                            <Icon symbol="paid" className="text-2xl" />
-                            <SelectableCardDescription>{account.balance}</SelectableCardDescription>
+                      <div className="flex w-full flex-wrap gap-4">
+                        {!isAccountsLoading && accounts.map((account) => (
+                          <SelectableCard
+                            key={account.id}
+                            value={account.id}
+                            className="min-w-[250px] flex-1"
+                          >
+                            <div className="flex h-16 items-center">
+                              <div className="flex flex-1 flex-col gap-2">
+                                <SelectableCardTitle>{account.name}</SelectableCardTitle>
+                                <div className={`
+                                  flex h-10 items-center gap-2 pl-2
+                                `}
+                                >
+                                  <Icon symbol="paid" className="text-2xl" />
+                                  <SelectableCardDescription>{account.balance}</SelectableCardDescription>
+                                </div>
+                              </div>
+                            </div>
+                          </SelectableCard>
+                        ))}
+                      </div>
+                    </SelectableCardGroup>
+                  </Card>
+                  {/* Amount Section */}
+                  <Card className="flex flex-col gap-4 border-0 bg-muted p-4">
+                    <p className="text-xs text-foreground">
+                      {t("transactions.create_payment.amount_label")}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <AmountInputContainer className="gap-2">
+                        <AmountInputFlag locale="es-CO" currencySymbol="" />
+                        <AmountInput
+                          value={amountMinor > 0 ? Number(minorToMajor(amountMinor)) : undefined}
+                          onValueChange={(value) => {
+                            if (value === undefined) {
+                              setAmount("");
+                              return;
+                            }
+                            // AmountInput gives major units; persist as major string for majorToMinor
+                            setAmount(value.toFixed(2));
+                          }}
+                          onInput={(e) => {
+                            const rawValue = (e.target as HTMLInputElement).value
+                              .replace(/[^0-9,.]/g, "");
+                            setAmount(rawValue);
+                          }}
+                          placeholder={t("transactions.create_payment.amount_placeholder")}
+                          locale="es-CO"
+                          minimumFractionDigits={2}
+                          maximumFractionDigits={2}
+                        />
+                        <AmountInputAction onClick={handleUseAll}>
+                          {t("transactions.create_payment.use_all")}
+                        </AmountInputAction>
+                      </AmountInputContainer>
+                      {selectedAccount && (
+                        <p className="text-xs text-foreground">
+                          {t("transactions.create_payment.available")}: {accounts.find((acc) => acc.id === selectedAccount)?.balance}
+                        </p>
+                      )}
+                    </div>
+                  </Card>
+                </div>
+                {/* Action Buttons */}
+                <div className="flex gap-6">
+                  <Button variant="secondary" onClick={() => navigate("/transactions")}>
+                    {t("transactions.create_payment.cancel")}
+                  </Button>
+                  <Button
+                    variant="default"
+                    disabled={!isStep2Valid}
+                    onClick={() => setCurrentStep(3)}
+                  >
+                    {t("transactions.create_payment.continue")}
+                  </Button>
+                </div>
+              </>
+            )}
+            {currentStep === 3 && selectedBeneficiary && selectedAccount && amount && (
+              <div className="flex flex-col gap-12">
+                {/* Two Column Layout */}
+                <div className="flex w-full gap-4">
+                  {/* Beneficiary Column */}
+                  <Card className={`
+                    flex min-w-[250px] flex-1 flex-col gap-6 border-0 bg-muted
+                    p-6
+                  `}
+                  >
+                    <div className="flex h-5 items-center justify-between">
+                      <p className="text-sm text-foreground">
+                        {t("transactions.create_payment.beneficiary_title")}
+                      </p>
+                      <Button variant="outline" size="sm" onClick={handleEditBeneficiary}>
+                        <Icon symbol="edit" className="size-6" />
+                        {t("transactions.create_payment.edit")}
+                      </Button>
+                    </div>
+                    <Card className={`
+                      flex flex-col gap-6 border-0 bg-background p-4
+                    `}
+                    >
+                      {/* Full Name */}
+                      <div className="flex h-16 items-center">
+                        <div className="flex flex-1 flex-col gap-2">
+                          <p className="text-xs text-foreground-secondary">
+                            {t("transactions.create_payment.full_name")}
+                          </p>
+                          <div className="flex h-10 items-center gap-2 pl-2">
+                            <Icon
+                              symbol="account_circle"
+                              className="text-2xl text-foreground"
+                            />
+                            <p className="text-sm font-semibold text-foreground">{selectedBeneficiary.name}</p>
+                          </div>
+                        </div>
+                      </div>
+                      {/* ID Type and Number */}
+                      <div className="flex h-16 items-center">
+                        <div className="flex flex-1 flex-col gap-2">
+                          <p className="text-xs text-foreground-secondary">
+                            {t("transactions.create_payment.id_type_number")}
+                          </p>
+                          <div className="flex h-10 items-center gap-2 pl-2">
+                            <Icon
+                              symbol="contacts"
+                              className="text-2xl text-foreground"
+                            />
+                            <p className="text-sm font-semibold text-foreground">
+                              {selectedBeneficiary.docType}: {selectedBeneficiary.docNumber}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Account Type and Number */}
+                      <div className="flex h-16 items-center">
+                        <div className="flex flex-1 flex-col gap-2">
+                          <p className="text-xs text-foreground-secondary">
+                            {t("transactions.create_payment.account_type_number")}
+                          </p>
+                          <div className="flex h-10 items-center gap-2 pl-2">
+                            <Icon
+                              symbol="account_balance"
+                              className="text-2xl text-foreground"
+                            />
+                            <p className={`
+                              flex-1 text-sm font-semibold text-foreground
+                            `}
+                            >
+                              {beneficiaryAccountLabel}
+                            </p>
+                            {canSelectAnotherAccount && (
+                              <Button
+                                variant="link"
+                                className="h-6 p-0 text-primary"
+                                onClick={handleOpenBankAccountDialog}
+                              >
+                                {t("transactions.create_payment.select_another")}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </Card>
+                  {/* Amount and Source Account Column */}
+                  <Card className={`
+                    flex min-w-[250px] flex-1 flex-col gap-6 border-0 bg-muted
+                    p-6
+                  `}
+                  >
+                    <div className="flex h-5 items-center justify-between">
+                      <p className="text-sm text-foreground">
+                        {t("transactions.create_payment.amount_source_title")}
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => setCurrentStep(2)}>
+                        <Icon symbol="edit" className="size-6" />
+                        {t("transactions.create_payment.edit")}
+                      </Button>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      {/* Amount Card */}
+                      <Card className={`
+                        border-0 bg-gradient-to-r from-[#e5f3fa] to-white p-4
+                      `}
+                      >
+                        <div className="flex h-16 items-center">
+                          <div className="flex flex-1 flex-col gap-2">
+                            <p className="text-xs text-foreground-secondary">
+                              {t("transactions.create_payment.amount")}
+                            </p>
+                            <div className="flex h-10 items-center gap-2 pl-2">
+                              <Icon
+                                symbol="paid"
+                                className="text-2xl text-foreground"
+                              />
+                              <p className={`
+                                text-sm font-semibold text-foreground
+                              `}
+                              >
+                                {formatCurrencyDisplay(amountMinor, "COP")}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                      {/* Source Account Card */}
+                      <Card className="border-0 bg-background p-4">
+                        <div className="flex h-16 items-center">
+                          <div className="flex flex-1 flex-col gap-2">
+                            <p className="text-xs text-foreground-secondary">
+                              {t("transactions.create_payment.source_account")}
+                            </p>
+                            <div className="flex h-10 items-center gap-2 pl-2">
+                              <Icon
+                                symbol="account_balance_wallet"
+                                className="text-2xl text-foreground"
+                              />
+                              <p className={`
+                                text-sm font-semibold text-foreground
+                              `}
+                              >
+                                {accounts.find((acc) => acc.id === selectedAccount)?.name}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </Card>
+                </div>
+                {/* Action Buttons */}
+                <div className="flex gap-6">
+                  <Button variant="secondary" onClick={() => navigate("/transactions")}>
+                    {t("transactions.create_payment.cancel_payment")}
+                  </Button>
+                  <Button variant="default" onClick={() => setShow2faDialog(true)}>
+                    <Icon symbol="check" className="size-6" />
+                    {t("transactions.create_payment.confirm_payment")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+          {/* Warning Alert for Step 3 */}
+          {currentStep === 3 && selectedBeneficiary && selectedAccount && amount && (
+            <Alert variant="warning" className="border-0 bg-warning-50">
+              <Icon symbol="info" />
+              <AlertTitle>{t("transactions.create_payment.verify_data")}</AlertTitle>
+              <AlertDescription>
+                {t("transactions.create_payment.operation_warning")}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+        {/* Select Bank Account Dialog */}
+        <Dialog open={showBankAccountDialog} onOpenChange={setShowBankAccountDialog}>
+          <DialogContent className="sm:max-w-[640px]">
+            <DialogHeader>
+              <DialogTitle>{t("transactions.select_account_dialog.title")}</DialogTitle>
+              <DialogDescription>
+                {t("transactions.select_account_dialog.description")}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+              <SelectableCardGroup
+                value={tempSelectedBankAccountId}
+                onValueChange={setTempSelectedBankAccountId}
+                className="w-full"
+              >
+                <div className="flex w-full flex-col gap-2">
+                  {bankAccounts.map((account) => (
+                    <SelectableCard key={account.id} value={account.id}>
+                      <div className="flex h-16 items-center">
+                        <div className="flex flex-1 flex-col gap-2">
+                          <SelectableCardTitle>
+                            {account.accountType}
+                          </SelectableCardTitle>
+                          <div className={`
+                            flex h-10 items-center justify-between gap-2 pl-2
+                          `}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon
+                                symbol="account_balance"
+                                className="text-2xl"
+                              />
+                              <SelectableCardDescription>
+                                {account.bank} Nº {account.accountNumber}
+                              </SelectableCardDescription>
+                            </div>
+                            {account.isPrimary && (
+                              <Badge
+                                variant="waiting-medium"
+                                className="h-8 bg-muted px-2 text-sm leading-5"
+                              >
+                                {t("beneficiaries:beneficiaries.bank_accounts.primary_label")}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -459,200 +947,23 @@ export const CreatePaymentPage = () => {
                   ))}
                 </div>
               </SelectableCardGroup>
-            </Card>
-
-            {/* Amount Section */}
-            <Card className="p-4 bg-muted border-0 flex flex-col gap-4">
-              <p className="text-xs text-foreground">
-                {t("transactions.create_payment.amount_label")}
-              </p>
-              <div className="flex flex-col gap-2">
-                <AmountInputContainer className="gap-2">
-                  <AmountInputFlag locale="es-CO" currencySymbol="" />
-                  <AmountInput
-                    value={amount ? parseFloat(amount.replace(',', '.')) : undefined}
-                    onValueChange={(value) => setAmount(value !== undefined ? String(value) : "")}
-                    onInput={(e) => {
-                      const rawValue = (e.target as HTMLInputElement).value.replace(/[^0-9,]/g, '').replace(',', '.');
-                      setAmount(rawValue);
-                    }}
-                    placeholder={t("transactions.create_payment.amount_placeholder")}
-                    locale="es-CO"
-                    minimumFractionDigits={2}
-                    maximumFractionDigits={2}
-                  />
-                  <AmountInputAction onClick={handleUseAll}>
-                    {t("transactions.create_payment.use_all")}
-                  </AmountInputAction>
-                </AmountInputContainer>
-                {selectedAccount && (
-                  <p className="text-xs text-foreground">
-                    {t("transactions.create_payment.available")}: {accounts.find(acc => acc.id === selectedAccount)?.balance}
-                  </p>
-                )}
-              </div>
-            </Card>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-6">
-            <Button variant="secondary" onClick={() => navigate("/transactions")}>
-              {t("transactions.create_payment.cancel")}
-            </Button>
-            <Button 
-              variant="default" 
-              disabled={!isStep2Valid}
-              onClick={() => setCurrentStep(3)}
-            >
-              {t("transactions.create_payment.continue")}
-            </Button>
-          </div>
-        </>
-      )}
-
-      {currentStep === 3 && selectedBeneficiary && selectedAccount && amount && (
-        <div className="flex flex-col gap-12">
-          {/* Two Column Layout */}
-          <div className="flex gap-4 w-full">
-              {/* Beneficiary Column */}
-              <Card className="flex-1 min-w-[250px] bg-muted border-0 p-6 flex flex-col gap-6">
-                <div className="flex items-center justify-between h-5">
-                  <p className="text-sm text-foreground">
-                    {t("transactions.create_payment.beneficiary_title")}
-                  </p>
-                  <Button variant="outline" size="sm" onClick={handleEditBeneficiary}>
-                    <Icon symbol="edit" className="size-6" />
-                    {t("transactions.create_payment.edit")}
-                  </Button>
-                </div>
-                <Card className="bg-background border-0 p-4 flex flex-col gap-6">
-                  {/* Full Name */}
-                  <div className="flex items-center h-16">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <p className="text-xs text-foreground-secondary">
-                        {t("transactions.create_payment.full_name")}
-                      </p>
-                      <div className="flex items-center gap-2 pl-2 h-10">
-                        <Icon symbol="account_circle" className="text-foreground text-2xl" />
-                        <p className="text-sm font-semibold text-foreground">{selectedBeneficiary.name}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ID Type and Number */}
-                  <div className="flex items-center h-16">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <p className="text-xs text-foreground-secondary">
-                        {t("transactions.create_payment.id_type_number")}
-                      </p>
-                      <div className="flex items-center gap-2 pl-2 h-10">
-                        <Icon symbol="contacts" className="text-foreground text-2xl" />
-                        <p className="text-sm font-semibold text-foreground">
-                          {selectedBeneficiary.docType}: {selectedBeneficiary.docNumber}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Account Type and Number */}
-                  <div className="flex items-center h-16">
-                    <div className="flex-1 flex flex-col gap-2">
-                      <p className="text-xs text-foreground-secondary">
-                        {t("transactions.create_payment.account_type_number")}
-                      </p>
-                      <div className="flex items-center gap-2 pl-2 h-10">
-                        <Icon symbol="account_balance" className="text-foreground text-2xl" />
-                        <p className="text-sm font-semibold text-foreground flex-1">
-                          {t("transactions.create_payment.checking_account")}
-                        </p>
-                        <Button variant="link" className="text-primary h-6 p-0">
-                          {t("transactions.create_payment.select_another")}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </Card>
-
-              {/* Amount and Source Account Column */}
-              <Card className="flex-1 min-w-[250px] bg-muted border-0 p-6 flex flex-col gap-6">
-                <div className="flex items-center justify-between h-5">
-                  <p className="text-sm text-foreground">
-                    {t("transactions.create_payment.amount_source_title")}
-                  </p>
-                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(2)}>
-                    <Icon symbol="edit" className="size-6" />
-                    {t("transactions.create_payment.edit")}
-                  </Button>
-                </div>
-                <div className="flex flex-col gap-4">
-                  {/* Amount Card */}
-                  <Card className="bg-gradient-to-r from-[#e5f3fa] to-white border-0 p-4">
-                    <div className="flex items-center h-16">
-                      <div className="flex-1 flex flex-col gap-2">
-                        <p className="text-xs text-foreground-secondary">
-                          {t("transactions.create_payment.amount")}
-                        </p>
-                        <div className="flex items-center gap-2 pl-2 h-10">
-                          <Icon symbol="paid" className="text-foreground text-2xl" />
-                          <p className="text-sm font-semibold text-foreground">
-                            {new Intl.NumberFormat('es-CO', {
-                              style: 'decimal',
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }).format(parseFloat(amount.replace(',', '.')))}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Source Account Card */}
-                  <Card className="bg-background border-0 p-4">
-                    <div className="flex items-center h-16">
-                      <div className="flex-1 flex flex-col gap-2">
-                        <p className="text-xs text-foreground-secondary">
-                          {t("transactions.create_payment.source_account")}
-                        </p>
-                        <div className="flex items-center gap-2 pl-2 h-10">
-                          <Icon symbol="account_balance_wallet" className="text-foreground text-2xl" />
-                          <p className="text-sm font-semibold text-foreground">
-                            {accounts.find(acc => acc.id === selectedAccount)?.name}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </Card>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-6">
-              <Button variant="secondary" onClick={() => navigate("/transactions")}>
-                {t("transactions.create_payment.cancel_payment")}
+            </DialogBody>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="secondary">
+                  {t("transactions.select_account_dialog.cancel")}
+                </Button>
+              </DialogClose>
+              <Button
+                variant="default"
+                onClick={handleConfirmBankAccountChange}
+                disabled={!tempSelectedBankAccountId}
+              >
+                {t("transactions.select_account_dialog.confirm")}
               </Button>
-              <Button variant="default" onClick={() => setShow2faDialog(true)}>
-                <Icon symbol="check" className="size-6" />
-                {t("transactions.create_payment.confirm_payment")}
-              </Button>
-            </div>
-          </div>
-      )}
-    </Card>
-
-        {/* Warning Alert for Step 3 */}
-        {currentStep === 3 && selectedBeneficiary && selectedAccount && amount && (
-          <Alert variant="warning" className="bg-warning-50 border-0">
-            <Icon symbol="info" />
-            <AlertTitle>{t("transactions.create_payment.verify_data")}</AlertTitle>
-            <AlertDescription>
-              {t("transactions.create_payment.operation_warning")}
-            </AlertDescription>
-          </Alert>
-        )}
-        </div>
-
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         {/* 2FA Dialog */}
         <Dialog open={show2faDialog} onOpenChange={setShow2faDialog}>
           <DialogContent>
@@ -685,8 +996,8 @@ export const CreatePaymentPage = () => {
               <DialogClose asChild>
                 <Button variant="secondary">{t("transactions.otp_dialog.cancel")}</Button>
               </DialogClose>
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 onClick={handleConfirmPayment}
                 disabled={otpCode.length !== 6}
               >

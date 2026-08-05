@@ -3,6 +3,8 @@
 # ===================================
 # npm/yarn/pnpm package directories
 node_modules/
+.pnp
+.pnp.js
 
 # ===================================
 # Build Outputs
@@ -11,6 +13,17 @@ node_modules/
 dist/
 # Vite SSR build output
 dist-ssr/
+# TypeScript incremental build cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ===================================
+# Vite / Tooling Cache
+# ===================================
+.vite/
+.eslintcache
+.stylelintcache
+.turbo/
 
 # ============================================
 # Environment Variables
@@ -18,6 +31,8 @@ dist-ssr/
 # Environment files with credentials and secrets
 .env
 .env.*
+.env.local
+.env.*.local
 
 # Allow example file (without real credentials)
 !.env.example
@@ -35,18 +50,15 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # ===================================
-# Generated Documentation
-# ===================================
-# TypeDoc auto-generated API documentation
-docs/
-
-# ===================================
 # Testing & Coverage
 # ===================================
 # Test coverage reports
 coverage/
 .nyc_output/
 *.lcov
+test-results/
+playwright-report/
+blob-report/
 
 # ===================================
 # IDE & Editor Files
@@ -57,6 +69,8 @@ coverage/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+# Cursor
+.cursor/
 # JetBrains IDEs (WebStorm, IntelliJ, etc.)
 .idea/
 *.iml
@@ -78,11 +92,16 @@ coverage/
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
 # Windows
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
 Desktop.ini
+$RECYCLE.BIN/
+# Git Bash / MSYS crash dumps (Windows)
+*.stackdump
+bash.exe.stackdump
 # Linux
 *~
 
@@ -94,3 +113,10 @@ Desktop.ini
 *.temp
 .cache/
 .parcel-cache/
+*.local
+
+# ===================================
+# Optional local tooling
+# ===================================
+.vercel
+.netlify

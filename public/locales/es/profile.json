@@ -51,19 +51,6 @@
       "success": "2FA activado exitosamente"
     }
   },
-  "language": {
-    "title": "Idioma",
-    "description": "Idioma preferido del sistema:",
-    "current": "Español",
-    "change_language": "Cambiar idioma",
-    "dialog": {
-      "title": "Idioma",
-      "description": "Selecciona tu idioma de preferencia:",
-      "cancel": "Cancelar",
-      "save": "Cambiar idioma",
-      "success": "Idioma cambiado exitosamente"
-    }
-  },
   "billing": {
     "title": "Planes y facturación",
     "description": "Administra tu facturación, accede a tu plan y más planes disponibles.",

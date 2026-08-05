@@ -1,150 +1,28 @@
-import type { Transaction } from "../entities/transaction.entity";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import type { ListQueryParams } from "@/lib/api/api.types";
+import { PaymentsService } from "@/features/transactions/api/services/payments.service";
+import { listQueryDefaults } from "@/lib/query/defaults";
+import { queryKeys } from "@/lib/query/query-keys";
 
-/**
- * hook to manage transactions
- */
-export const useTransactions = () => {
-  // sample data matching figma design
-  const transactions: Transaction[] = [
-    {
-      id: "1",
-      date: "10/12/2025",
-      beneficiary: "Luisa Fernanda Gomez",
-      idNumber: "22.030.116",
-      amount: 22350000,
-      reference: "JKL-5678",
-      status: "pending",
+export function useTransactions(params?: ListQueryParams) {
+  const { t } = useTranslation(["transactions"]);
+
+  const query = useQuery({
+    queryKey: queryKeys.payments.all(params),
+    queryFn: () => PaymentsService.list(params),
+    ...listQueryDefaults,
+    meta: {
+      showMessageOnSuccess: false,
+      errorMessage: t("transactions:errors.load_failed", { defaultValue: "Error al cargar transacciones" }),
     },
-    {
-      id: "2",
-      date: "11/15/2025",
-      beneficiary: "Carlos Alberto Ruiz",
-      idNumber: "12.345.678",
-      amount: 18750000,
-      reference: "MNO-1234",
-      status: "returned",
-    },
-    {
-      id: "3",
-      date: "12/01/2025",
-      beneficiary: "Sofia Maria Torres",
-      idNumber: "34.567.890",
-      amount: 27900000,
-      reference: "PQR-9101",
-      status: "paid",
-    },
-    {
-      id: "4",
-      date: "01/20/2026",
-      beneficiary: "Javier Antonio Ruiz",
-      idNumber: "56.789.012",
-      amount: 15500000,
-      reference: "STU-3456",
-      status: "validated",
-    },
-    {
-      id: "5",
-      date: "02/15/2026",
-      beneficiary: "Gabriela Sofia Lopez",
-      idNumber: "78.901.234",
-      amount: 20000000,
-      reference: "VWX-7890",
-      status: "paid",
-    },
-    {
-      id: "6",
-      date: "03/10/2026",
-      beneficiary: "Isabella Martinez",
-      idNumber: "90.123.456",
-      amount: 23750000,
-      reference: "YZA-4567",
-      status: "paid",
-    },
-    {
-      id: "7",
-      date: "04/05/2026",
-      beneficiary: "Fernando José Torres",
-      idNumber: "12.345.678",
-      amount: 19300000,
-      reference: "BCD-1234",
-      status: "paid",
-    },
-    {
-      id: "8",
-      date: "05/25/2026",
-      beneficiary: "María Clara Ramos",
-      idNumber: "34.567.890",
-      amount: 25500000,
-      reference: "EFG-5678",
-      status: "returned",
-    },
-    {
-      id: "9",
-      date: "06/30/2026",
-      beneficiary: "Miguel Alejandro Castro",
-      idNumber: "56.789.012",
-      amount: 30000000,
-      reference: "HIJ-9101",
-      status: "validated",
-    },
-    {
-      id: "10",
-      date: "07/18/2026",
-      beneficiary: "Valentina Pérez",
-      idNumber: "78.901.234",
-      amount: 28150000,
-      reference: "KLM-2345",
-      status: "paid",
-    },
-    {
-      id: "11",
-      date: "08/12/2026",
-      beneficiary: "Andrés Felipe Mora",
-      idNumber: "90.123.456",
-      amount: 16800000,
-      reference: "NOP-6789",
-      status: "rejected",
-    },
-    {
-      id: "12",
-      date: "09/09/2026",
-      beneficiary: "Camilo Andrés Vargas",
-      idNumber: "12.345.678",
-      amount: 22900000,
-      reference: "QRS-1234",
-      status: "paid",
-    },
-    {
-      id: "13",
-      date: "10/20/2026",
-      beneficiary: "Natalia Sepúlveda",
-      idNumber: "34.567.890",
-      amount: 21250000,
-      reference: "TUV-5678",
-      status: "paid",
-    },
-    {
-      id: "14",
-      date: "11/21/2026",
-      beneficiary: "Diego Alejandro Gómez",
-      idNumber: "56.789.012",
-      amount: 24900000,
-      reference: "WXY-9101",
-      status: "returned",
-    },
-    {
-      id: "15",
-      date: "12/14/2026",
-      beneficiary: "Luisa Fernanda Guzmán",
-      idNumber: "78.901.234",
-      amount: 29000000,
-      reference: "ZAB-3456",
-      status: "returned",
-    },
-  ];
+  });
 
   return {
-    transactions,
-    totalCount: 791,
+    transactions: query.data?.data ?? [],
+    totalCount: query.data?.pagination?.total ?? 0,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
   };
-};
+}

@@ -1,31 +1,26 @@
-import type { Home } from "@/features/home/application/entities/home.entity";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { DashboardService } from "@/features/home/api/services/dashboard.service";
+import { queryDefaults } from "@/lib/query/defaults";
+import { queryKeys } from "@/lib/query/query-keys";
 
-/**
- * hook for home feature
- * 
- * provides home data and state management
- */
 export function useHome() {
-  // for now, we return static data
-  // in the future, this could fetch from an API
-  const homeData: Home = {
-    walletBalance: {
-      amount: "$190.034.500,59",
-      currency: "COP",
-      countryCode: "CO",
+  const { t } = useTranslation(["home"]);
+
+  const query = useQuery({
+    queryKey: queryKeys.dashboard.summary,
+    queryFn: DashboardService.getSummary,
+    ...queryDefaults,
+    meta: {
+      showMessageOnSuccess: false,
+      errorMessage: t("home:errors.load_failed", { defaultValue: "Error al cargar el inicio" }),
     },
-    transactionStats: {
-      pending: 1392,
-      returned: 1392,
-      rejected: 1392,
-      validated: 1392,
-      paid: 1392,
-    },
-  };
+  });
 
   return {
-    data: homeData,
-    isLoading: false,
-    error: null,
+    data: query.data?.data,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
   };
 }

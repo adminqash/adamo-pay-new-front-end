@@ -9,54 +9,5 @@
     "beneficiaries": "Beneficiarios",
     "metrics": "Métricas",
     "reports": "Reportes"
-  },
-  "footer": {
-    "profile": "Perfil",
-    "logout": "Cerrar sesión"
-  },
-  "logout_dialog": {
-    "title": "Confirmar cierre de sesión",
-    "description": "¿Estás seguro que quieres cerrar sesión?",
-    "cancel": "Cancelar",
-    "confirm": "Cerrar sesión"
-  },
-  "help": {
-    "request_whatsapp": "Solicitar ayuda por WhatsApp",
-    "report_idea": "Reportar fallo / enviar idea",
-    "dialog": {
-      "title": "Reportar fallo / enviar idea",
-      "description": "Selecciona el tema y escribe un mensaje sobre el tema que deseas reportar un fallo o enviar una idea de mejora:",
-      "topic_placeholder": "Selecciona un tema",
-      "topics": {
-        "bug": "Reportar un error",
-        "feature": "Sugerir una mejora",
-        "question": "Hacer una pregunta",
-        "other": "Otro"
-      },
-      "message_placeholder": "Escribe tu mensaje...",
-      "cancel": "Cancelar",
-      "send": "Enviar mensaje"
-    }
-  },
-  "notifications": {
-    "title": "Notificaciones",
-    "items": {
-      "payment_received": {
-        "title": "Pago recibido",
-        "description": "Se ha recibido un pago de $50,000 COP",
-        "time": "Hace 5 minutos"
-      },
-      "batch_processed": {
-        "title": "Lote procesado",
-        "description": "El lote #1234 se ha procesado correctamente",
-        "time": "Hace 1 hora"
-      },
-      "document_approved": {
-        "title": "Documento aprobado",
-        "description": "Tu documento ha sido aprobado y está listo para usar",
-        "time": "Hace 2 horas"
-      }
-    },
-    "view_all": "Ver todas las notificaciones"
   }
 }

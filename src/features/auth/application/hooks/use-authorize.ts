@@ -1,0 +1,22 @@
+import { useQuery } from "@tanstack/react-query";
+import { AuthorizeService } from "@/features/auth/api/services/authorize.service";
+import { queryKeys } from "@/lib/query/query-keys";
+
+export function useAuthorize() {
+  const query = useQuery({
+    queryKey: queryKeys.auth.authorize,
+    queryFn: AuthorizeService.check,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    meta: {
+      showMessageOnError: false,
+    },
+  });
+
+  return {
+    data: query.data?.data,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
+}

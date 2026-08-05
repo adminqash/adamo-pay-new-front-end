@@ -1,28 +1,25 @@
 import { Card } from "@adamosuiteservices/ui/card";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 
 interface PaymentFrequencyChartProps {
-  currentTime?: string;
-  totalPayments?: number;
-  filterType?: "today" | "this_week" | "this_month" | "custom";
+  currentTime?: string
+  totalPayments?: number
+  filterType?: "today" | "this_week" | "this_month" | "custom"
+  data?: Array<{ label: string, payments: number }>
 }
 
-/**
- * payment frequency chart component
- * 
- * displays payment frequency visualization using recharts area chart
- */
 export function PaymentFrequencyChart({
   currentTime = "Hoy 10:22 AM",
-  totalPayments = 1790,
+  totalPayments = 0,
   filterType = "this_week",
+  data: propData,
 }: PaymentFrequencyChartProps) {
   const { t } = useTranslation("metrics");
-  
-  // TODO: Replace with actual data from API
+
   const getChartData = () => {
+    if (propData && propData.length > 0) return propData;
     switch (filterType) {
       case "today":
         return [
@@ -62,7 +59,8 @@ export function PaymentFrequencyChart({
   };
 
   const data = getChartData();
-
+  const maxPayments = Math.max(...data.map((point) => point.payments), 1);
+  const yTicks = [0, Math.round(maxPayments / 3), Math.round((maxPayments * 2) / 3), maxPayments];
   const [activeDay, setActiveDay] = useState<string | null>(null);
 
   // Format numbers in short form (1000 → 1k, 3200 → 3.2k)
@@ -73,69 +71,44 @@ export function PaymentFrequencyChart({
     return num.toString();
   };
 
-  // Custom tooltip that updates the header
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const label = payload[0].payload.label;
-      const payments = payload[0].value;
-      
-      if (label !== activeDay) {
-        setActiveDay(label);
-      }
+  const handleChartMouseMove = (state: { activeLabel?: string | number }) => {
+    if (typeof state.activeLabel === "string") {
+      setActiveDay(state.activeLabel);
     }
-    return null; // Don't render anything visible
   };
 
   const handleMouseLeave = () => {
     setActiveDay(null);
   };
 
-  // Custom active dot with halo effect
-  const CustomActiveDot = (props: any) => {
-    const { cx, cy } = props;
-    return (
-      <g>
-        {/* Halo circle */}
-        <circle 
-          cx={cx} 
-          cy={cy} 
-          r={12} 
-          fill="rgba(14, 147, 132, 0.10)" 
-        />
-        {/* Main dot */}
-        <circle 
-          cx={cx} 
-          cy={cy} 
-          r={8} 
-          fill="oklch(.7477 .0802 186.37)" 
-          stroke="white" 
-          strokeWidth={2}
-        />
-      </g>
-    );
-  };
-
   // Find the active data point
-  const activeData = activeDay ? data.find(d => d.label === activeDay) : null;
+  const activeData = activeDay ? data.find((d) => d.label === activeDay) : null;
   const displayLabel = activeDay || currentTime;
-  const displayPayments = activeData 
+  const displayPayments = activeData
     ? formatNumber(activeData.payments)
     : formatNumber(totalPayments);
 
   return (
-    <Card className="flex flex-col gap-6 border-0 bg-white p-6 rounded-3xl h-[400px] w-full relative">
+    <Card className={`
+      relative flex h-[400px] w-full flex-col gap-6 rounded-3xl border-0
+      bg-white p-6
+    `}
+    >
       {/* Header with timestamp and total */}
-      <div className="flex items-center justify-end gap-2 text-sm text-neutral-700">
+      <div className={`
+        flex items-center justify-end gap-2 text-sm text-neutral-700
+      `}
+      >
         <span>{displayLabel},</span>
         <span className="font-bold">{displayPayments} {t("metrics.chart.total_payments")}</span>
       </div>
-
       {/* Chart Area */}
-      <div className="flex-1 w-full">
+      <div className="w-full flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
             margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            onMouseMove={handleChartMouseMove}
             onMouseLeave={handleMouseLeave}
           >
             <defs>
@@ -157,18 +130,21 @@ export function PaymentFrequencyChart({
               axisLine={false}
               tickLine={false}
               tick={{ fill: "oklch(.3758 .0275 256.82)", fontSize: 12, textAnchor: "start", dx: 0 }}
-              ticks={[0, 1167, 2333, 3500]}
-              domain={[0, 3500]}
+              ticks={yTicks}
+              domain={[0, maxPayments]}
               tickFormatter={formatNumber}
               width={25}
             />
             <Tooltip
-              content={<CustomTooltip />}
               cursor={{
                 stroke: "oklch(.3758 .0275 256.82)",
                 strokeWidth: 1,
                 strokeDasharray: "3 3",
               }}
+              formatter={(value) => [
+                formatNumber(Number(value ?? 0)),
+                t("metrics.chart.total_payments"),
+              ]}
             />
             <Area
               type="monotone"
@@ -177,7 +153,12 @@ export function PaymentFrequencyChart({
               strokeWidth={2}
               fill="url(#colorPayments)"
               dot={false}
-              activeDot={<CustomActiveDot />}
+              activeDot={{
+                r: 8,
+                fill: "oklch(.7477 .0802 186.37)",
+                stroke: "white",
+                strokeWidth: 2,
+              }}
             />
           </AreaChart>
         </ResponsiveContainer>

@@ -1,6 +1,12 @@
-import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
+import {
+  AmountInputContainer,
+  AmountInputFlag,
+  AmountInput,
+  AmountInputAction,
+} from "@adamosuiteservices/ui/amount-input";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
+import { Combobox } from "@adamosuiteservices/ui/combobox";
 import {
   Dialog,
   DialogTrigger,
@@ -20,23 +26,19 @@ import {
 } from "@adamosuiteservices/ui/dropdown-menu";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import { Input } from "@adamosuiteservices/ui/input";
-import { Label } from "@adamosuiteservices/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
-import { Combobox } from "@adamosuiteservices/ui/combobox";
-import { 
-  AmountInputContainer,
-  AmountInputFlag,
-  AmountInput,
-  AmountInputAction,
-} from "@adamosuiteservices/ui/amount-input";
-import { ToastManager } from "@adamosuiteservices/ui/toaster";
-import { createPortal } from "react-dom";
+import { Label } from "@adamosuiteservices/ui/label";
+import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { useAccounts, useCreateAccount, useDeleteAccount, useTransferAccount, useUpdateAccount } from "../hooks/use-accounts";
+import { buildAccountListParams } from "../utils/account-filters.utils";
+import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
-import { CountryFlag } from "@/features/common/components/flags/country-flag";
+import { parseCurrencyToMinor } from "@/lib/money/money";
 
 export function AccountsPage() {
   const { t } = useTranslation("accounts");
@@ -63,32 +65,15 @@ export function AccountsPage() {
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
-  // datos de ejemplo - reemplazar con hook real
-  const [accounts, setAccounts] = useState([
-    {
-      id: "1",
-      name: "Cuenta principal",
-      balance: "$90.784.510,46",
-      currency: "COP",
-      countryCode: "CO",
-    },
-    {
-      id: "2",
-      name: "Cuenta de nómina",
-      balance: "$61.002.031,71",
-      currency: "COP",
-      countryCode: "CO",
-    },
-    {
-      id: "3",
-      name: "Cuenta de ahorros",
-      balance: "$39.002.031,71",
-      currency: "COP",
-      countryCode: "CO",
-    },
-  ]);
+  const { accounts, totalBalance: fetchedTotalBalance, refetch } = useAccounts(
+    buildAccountListParams({ page: 1, limit: 100 }),
+  );
+  const createAccount = useCreateAccount();
+  const updateAccount = useUpdateAccount();
+  const deleteAccount = useDeleteAccount();
+  const transferAccount = useTransferAccount();
 
-  const totalBalance = "$190.034.500,59";
+  const totalBalance = fetchedTotalBalance || "$0,00";
 
   /**
    * handle open edit name dialog
@@ -129,36 +114,26 @@ export function AccountsPage() {
    * handle OTP submit - confirms name change or account deletion
    */
   const handleOtpSubmit = () => {
-    console.log("OTP submitted:", otpCode);
-    
-    if (otpAction === "edit") {
-      console.log("New account name:", editedAccountName);
-      console.log("Account ID:", editingAccountId);
-
-      // Update account name in state
-      setAccounts(accounts.map(account => 
-        account.id === editingAccountId 
-          ? { ...account, name: editedAccountName }
-          : account
-      ));
-
-      setEditingAccountId(null);
-
-      ToastManager.show({
-        message: t("accounts.messages.name_updated"),
-        variant: "success",
+    if (otpAction === "edit" && editingAccountId) {
+      updateAccount.mutate({
+        accountId: editingAccountId,
+        name: editedAccountName,
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setEditingAccountId(null);
+          void refetch();
+        },
       });
-    } else if (otpAction === "delete") {
-      console.log("Deleting account:", deletingAccountId);
-
-      // Remove account from state
-      setAccounts(accounts.filter(account => account.id !== deletingAccountId));
-
-      setDeletingAccountId(null);
-
-      ToastManager.show({
-        message: t("accounts.messages.account_deleted"),
-        variant: "success",
+    } else if (otpAction === "delete" && deletingAccountId) {
+      deleteAccount.mutate({
+        accountId: deletingAccountId,
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setDeletingAccountId(null);
+          void refetch();
+        },
       });
     }
 
@@ -186,44 +161,36 @@ export function AccountsPage() {
    * handle transfer confirm
    */
   const handleTransferConfirm = () => {
-    console.log("Transfer from:", transferFromAccountId);
-    console.log("Transfer to:", transferToAccountId);
-    console.log("Amount:", transferAmount);
+    if (!transferFromAccountId || !transferToAccountId) {
+      return;
+    }
 
-    setIsTransferDialogOpen(false);
-    
-    ToastManager.show({
-      message: t("accounts.messages.transfer_success"),
-      variant: "success",
+    transferAccount.mutate({
+      fromAccountId: transferFromAccountId,
+      toAccountId: transferToAccountId,
+      amount: parseCurrencyToMinor(transferAmount),
+    }, {
+      onSuccess: () => {
+        setIsTransferDialogOpen(false);
+        setTransferFromAccountId(null);
+        setTransferToAccountId(null);
+        setTransferAmount("");
+        void refetch();
+      },
     });
-
-    // reset transfer form
-    setTransferFromAccountId(null);
-    setTransferToAccountId(null);
-    setTransferAmount("");
   };
 
   /**
    * handle create account
    */
   const handleCreateAccount = () => {
-    const newAccount = {
-      id: String(accounts.length + 1),
-      name: newAccountName,
-      balance: "$0,00",
-      currency: "COP",
-      countryCode: "CO",
-    };
-
-    setAccounts([...accounts, newAccount]);
-    
-    ToastManager.show({
-      message: t("accounts.messages.account_created"),
-      variant: "success",
+    createAccount.mutate({ name: newAccountName.trim() }, {
+      onSuccess: () => {
+        setIsDialogOpen(false);
+        setNewAccountName("");
+        void refetch();
+      },
     });
-
-    setIsDialogOpen(false);
-    setNewAccountName("");
   };
 
   return (
@@ -233,15 +200,22 @@ export function AccountsPage() {
         sidebarTopBarPortal,
       )}
       <PageContainer>
-        <Card className="p-6 flex flex-col gap-6">
+        <Card className="flex flex-col gap-6 p-6">
           {/* wallet card with gradient */}
-          <Card className="bg-gradient-to-r from-[#e5f3fa] to-background border-0 p-6">
+          <Card className={`
+            border-0 bg-gradient-to-r from-[#e5f3fa] to-background p-6
+          `}
+          >
             <div className="flex flex-col gap-4">
-              <div className="text-sm text-foreground font-bold leading-5">
+              <div className="text-sm leading-5 font-bold text-foreground">
                 {t("accounts.total_balance")}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="inline-flex items-center gap-3 bg-white rounded-full px-4 py-4 h-14">
+                <div className={`
+                  inline-flex h-14 items-center gap-3 rounded-full bg-white px-4
+                  py-4
+                `}
+                >
                   <CountryFlag countryCode="CO" />
                   <span className="text-sm font-bold text-foreground">
                     {totalBalance}
@@ -290,19 +264,34 @@ export function AccountsPage() {
               </div>
             </div>
           </Card>
-
           {/* accounts grid */}
           <div className="flex flex-wrap gap-6">
             {accounts.map((account) => (
-              <Card key={account.id} className="w-full sm:flex-1 sm:min-w-[400px] bg-primary-50 border-transparent p-6 relative">
+              <Card
+                key={account.id}
+                className={`
+                  relative w-full border-transparent bg-primary-50 p-6
+                  sm:min-w-[400px] sm:flex-1
+                `}
+              >
                 {/* menu button */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button 
-                      className="absolute right-4 top-4 border-none bg-transparent p-0 hover:bg-transparent focus:outline-none focus-visible:outline-none active:bg-transparent"
-                      style={{ WebkitTapHighlightColor: 'transparent' }}
+                    <button
+                      className={`
+                        absolute top-4 right-4 border-none bg-transparent p-0
+                        hover:bg-transparent
+                        focus:outline-none
+                        focus-visible:outline-none
+                        active:bg-transparent
+                      `}
+                      style={{ WebkitTapHighlightColor: "transparent" }}
                     >
-                      <Icon symbol="more_vert" weight={200} className="text-foreground" />
+                      <Icon
+                        symbol="more_vert"
+                        weight={200}
+                        className="text-foreground"
+                      />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -325,13 +314,16 @@ export function AccountsPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
                 <div className="flex flex-col gap-8">
                   <div className="flex flex-col gap-4">
-                    <h3 className="text-sm font-bold text-foreground leading-5">
+                    <h3 className="text-sm leading-5 font-bold text-foreground">
                       {account.name}
                     </h3>
-                    <div className="inline-flex items-center gap-3 bg-white rounded-full px-4 py-4 h-14 w-fit">
+                    <div className={`
+                      inline-flex h-14 w-fit items-center gap-3 rounded-full
+                      bg-white px-4 py-4
+                    `}
+                    >
                       <span className="text-sm font-bold text-foreground">
                         {account.balance}
                       </span>
@@ -340,15 +332,14 @@ export function AccountsPage() {
                       </span>
                     </div>
                   </div>
-
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-8">
                     <Button variant="default" className="w-fit" asChild>
                       <Link to={`/accounts/${account.id}/movements`}>
                         {t("accounts.card.view_movements")}
                       </Link>
                     </Button>
-                    <Button 
-                      variant="link" 
+                    <Button
+                      variant="link"
                       className="h-6 p-0 text-primary"
                       onClick={() => handleOpenTransferDialog(account.id)}
                     >
@@ -362,7 +353,6 @@ export function AccountsPage() {
           </div>
         </Card>
       </PageContainer>
-
       {/* Edit Name Dialog */}
       <Dialog open={isEditNameDialogOpen} onOpenChange={setIsEditNameDialogOpen}>
         <DialogContent className="sm:max-w-[640px]">
@@ -391,14 +381,13 @@ export function AccountsPage() {
             <Button
               variant="default"
               onClick={handleSaveNewName}
-              disabled={!editedAccountName.trim() || editedAccountName === accounts.find(a => a.id === editingAccountId)?.name}
+              disabled={!editedAccountName.trim() || editedAccountName === accounts.find((a) => a.id === editingAccountId)?.name}
             >
               {t("accounts.edit_name_dialog.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* OTP Confirmation Dialog */}
       <Dialog open={isOtpDialogOpen} onOpenChange={setIsOtpDialogOpen}>
         <DialogContent className="max-w-[610px] gap-12">
@@ -410,22 +399,20 @@ export function AccountsPage() {
               {otpAction === "edit" ? t("accounts.otp_dialog.description") : t("accounts.otp_dialog.delete_description")}
             </p>
           </DialogHeader>
-          
           <InputOTP
             maxLength={6}
             value={otpCode}
             onChange={setOtpCode}
           >
             <InputOTPGroup className="w-full gap-2">
-              <InputOTPSlot index={0} className="flex-1 h-10" />
-              <InputOTPSlot index={1} className="flex-1 h-10" />
-              <InputOTPSlot index={2} className="flex-1 h-10" />
-              <InputOTPSlot index={3} className="flex-1 h-10" />
-              <InputOTPSlot index={4} className="flex-1 h-10" />
-              <InputOTPSlot index={5} className="flex-1 h-10" />
+              <InputOTPSlot index={0} className="h-10 flex-1" />
+              <InputOTPSlot index={1} className="h-10 flex-1" />
+              <InputOTPSlot index={2} className="h-10 flex-1" />
+              <InputOTPSlot index={3} className="h-10 flex-1" />
+              <InputOTPSlot index={4} className="h-10 flex-1" />
+              <InputOTPSlot index={5} className="h-10 flex-1" />
             </InputOTPGroup>
           </InputOTP>
-
           <DialogFooter className="gap-6">
             <Button
               variant="secondary"
@@ -443,14 +430,13 @@ export function AccountsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Transfer Dialog */}
       <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
         <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>
-              {t("accounts.transfer_dialog.title", { 
-                accountName: accounts.find(a => a.id === transferFromAccountId)?.name || "" 
+              {t("accounts.transfer_dialog.title", {
+                accountName: accounts.find((a) => a.id === transferFromAccountId)?.name || "",
               })}
             </DialogTitle>
             <DialogDescription>
@@ -460,7 +446,10 @@ export function AccountsPage() {
           <DialogBody className="flex flex-col gap-6">
             {/* amount */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="transfer-amount" className="text-xs text-foreground">
+              <Label
+                htmlFor="transfer-amount"
+                className="text-xs text-foreground"
+              >
                 {t("accounts.transfer_dialog.amount")}
               </Label>
               <AmountInputContainer className="gap-2">
@@ -476,10 +465,10 @@ export function AccountsPage() {
                 />
                 <AmountInputAction
                   onClick={() => {
-                    const fromAccount = accounts.find(a => a.id === transferFromAccountId);
+                    const fromAccount = accounts.find((a) => a.id === transferFromAccountId);
                     if (fromAccount) {
                       // Extract numeric value from balance (e.g., "$90.784.510,46" -> "90784510.46")
-                      const numericBalance = fromAccount.balance.replace(/[^0-9,]/g, '').replace('.', '').replace(',', '.');
+                      const numericBalance = fromAccount.balance.replace(/[^0-9,]/g, "").replace(".", "").replace(",", ".");
                       setTransferAmount(numericBalance);
                     }
                   }}
@@ -489,11 +478,10 @@ export function AccountsPage() {
               </AmountInputContainer>
               {transferFromAccountId && (
                 <p className="text-xs text-foreground">
-                  {t("accounts.transfer_dialog.available_balance")}: {accounts.find(a => a.id === transferFromAccountId)?.balance}
+                  {t("accounts.transfer_dialog.available_balance")}: {accounts.find((a) => a.id === transferFromAccountId)?.balance}
                 </p>
               )}
             </div>
-
             {/* to account */}
             <Combobox
               alwaysShowPlaceholder
@@ -506,8 +494,8 @@ export function AccountsPage() {
                 placeholder: t("accounts.transfer_dialog.to_account"),
               }}
               options={accounts
-                .filter(a => a.id !== transferFromAccountId)
-                .map(account => ({
+                .filter((a) => a.id !== transferFromAccountId)
+                .map((account) => ({
                   value: account.id,
                   label: account.name,
                   supportiveText: `${account.balance} ${account.currency}`,
@@ -533,10 +521,13 @@ export function AccountsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Delete Account Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[640px] gap-12">
+        <DialogContent className={`
+          gap-12
+          sm:max-w-[640px]
+        `}
+        >
           <DialogHeader>
             <DialogTitle>{t("accounts.delete_dialog.title")}</DialogTitle>
             <DialogDescription>

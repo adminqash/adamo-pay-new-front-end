@@ -1,13 +1,23 @@
-import axios from "axios";
-import i18next from "i18next";
-import { env } from "@/lib/env";
+import { createApiClient } from "./api.config";
+import { apiUrls } from "@/lib/env";
 
-export const api = axios.create({
-  baseURL: env.VITE_API_BASE_URL,
-  withCredentials: true, // Enable sending cookies with requests
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    "Accept-Language": i18next.language,
-  },
-});
+/** Core microservice (payments, batches, accounts, dashboard, documents, etc.) */
+export const coreApi = createApiClient(apiUrls.core);
+
+/** Beneficiaries microservice */
+export const beneficiariesApi = createApiClient(apiUrls.beneficiaries);
+
+/** Analytics microservice (metrics, reports) */
+export const analyticsApi = createApiClient(apiUrls.analytics);
+
+/** Realtime microservice (WebSocket gateway + batch uploads) */
+export const realtimeApi = createApiClient(apiUrls.realtime);
+
+/** Identity/SSO microservice (adamo-services-identity-microservice) */
+export const authApi = createApiClient(apiUrls.auth);
+
+/**
+ * @deprecated Use coreApi, beneficiariesApi, or analyticsApi.
+ * Kept for backward compatibility with existing services.
+ */
+export const api = coreApi;

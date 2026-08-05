@@ -2,6 +2,15 @@ import { z } from "zod";
 
 const ENVSchema = z.object({
   VITE_API_BASE_URL: z.url(),
+  VITE_API_CORE_URL: z.url().optional(),
+  VITE_API_BENEFICIARIES_URL: z.url().optional(),
+  VITE_API_ANALYTICS_URL: z.url().optional(),
+  VITE_API_REALTIME_URL: z.url().optional(),
+  VITE_ADAMO_API_BASE_URL: z.url(),
+  VITE_ADAMO_LANDING_BASE_URL: z.string().optional(),
+  VITE_ID_FRONT_BASE_URL: z.string().optional(),
+  VITE_SIGN_FRONT_BASE_URL: z.string().optional(),
+  VITE_CHECK_FRONT_BASE_URL: z.string().optional(),
 });
 
 const result = ENVSchema.safeParse(import.meta.env);
@@ -11,3 +20,11 @@ if (!result.success) {
 }
 
 export const env = result.data;
+
+export const apiUrls = {
+  core: env.VITE_API_CORE_URL ?? env.VITE_API_BASE_URL,
+  beneficiaries: env.VITE_API_BENEFICIARIES_URL ?? env.VITE_API_BASE_URL,
+  analytics: env.VITE_API_ANALYTICS_URL ?? env.VITE_API_BASE_URL,
+  realtime: env.VITE_API_REALTIME_URL ?? env.VITE_API_BASE_URL,
+  auth: `${env.VITE_ADAMO_API_BASE_URL}/api/v1`,
+} as const;

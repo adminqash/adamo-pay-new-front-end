@@ -9,54 +9,5 @@
     "beneficiaries": "Beneficiaries",
     "metrics": "Metrics",
     "reports": "Reports"
-  },
-  "footer": {
-    "profile": "Profile",
-    "logout": "Logout"
-  },
-  "logout_dialog": {
-    "title": "Confirm logout",
-    "description": "Are you sure you want to log out of your account?",
-    "cancel": "Cancel",
-    "confirm": "Log out"
-  },
-  "help": {
-    "request_whatsapp": "Request help via WhatsApp",
-    "report_idea": "Report issue / send idea",
-    "dialog": {
-      "title": "Report issue / send idea",
-      "description": "Select the topic and write a message about the issue you want to report or improvement idea you want to send:",
-      "topic_placeholder": "Select a topic",
-      "topics": {
-        "bug": "Report a bug",
-        "feature": "Suggest an improvement",
-        "question": "Ask a question",
-        "other": "Other"
-      },
-      "message_placeholder": "Write your message...",
-      "cancel": "Cancel",
-      "send": "Send message"
-    }
-  },
-  "notifications": {
-    "title": "Notifications",
-    "items": {
-      "payment_received": {
-        "title": "Payment received",
-        "description": "A payment of $50,000 COP has been received",
-        "time": "5 minutes ago"
-      },
-      "batch_processed": {
-        "title": "Batch processed",
-        "description": "Batch #1234 has been processed successfully",
-        "time": "1 hour ago"
-      },
-      "document_approved": {
-        "title": "Document approved",
-        "description": "Your document has been approved and is ready to use",
-        "time": "2 hours ago"
-      }
-    },
-    "view_all": "View all notifications"
   }
 }
