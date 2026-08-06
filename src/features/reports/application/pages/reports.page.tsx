@@ -1,3 +1,4 @@
+import { Badge } from "@adamosuiteservices/ui/badge";
 import { Button } from "@adamosuiteservices/ui/button";
 import { Card } from "@adamosuiteservices/ui/card";
 import { Icon } from "@adamosuiteservices/ui/icon";
@@ -17,10 +18,18 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { DeleteReportDialog } from "../components/delete-report-dialog";
 import { useReports } from "../hooks/use-reports";
-import type { Report } from "../entities/report.entity";
+import type { Report, ReportStatus } from "../entities/report.entity";
+import { ReportsService } from "@/features/reports/api/services/reports.service";
+import { triggerBrowserDownload } from "@/lib/utils/file.utils";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
+
+function getStatusVariant(status: ReportStatus): "muted" | "success-medium" | "destructive-medium" {
+  if (status === "completed") return "success-medium";
+  if (status === "failed") return "destructive-medium";
+  return "muted";
+}
 
 export function ReportsPage() {
   const { t } = useTranslation(["reports"]);
@@ -29,28 +38,20 @@ export function ReportsPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { reports: fetchedReports } = useReports();
+  const { reports, totalCount, refetch } = useReports({ search: searchQuery || undefined });
 
-  const fallbackReports: Report[] = [
-    { id: "1", date: "10/12/2025", name: "Reporte de transacciones Felipe", type: "Transacciones" },
-    { id: "2", date: "11/15/2025", name: "Reporte de lotes Mayo 25", type: "Lotes" },
-    { id: "3", date: "12/01/2025", name: "Reporte de transacciones Juan", type: "Transacciones" },
-    { id: "4", date: "01/20/2026", name: "Reporte Technova solutions", type: "Beneficiario" },
-    { id: "5", date: "02/15/2026", name: "Reporte de lotes Junio 25", type: "Lotes" },
-    { id: "6", date: "03/10/2026", name: "Reporte de transacciones Maria", type: "Transacciones" },
-    { id: "7", date: "04/05/2026", name: "Reporte de lotes Septiembre", type: "Lotes" },
-    { id: "8", date: "05/25/2026", name: "Reporte de lotes Diciembre", type: "Lotes" },
-    { id: "9", date: "06/30/2026", name: "Reporte de lotes Diciembre", type: "Transacciones" },
-  ];
-
-  const sourceReports = fetchedReports.length > 0 ? fetchedReports : fallbackReports;
-  const [deletedReportIds, setDeletedReportIds] = useState<string[]>([]);
-  const reports = sourceReports.filter((report) => !deletedReportIds.includes(report.id));
-
-  const handleDownload = (reportId: string) => {
-    // TODO: implement download logic
-    console.log("Download report:", reportId);
+  const handleDownload = async(report: Report) => {
+    try {
+      const { blob, fileName } = await ReportsService.download(report.id, `${report.name}.csv`);
+      triggerBrowserDownload(blob, fileName);
+    } catch {
+      ToastManager.show({
+        message: t("reports:messages.download_error"),
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDelete = (report: Report) => {
@@ -58,17 +59,24 @@ export function ReportsPage() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedReport) {
-      setDeletedReportIds((prev) => [...prev, selectedReport.id]);
+  const handleConfirmDelete = async() => {
+    if (!selectedReport) {
+      return;
+    }
 
-      // Show success toast
+    try {
+      await ReportsService.remove(selectedReport.id);
       ToastManager.show({
         message: t("reports:messages.delete_success"),
         variant: "success",
       });
-
-      // Reset selected report
+      await refetch();
+    } catch {
+      ToastManager.show({
+        message: t("reports:messages.delete_error"),
+        variant: "destructive",
+      });
+    } finally {
       setSelectedReport(null);
     }
   };
@@ -87,7 +95,7 @@ export function ReportsPage() {
               {/* title */}
               <div className="flex min-w-[220px] flex-1 items-center gap-4">
                 <p className="text-sm font-semibold text-neutral-700">
-                  {t("reports:header.count", { count: reports.length })}
+                  {t("reports:header.count", { count: totalCount })}
                 </p>
               </div>
               {/* search input */}
@@ -102,6 +110,8 @@ export function ReportsPage() {
                   <Input
                     placeholder={t("reports:header.search_placeholder")}
                     className="h-10 pl-10 text-sm"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
                   />
                 </div>
               </div>
@@ -134,6 +144,12 @@ export function ReportsPage() {
                     text-xs font-semibold text-neutral-700 uppercase
                   `}
                   >
+                    {t("reports:table.status")}
+                  </TableHead>
+                  <TableHead className={`
+                    text-xs font-semibold text-neutral-700 uppercase
+                  `}
+                  >
                     {t("reports:table.actions")}
                   </TableHead>
                 </TableRow>
@@ -151,12 +167,21 @@ export function ReportsPage() {
                       {report.type}
                     </TableCell>
                     <TableCell>
+                      <Badge
+                        variant={getStatusVariant(report.status)}
+                        className="h-8 px-2 text-sm leading-5"
+                      >
+                        {t(`reports:status.${report.status}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-4">
                         <Button
                           variant="link"
                           size="sm"
                           className="h-6 px-0 text-pay-500"
-                          onClick={() => handleDownload(report.id)}
+                          disabled={!report.canDownload}
+                          onClick={() => void handleDownload(report)}
                         >
                           {t("reports:table.download")}
                         </Button>
@@ -182,7 +207,7 @@ export function ReportsPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         reportName={selectedReport?.name || ""}
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => void handleConfirmDelete()}
       />
     </>
   );

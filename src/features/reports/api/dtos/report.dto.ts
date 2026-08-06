@@ -3,9 +3,9 @@ export type ReportListItemDTO = {
   organizationId: string
   name: string
   type: "transactions" | "batches" | "beneficiaries" | "accounts" | "compliance" | "audit"
-  status: string
+  status: "queued" | "processing" | "completed" | "failed"
   format: string
-  downloadUrl?: string
+  canDownload: boolean
   fileSizeBytes?: number
   completedAt?: string
   expiresAt?: string

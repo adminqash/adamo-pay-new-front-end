@@ -20,9 +20,11 @@ import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container"
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router";
+import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
+import { ReportsService } from "@/features/reports/api/services/reports.service";
 import { useTransactions } from "../hooks/use-transactions";
 import { useTransactionDetail } from "../hooks/use-transaction-detail";
 import { usePaymentsRealtime } from "../hooks/use-payments-realtime";
@@ -41,7 +43,7 @@ import {
 import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/popover";
 import type { DateRange } from "react-day-picker";
 import { format, subDays } from "date-fns";
-import { businessTodayAsLocalDate } from "@/lib/utils/date.utils";
+import { businessTodayAsLocalDate, formatApiDate } from "@/lib/utils/date.utils";
 import { es, enUS } from "date-fns/locale";
 import { useRef, useState as useStateReact, useState, useMemo } from "react";
 import { Label } from "@adamosuiteservices/ui/label";
@@ -333,6 +335,42 @@ export const TransactionsPage = () => {
   };
 
   /**
+   * generate a transactions report from the export dialog filters
+   */
+  const handleExportTransactions = async() => {
+    try {
+      const statuses = exportStatusFilter.filter((status) => status !== "all");
+      const from = exportDateRange.from ? formatApiDate(exportDateRange.from) : undefined;
+      const to = exportDateRange.to ? formatApiDate(exportDateRange.to) : undefined;
+      const nameParts = ["Transacciones", from, to].filter(Boolean);
+
+      await ReportsService.create({
+        name: nameParts.join(" "),
+        type: "transactions",
+        format: "csv",
+        filters: {
+          dateFrom: from,
+          dateTo: to,
+          status: statuses.length > 0 ? statuses.join(",") : undefined,
+        },
+      });
+
+      ToastManager.show({
+        message: t("transactions.export_dialog.success"),
+        variant: "success",
+      });
+      setIsExportDialogOpen(false);
+      setExportFormatCSV(false);
+      setExportFormatPDF(false);
+    } catch {
+      ToastManager.show({
+        message: t("transactions.export_dialog.error"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  /**
    * handle row click
    */
   const handleRowClick = (transaction: Transaction) => {
@@ -483,11 +521,14 @@ export const TransactionsPage = () => {
                           <Checkbox
                             id="pdf"
                             checked={exportFormatPDF}
+                            disabled
                             onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
                           />
                           <Label
                             htmlFor="pdf"
-                            className="cursor-pointer text-sm text-neutrals-700"
+                            className={`
+                              cursor-not-allowed text-sm text-neutrals-400
+                            `}
                           >
                             {t("transactions.export_dialog.pdf")}
                           </Label>
@@ -502,7 +543,8 @@ export const TransactionsPage = () => {
                       </DialogClose>
                       <Button
                         variant="default"
-                        disabled={!exportFormatCSV && !exportFormatPDF}
+                        disabled={!exportFormatCSV}
+                        onClick={() => void handleExportTransactions()}
                       >
                         {t("transactions.export_dialog.export")}
                       </Button>

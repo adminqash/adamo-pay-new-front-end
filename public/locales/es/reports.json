@@ -8,8 +8,15 @@
     "date": "Fecha",
     "report_name": "Nombre del reporte",
     "report_type": "Tipo de reporte",
+    "status": "Estado",
     "actions": "Acciones",
     "download": "Descargar"
+  },
+  "status": {
+    "queued": "En cola",
+    "processing": "Procesando",
+    "completed": "Completado",
+    "failed": "Fallido"
   },
   "delete_dialog": {
     "title": "Eliminar reporte",
@@ -18,6 +25,10 @@
     "confirm": "Eliminar reporte"
   },
   "messages": {
-    "delete_success": "Reporte eliminado exitosamente"
+    "delete_success": "Reporte eliminado exitosamente",
+    "delete_error": "No se pudo eliminar el reporte",
+    "download_error": "No se pudo descargar el reporte",
+    "create_success": "Reporte generado — revísalo en Reportes",
+    "create_error": "No se pudo generar el reporte"
   }
 }

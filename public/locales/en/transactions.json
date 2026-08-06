@@ -45,9 +45,11 @@
       "status_all": "All",
       "file_type_label": "File type:",
       "csv_excel": "CSV (Excel)",
-      "pdf": "PDF",
+      "pdf": "PDF (coming soon)",
       "cancel": "Cancel",
-      "export": "Export data"
+      "export": "Export data",
+      "success": "Report generated — check it in Reports",
+      "error": "Could not generate the report"
     },
     "create_payment": {
       "breadcrumb_title": "New payment",

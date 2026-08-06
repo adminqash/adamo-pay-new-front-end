@@ -45,9 +45,11 @@
       "status_all": "Todos",
       "file_type_label": "Tipo de archivo:",
       "csv_excel": "CVS (Excel)",
-      "pdf": "PDF",
+      "pdf": "PDF (próximamente)",
       "cancel": "Cancelar",
-      "export": "Exportar datos"
+      "export": "Exportar datos",
+      "success": "Reporte generado — revísalo en Reportes",
+      "error": "No se pudo generar el reporte"
     },
     "create_payment": {
       "breadcrumb_title": "Nuevo pago",

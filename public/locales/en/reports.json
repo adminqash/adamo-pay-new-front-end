@@ -8,8 +8,15 @@
     "date": "Date",
     "report_name": "Report name",
     "report_type": "Report type",
+    "status": "Status",
     "actions": "Actions",
     "download": "Download"
+  },
+  "status": {
+    "queued": "Queued",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed"
   },
   "delete_dialog": {
     "title": "Delete report",
@@ -18,6 +25,10 @@
     "confirm": "Delete report"
   },
   "messages": {
-    "delete_success": "Report successfully deleted"
+    "delete_success": "Report successfully deleted",
+    "delete_error": "Could not delete the report",
+    "download_error": "Could not download the report",
+    "create_success": "Report generated — check it in Reports",
+    "create_error": "Could not generate the report"
   }
 }

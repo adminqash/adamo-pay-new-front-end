@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/p
 import { Calendar } from "@adamosuiteservices/ui/calendar";
 import type { DateRange } from "react-day-picker";
 import { format, subDays } from "date-fns";
-import { businessTodayAsLocalDate } from "@/lib/utils/date.utils";
+import { businessTodayAsLocalDate, formatApiDate } from "@/lib/utils/date.utils";
 import { es, enUS } from "date-fns/locale";
 import {
   Table,
@@ -40,6 +40,7 @@ import {
 import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import { Label } from "@adamosuiteservices/ui/label";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { ReportsService } from "@/features/reports/api/services/reports.service";
 import type { BatchStatus } from "../entities/batch.entity";
 import { useState, useRef, useState as useStateReact, useEffect, useMemo } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
@@ -285,6 +286,42 @@ export const BatchesPage = () => {
   };
 
   /**
+   * generate a batches report from the export dialog filters
+   */
+  const handleExportBatches = async() => {
+    try {
+      const statuses = exportStatusFilter.filter((status) => status !== "all");
+      const from = exportDateRange.from ? formatApiDate(exportDateRange.from) : undefined;
+      const to = exportDateRange.to ? formatApiDate(exportDateRange.to) : undefined;
+      const nameParts = ["Lotes", from, to].filter(Boolean);
+
+      await ReportsService.create({
+        name: nameParts.join(" "),
+        type: "batches",
+        format: "csv",
+        filters: {
+          dateFrom: from,
+          dateTo: to,
+          status: statuses.length > 0 ? statuses.join(",") : undefined,
+        },
+      });
+
+      ToastManager.show({
+        message: t("batches.export_dialog.success"),
+        variant: "success",
+      });
+      setIsExportDialogOpen(false);
+      setExportFormatCSV(false);
+      setExportFormatPDF(false);
+    } catch {
+      ToastManager.show({
+        message: t("batches.export_dialog.error"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  /**
    * handle row click
    */
   const handleRowClick = (batchId: string) => {
@@ -437,11 +474,14 @@ export const BatchesPage = () => {
                         <Checkbox
                           id="batch-pdf"
                           checked={exportFormatPDF}
+                          disabled
                           onCheckedChange={(checked) => setExportFormatPDF(checked as boolean)}
                         />
                         <Label
                           htmlFor="batch-pdf"
-                          className="cursor-pointer text-sm text-neutrals-700"
+                          className={`
+                            cursor-not-allowed text-sm text-neutrals-400
+                          `}
                         >
                           {t("batches.export_dialog.pdf")}
                         </Label>
@@ -454,9 +494,10 @@ export const BatchesPage = () => {
                         {t("batches.export_dialog.cancel")}
                       </Button>
                     </DialogClose>
-                    <Button 
-                      variant="default" 
-                      disabled={!exportFormatCSV && !exportFormatPDF}
+                    <Button
+                      variant="default"
+                      disabled={!exportFormatCSV}
+                      onClick={() => void handleExportBatches()}
                     >
                       {t("batches.export_dialog.export")}
                     </Button>

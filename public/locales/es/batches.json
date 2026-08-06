@@ -28,9 +28,11 @@
       "description": "Seleccioná los filtros y el formato para exportar los datos de lotes.",
       "file_type_label": "Tipo de archivo",
       "csv_excel": "CSV / Excel",
-      "pdf": "PDF",
+      "pdf": "PDF (próximamente)",
       "cancel": "Cancelar",
-      "export": "Exportar"
+      "export": "Exportar",
+      "success": "Reporte generado — revísalo en Reportes",
+      "error": "No se pudo generar el reporte"
     },
     "table": {
       "date": "FECHA",

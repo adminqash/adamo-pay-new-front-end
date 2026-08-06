@@ -18,6 +18,8 @@ export class ReportMapper {
       date: formatDisplayDate(dto.createdAt),
       name: dto.name,
       type: REPORT_TYPE_LABELS[dto.type] ?? dto.type,
+      status: dto.status,
+      canDownload: dto.canDownload,
     };
   }
 

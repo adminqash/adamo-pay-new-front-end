@@ -28,9 +28,11 @@
       "description": "Select the filters and format to export batch data.",
       "file_type_label": "File type",
       "csv_excel": "CSV / Excel",
-      "pdf": "PDF",
+      "pdf": "PDF (coming soon)",
       "cancel": "Cancel",
-      "export": "Export"
+      "export": "Export",
+      "success": "Report generated — check it in Reports",
+      "error": "Could not generate the report"
     },
     "table": {
       "date": "DATE",
