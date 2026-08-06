@@ -18,6 +18,7 @@ import {
   SidebarTrigger,
 } from "@adamosuiteservices/ui/sidebar";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { useQueryClient } from "@tanstack/react-query";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -50,6 +51,7 @@ function isPathActive(pathname: string, path: string) {
 export function MainSidebar() {
   const { t } = useTranslation(["sidebar"]);
   const { pathname } = useLocation();
+  const queryClient = useQueryClient();
   const [selectedCountry, setSelectedCountry] = useState(
     () => ALPHA3_TO_ALPHA2[getStoredCountryCodeAlpha3()] ?? "CO",
   );
@@ -62,8 +64,17 @@ export function MainSidebar() {
   };
 
   function selectCountry(alpha2: string) {
+    if (alpha2 === selectedCountry) {
+      return;
+    }
+
     setSelectedCountry(alpha2);
     localStorage.setItem(COUNTRY_CODE_STORAGE_KEY, ALPHA2_TO_ALPHA3[alpha2]);
+
+    // Every list/dashboard query is implicitly scoped by countryCode via the
+    // axios interceptor (not part of the query key), so React Query has no
+    // way to know it changed on its own — force every active query to refetch.
+    void queryClient.invalidateQueries();
   }
 
   const menu: SidebarMenuItem[] = [

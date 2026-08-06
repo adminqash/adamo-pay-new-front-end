@@ -1,7 +1,7 @@
 {
   "beneficiaries": {
     "page_title": "Beneficiarios",
-    "count": "711 Beneficiarios",
+    "count": "{{count}} Beneficiarios",
     "add_button": "Añadir beneficiario",
     "export_button": "Exportar datos",
     "search_placeholder": "Buscar por nombre/ número de ID/ número de cuenta o estado",

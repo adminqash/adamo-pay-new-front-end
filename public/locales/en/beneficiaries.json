@@ -1,7 +1,7 @@
 {
   "beneficiaries": {
     "page_title": "Beneficiaries",
-    "count": "711 Beneficiaries",
+    "count": "{{count}} Beneficiaries",
     "add_button": "Add beneficiary",
     "export_button": "Export data",
     "search_placeholder": "Search by name/ ID number/ account number or status",
