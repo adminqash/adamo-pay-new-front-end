@@ -238,7 +238,7 @@ export const TransactionsPage = () => {
   const [accountFilter, setAccountFilter] = useState<string[]>(["all"]);
   const [statusFilter, setStatusFilter] = useState<string[]>(() => {
     const statusParam = searchParams.get("status");
-    if (statusParam && ["pending", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
+    if (statusParam && ["pending", "in_review", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
       return [statusParam];
     }
     return ["all"];
@@ -355,6 +355,7 @@ export const TransactionsPage = () => {
       case "rejected":
         return "destructive-medium";
       case "pending":
+      case "in_review":
       default:
         return "muted";
     }
@@ -445,6 +446,7 @@ export const TransactionsPage = () => {
                             options={[
                               { value: "all", label: t("transactions.export_dialog.status_all") },
                               { value: "pending", label: t("transactions.status.pending") },
+                              { value: "in_review", label: t("transactions.status.in_review") },
                               { value: "validated", label: t("transactions.status.validated") },
                               { value: "paid", label: t("transactions.status.paid") },
                               { value: "returned", label: t("transactions.status.returned") },
@@ -580,6 +582,7 @@ export const TransactionsPage = () => {
                   options={[
                     { value: "all", label: t("transactions.filters.all_status") },
                     { value: "pending", label: t("transactions.status.pending") },
+                    { value: "in_review", label: t("transactions.status.in_review") },
                     { value: "validated", label: t("transactions.status.validated") },
                     { value: "paid", label: t("transactions.status.paid") },
                     { value: "returned", label: t("transactions.status.returned") },

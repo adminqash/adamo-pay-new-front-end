@@ -142,6 +142,7 @@ export const BatchDetailPage = () => {
       case "rejected":
         return "destructive-medium";
       case "pending":
+      case "in_review":
       default:
         return "muted";
     }

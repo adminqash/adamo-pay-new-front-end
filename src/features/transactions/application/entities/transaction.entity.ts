@@ -7,7 +7,7 @@
 /**
  * transaction status type
  */
-export type TransactionStatus = "pending" | "validated" | "paid" | "returned" | "rejected";
+export type TransactionStatus = "pending" | "in_review" | "validated" | "paid" | "returned" | "rejected";
 
 /**
  * transaction entity

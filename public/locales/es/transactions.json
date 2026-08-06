@@ -30,6 +30,7 @@
     },
     "status": {
       "pending": "Pendiente",
+      "in_review": "En revisión",
       "validated": "Validada",
       "paid": "Pagada",
       "returned": "Retornada",
