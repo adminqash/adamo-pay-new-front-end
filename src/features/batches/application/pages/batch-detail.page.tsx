@@ -132,19 +132,18 @@ export const BatchDetailPage = () => {
   /**
    * get badge variant based on transaction status
    */
-  const getStatusVariant = (status: TransactionStatus): "default-medium" | "success-medium" | "warning-medium" | "destructive-medium" | "waiting-medium" => {
+  const getStatusVariant = (status: TransactionStatus): "muted" | "success-medium" | "warning-medium" | "destructive-medium" => {
     switch (status) {
       case "paid":
         return "success-medium";
       case "validated":
-        return "default-medium";
-      case "returned":
         return "warning-medium";
+      case "returned":
       case "rejected":
         return "destructive-medium";
       case "pending":
       default:
-        return "waiting-medium";
+        return "muted";
     }
   };
 
@@ -489,18 +488,9 @@ export const BatchDetailPage = () => {
                     {transaction.reference}
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant={getStatusVariant(transaction.status)} 
-                      className={`
-                        h-8 px-2 text-sm leading-5
-                        ${
-                        transaction.status === "pending" ? "bg-neutrals-50" 
-                        : transaction.status === "validated" ? `
-                          bg-[#E5F3FA] text-neutrals-700
-                        ` 
-                        : ""
-                      }
-                      `}
+                    <Badge
+                      variant={getStatusVariant(transaction.status)}
+                      className="h-8 px-2 text-sm leading-5"
                     >
                       {t(`transactions:transactions.status.${transaction.status}`)}
                     </Badge>

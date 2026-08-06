@@ -345,19 +345,18 @@ export const TransactionsPage = () => {
   /**
    * get badge variant based on transaction status
    */
-  const getStatusVariant = (status: TransactionStatus): "default-medium" | "success-medium" | "warning-medium" | "destructive-medium" | "waiting-medium" => {
+  const getStatusVariant = (status: TransactionStatus): "muted" | "success-medium" | "warning-medium" | "destructive-medium" => {
     switch (status) {
       case "paid":
         return "success-medium";
       case "validated":
-        return "default-medium";
-      case "returned":
         return "warning-medium";
+      case "returned":
       case "rejected":
         return "destructive-medium";
       case "pending":
       default:
-        return "waiting-medium";
+        return "muted";
     }
   };
 
@@ -678,16 +677,7 @@ export const TransactionsPage = () => {
                   <TableCell>
                     <Badge
                       variant={getStatusVariant(transaction.status)}
-                      className={`
-                        h-8 px-2 text-sm leading-5
-                        ${
-                transaction.status === "pending"
-                  ? "bg-neutrals-50"
-                  : transaction.status === "validated"
-                    ? "bg-[#E5F3FA] text-neutrals-700"
-                    : ""
-                }
-                      `}
+                      className="h-8 px-2 text-sm leading-5"
                     >
                       {t(`transactions.status.${transaction.status}`)}
                     </Badge>
@@ -797,16 +787,7 @@ export const TransactionsPage = () => {
                     <div className="flex h-10 items-center gap-2 pl-2">
                       <Badge
                         variant={getStatusVariant(displayedTransaction.status)}
-                        className={`
-                          h-8 px-2 text-sm leading-5
-                          ${
-              displayedTransaction.status === "pending"
-                ? "bg-neutrals-50"
-                : displayedTransaction.status === "validated"
-                  ? "bg-[#E5F3FA] text-neutrals-700"
-                  : ""
-              }
-                        `}
+                        className="h-8 px-2 text-sm leading-5"
                       >
                         {t(`transactions.status.${displayedTransaction.status}`)}
                       </Badge>

@@ -580,13 +580,6 @@ export const CorrectPaymentPage = () => {
   };
 
   /**
-   * get badge variant based on transaction status
-   */
-  const getStatusVariant = (status: "returned" | "rejected"): "warning-medium" | "destructive-medium" => {
-    return status === "returned" ? "warning-medium" : "destructive-medium";
-  };
-
-  /**
    * get return/rejection reason
    */
   const getReturnReason = (current: BatchTransactionDetail): string => {
@@ -644,9 +637,7 @@ export const CorrectPaymentPage = () => {
           <div className="flex items-center gap-4">
             <p className="text-sm text-[#41454c]">{t("transactions:transactions.correct_payment.payment_status")}</p>
             <Badge
-              variant={getStatusVariant(
-                transaction.status === "rejected" ? "rejected" : "returned",
-              )}
+              variant="destructive-medium"
               className="h-8 px-2 text-sm leading-5"
             >
               {t(`transactions:transactions.status.${transaction.status}`)}

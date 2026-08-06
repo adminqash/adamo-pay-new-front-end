@@ -631,19 +631,18 @@ export const TransactionDetailPage = () => {
   /**
    * get badge variant based on transaction status
    */
-  const getStatusVariant = (status: string): "default-medium" | "success-medium" | "warning-medium" | "destructive-medium" | "waiting-medium" => {
+  const getStatusVariant = (status: string): "muted" | "success-medium" | "warning-medium" | "destructive-medium" => {
     switch (status) {
       case "paid":
         return "success-medium";
       case "validated":
-        return "default-medium";
-      case "returned":
         return "warning-medium";
+      case "returned":
       case "rejected":
         return "destructive-medium";
       case "pending":
       default:
-        return "waiting-medium";
+        return "muted";
     }
   };
 
@@ -737,18 +736,9 @@ export const TransactionDetailPage = () => {
           {/* payment status header */}
           <div className="flex items-center gap-4">
             <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.payment_status")}</p>
-            <Badge 
-              variant={getStatusVariant(transaction.status)} 
-              className={`
-                h-8 px-2 text-sm leading-5
-                ${
-                transaction.status === "pending" ? "bg-neutrals-50" 
-                : transaction.status === "validated" ? `
-                  bg-[#E5F3FA] text-neutrals-700
-                ` 
-                : ""
-              }
-              `}
+            <Badge
+              variant={getStatusVariant(transaction.status)}
+              className="h-8 px-2 text-sm leading-5"
             >
               {getStatusLabel()}
             </Badge>
