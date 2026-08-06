@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@adamosuiteservices/ui/
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { useAuth } from "@/features/auth/application/contexts/auth.context";
 import { ChangeLanguageDialog } from "@/features/common/components/language/change-language-dialog";
 import { useAvatar } from "@/features/common/contexts/use-avatar";
 
@@ -24,11 +25,13 @@ const itemClass = `
 
 export function ProfileMenu() {
   const { t } = useTranslation(["suite-header"]);
+  const { signOut } = useAuth();
   const { avatarUrl, userInitials, userName, userEmail } = useAvatar();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   return (
     <>
@@ -117,10 +120,10 @@ export function ProfileMenu() {
             </Button>
             <Button
               variant="default"
+              disabled={isLoggingOut}
               onClick={() => {
-                // TODO: Implement logout logic
-                console.log("Logout confirmed");
-                setIsLogoutOpen(false);
+                setIsLoggingOut(true);
+                void signOut();
               }}
             >
               {t("logout_dialog.confirm")}

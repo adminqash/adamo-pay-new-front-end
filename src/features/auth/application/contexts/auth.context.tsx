@@ -14,7 +14,7 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 type AuthContextValue = {
   user: User | null
   status: AuthStatus
-  signOut: () => void
+  signOut: () => Promise<void>
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
