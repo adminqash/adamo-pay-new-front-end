@@ -756,6 +756,8 @@ export const TransactionDetailPage = () => {
               {/* header */}
               <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.beneficiary.title")}</p>
+                {/* edit button hidden for now — see isEditDialogOpen block below */}
+                {false && (
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline">
@@ -867,6 +869,7 @@ export const TransactionDetailPage = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
 
               {/* content card */}
@@ -916,6 +919,8 @@ export const TransactionDetailPage = () => {
               {/* header */}
               <div className="flex h-5 items-center justify-between">
                 <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.payment_info.title")}</p>
+                {/* edit button hidden for now — see isPaymentDialogOpen block below */}
+                {false && (
                 <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline">
@@ -967,7 +972,7 @@ export const TransactionDetailPage = () => {
                               >
                                 {accountType && bank && accountNumber
                                   ? `${accountType.charAt(0).toUpperCase() + accountType.slice(1)}. ${mapBankToDisplay(bank)} Nº ${accountNumber}`
-                                  : `${transaction.payment.accountType}. ${transaction.payment.bank} Nº ${transaction.payment.accountNumber}`}
+                                  : `${transaction!.payment.accountType}. ${transaction!.payment.bank} Nº ${transaction!.payment.accountNumber}`}
                               </p>
                             </div>
                             <Button
@@ -997,6 +1002,7 @@ export const TransactionDetailPage = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
 
               {/* content card */}
