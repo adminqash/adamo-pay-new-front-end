@@ -106,6 +106,14 @@ class RealtimeConnection {
       }, 25_000);
     };
 
+    // Without this handler, a failed handshake (wrong URL, TLS/proxy issue,
+    // auth rejection) only ever surfaces as a silent `onclose` — nothing
+    // logs *why* it failed, which makes "nothing seems to connect" reports
+    // impossible to diagnose from the console alone.
+    ws.onerror = () => {
+      console.error(`[realtime] WebSocket connection error (url: ${wsUrl})`);
+    };
+
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data as string) as RealtimeEventMessage;
       if (message.type !== "event") {
@@ -125,7 +133,7 @@ class RealtimeConnection {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       if (this.heartbeatTimer) {
         clearInterval(this.heartbeatTimer);
         this.heartbeatTimer = null;
@@ -133,6 +141,14 @@ class RealtimeConnection {
       this.ws = null;
 
       if (this.entries.size > 0 && this.reconnectAttempts < 10) {
+        // event.reason carries the gateway's AUTH_ERROR_CODES value
+        // (e.g. TOKEN_EXPIRED, HEARTBEAT_TIMEOUT) when the server closed it —
+        // log it so a silently-failing connection is diagnosable from the
+        // console instead of just "nothing happens".
+        console.warn(
+          `[realtime] WebSocket closed (code: ${event.code}, reason: ${event.reason || "none"}) — `
+          + `reconnecting (attempt ${this.reconnectAttempts + 1}/10)`,
+        );
         this.reconnectAttempts += 1;
         this.reconnectTimer = setTimeout(
           () => this.connect(),
