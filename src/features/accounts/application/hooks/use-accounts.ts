@@ -8,14 +8,17 @@ import type {
 } from "@/features/accounts/application/commands/account.commands";
 import type { ListQueryParams } from "@/lib/api/api.types";
 import { AccountsService } from "@/features/accounts/api/services/accounts.service";
+import { useCountry } from "@/features/common/contexts/use-country";
+import { withCountryScope } from "@/lib/country/country-code";
 import { listQueryDefaults } from "@/lib/query/defaults";
 import { queryKeys } from "@/lib/query/query-keys";
 
 export function useAccounts(params?: ListQueryParams) {
   const { t } = useTranslation(["accounts"]);
+  const { countryCode } = useCountry();
 
   const accountsQuery = useQuery({
-    queryKey: queryKeys.accounts.all(params),
+    queryKey: withCountryScope(queryKeys.accounts.all(params), countryCode),
     queryFn: () => AccountsService.list(params),
     ...listQueryDefaults,
     meta: {
@@ -25,7 +28,7 @@ export function useAccounts(params?: ListQueryParams) {
   });
 
   const balanceQuery = useQuery({
-    queryKey: queryKeys.accounts.balanceSummary,
+    queryKey: withCountryScope(queryKeys.accounts.balanceSummary, countryCode),
     queryFn: () => AccountsService.getBalanceSummary(),
     ...listQueryDefaults,
     meta: { showMessageOnSuccess: false, showMessageOnError: false },
@@ -43,9 +46,10 @@ export function useAccounts(params?: ListQueryParams) {
 
 export function useAccount(accountId: string) {
   const { t } = useTranslation(["accounts"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.accounts.detail(accountId),
+    queryKey: withCountryScope(queryKeys.accounts.detail(accountId), countryCode),
     queryFn: () => AccountsService.getById(accountId),
     enabled: Boolean(accountId),
     ...listQueryDefaults,
@@ -65,9 +69,10 @@ export function useAccount(accountId: string) {
 
 export function useAccountMovements(accountId: string, params?: ListQueryParams) {
   const { t } = useTranslation(["accounts"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.accounts.movements(accountId, params),
+    queryKey: withCountryScope(queryKeys.accounts.movements(accountId, params), countryCode),
     queryFn: () => AccountsService.listMovements(accountId, params),
     enabled: Boolean(accountId),
     ...listQueryDefaults,

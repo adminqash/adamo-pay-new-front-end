@@ -56,6 +56,7 @@ import { buildAccountListParams, buildAccountMovementListParams } from "../utils
 import type { AccountMovement } from "@/features/accounts/application/entities/account.entity";
 import type { DateRange } from "react-day-picker";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { parseCurrencyToMinor } from "@/lib/money/money";
 
 /**
@@ -208,6 +209,7 @@ export function AccountMovementsPage() {
   const { t, i18n } = useTranslation("accounts");
   const { accountId } = useParams<{ accountId: string }>();
   const navigate = useNavigate();
+  const { countryCode, currencyUpper, locale: moneyLocale } = useCountry();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -376,8 +378,8 @@ export function AccountMovementsPage() {
     id: accountId ?? "",
     name: t("accounts.unknown_account", { defaultValue: "Cuenta desconocida" }),
     balance: "$0,00",
-    currency: "COP",
-    countryCode: "CO",
+    currency: currencyUpper,
+    countryCode,
   };
 
   if (!accountId) {
@@ -818,12 +820,12 @@ export function AccountMovementsPage() {
                 {t("accounts.transfer_dialog.amount")}
               </Label>
               <AmountInputContainer className="gap-2">
-                <AmountInputFlag locale="es-CO" currencySymbol="" />
+                <AmountInputFlag locale={moneyLocale} currencySymbol="" />
                 <AmountInput
                   id="transfer-amount"
                   value={transferAmount}
                   onValueChange={(value) => setTransferAmount(value !== undefined ? String(value) : "")}
-                  locale="es-CO"
+                  locale={moneyLocale}
                   placeholder="0.00"
                   minimumFractionDigits={2}
                   maximumFractionDigits={2}

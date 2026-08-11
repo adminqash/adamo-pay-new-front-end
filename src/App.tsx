@@ -5,18 +5,21 @@ import { AuthProvider } from "@/features/auth/application/contexts/auth.context"
 import { GlobalQueryLoader } from "@/features/common/components/layout/global-query-loader";
 import { RefetchProgressBar } from "@/features/common/components/layout/refetch-progress-bar";
 import { AvatarProvider } from "@/features/common/contexts/avatar-context";
+import { CountryProvider } from "@/features/common/contexts/country-context";
 import { router } from "@/router";
 
 function App() {
   return (
     <AuthProvider>
-      <AvatarProvider>
-        <RefetchProgressBar />
-        <FullScreenLoader />
-        <GlobalQueryLoader />
-        <RouterProvider router={router} />
-        <Toaster />
-      </AvatarProvider>
+      <CountryProvider>
+        <AvatarProvider>
+          <RefetchProgressBar />
+          <FullScreenLoader />
+          <GlobalQueryLoader />
+          <RouterProvider router={router} />
+          <Toaster />
+        </AvatarProvider>
+      </CountryProvider>
     </AuthProvider>
   );
 }

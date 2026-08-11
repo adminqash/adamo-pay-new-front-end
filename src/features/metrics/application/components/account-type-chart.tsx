@@ -1,6 +1,7 @@
 import { Card } from "@adamosuiteservices/ui/card";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useCountry } from "@/features/common/contexts/use-country";
 
 interface TransactionData {
   name: string
@@ -21,18 +22,15 @@ type PieTooltipProps = {
   active?: boolean
   payload?: PieTooltipPayloadItem[]
   total: number
+  formatCurrency: (value: number) => string
 };
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function AccountTransactionAmountTooltip({ active, payload, total }: PieTooltipProps) {
+function AccountTransactionAmountTooltip({
+  active,
+  payload,
+  total,
+  formatCurrency,
+}: PieTooltipProps) {
   if (!active || !payload || payload.length === 0) {
     return null;
   }
@@ -62,6 +60,15 @@ export function AccountTransactionAmountChart({
   data: propData,
 }: AccountTransactionAmountChartProps) {
   const { t } = useTranslation("metrics");
+  const { currencyUpper, locale } = useCountry();
+
+  const formatCurrency = (value: number): string =>
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: currencyUpper,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
 
   const data = propData ?? [];
   const totalAmount = data.reduce((sum, item) => sum + item.value, 0);
@@ -97,7 +104,12 @@ export function AccountTransactionAmountChart({
               ))}
             </Pie>
             <Tooltip
-              content={<AccountTransactionAmountTooltip total={totalAmount} />}
+              content={
+                <AccountTransactionAmountTooltip
+                  total={totalAmount}
+                  formatCurrency={formatCurrency}
+                />
+              }
               cursor={false}
               wrapperStyle={{ zIndex: 1000 }}
             />

@@ -47,9 +47,11 @@ import { useParams, useNavigate, Link } from "react-router";
 import type { BatchTransactionDetail } from "@/features/batches/application/entities/batch-transaction-detail.entity";
 import { AddBankAccountDialog } from "@/features/beneficiaries/application/components/add-bank-account-dialog";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { CorrectPaymentMapper } from "@/features/transactions/api/mappers/correct-payment.mapper";
 import { PaymentsService } from "@/features/transactions/api/services/payments.service";
 import { useCorrectPayment } from "@/features/transactions/application/hooks/use-payment-mutations";
+import { withCountryScope } from "@/lib/country/country-code";
 import { queryKeys } from "@/lib/query/query-keys";
 import {
   formatCurrencyDisplay,
@@ -90,9 +92,10 @@ export const CorrectPaymentPage = () => {
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
   const correctPayment = useCorrectPayment();
+  const { countryCode } = useCountry();
 
   const paymentQuery = useQuery({
-    queryKey: queryKeys.payments.detail(id ?? ""),
+    queryKey: withCountryScope(queryKeys.payments.detail(id ?? ""), countryCode),
     queryFn: async() => {
       const result = await PaymentsService.getDetailDto(id!);
       return result.data ?? null;

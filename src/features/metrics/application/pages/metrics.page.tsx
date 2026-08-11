@@ -50,6 +50,7 @@ import { buildMetricsParams } from "../utils/metrics-filters.utils";
 import type { DateRange } from "react-day-picker";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
+import { useCountry } from "@/features/common/contexts/use-country";
 
 /**
  * custom date range picker component
@@ -199,6 +200,7 @@ const DateRangePicker = ({
 
 export function MetricsPage() {
   const { t, i18n } = useTranslation("metrics");
+  const { countryCodeAlpha2 } = useCountry();
   const [filterTab, setFilterTab] = useStateReact("today");
   const [chartTab, setChartTab] = useStateReact("transactions");
   const [isDatePickerOpen, setIsDatePickerOpen] = useStateReact(false);
@@ -287,7 +289,7 @@ export function MetricsPage() {
   const { dashboard, refetch } = useMetricsDashboard(metricsParams);
 
   const metricsData = dashboard?.overview ?? {
-    totalVolume: { value: "$0,00", countryCode: "CO", variation: { value: 0, trend: "up" as const } },
+    totalVolume: { value: "$0,00", countryCode: countryCodeAlpha2, variation: { value: 0, trend: "up" as const } },
     totalTransactions: { value: "0", variation: { value: 0, trend: "up" as const } },
     averageTicket: { value: "$0,00", variation: { value: 0, trend: "up" as const } },
     averageFunding: { value: "$0,00", variation: { value: 0, trend: "up" as const } },

@@ -1,5 +1,7 @@
 export type CreateAccountCommand = {
   name: string
+  currency?: string
+  countryCode?: string
 };
 
 export type UpdateAccountCommand = {

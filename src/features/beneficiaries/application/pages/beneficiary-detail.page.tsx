@@ -57,6 +57,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams, useNavigate } from "react-router";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { CreditCard, type CreditCardData } from "../components/credit-card";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useBeneficiaryDetail, useBeneficiaryTransactions, useUpdateBeneficiary } from "../hooks/use-beneficiaries";
@@ -69,6 +70,7 @@ export function BeneficiaryDetailPage() {
   const { t } = useTranslation("beneficiaries");
   const { beneficiaryId } = useParams();
   const navigate = useNavigate();
+  const { currencyUpper, locale: moneyLocale } = useCountry();
   const [activeTab, setActiveTab] = useState("physical");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftButton, setShowLeftButton] = useState(false);
@@ -154,7 +156,7 @@ export function BeneficiaryDetailPage() {
       name: "Nombre de la tarjeta",
       type: "physical",
       balance: 0,
-      currency: "COP",
+      currency: currencyUpper,
       cardNumber: "1234567890120121",
       status: "reported",
       gradient: "linear-gradient(147.63deg, rgb(14, 147, 132) 0%, rgb(159, 212, 206) 100%)",
@@ -164,7 +166,7 @@ export function BeneficiaryDetailPage() {
       name: "Tarjeta corporativa",
       type: "physical",
       balance: 1500000,
-      currency: "COP",
+      currency: currencyUpper,
       cardNumber: "9876543210984567",
       status: "active",
       gradient: "linear-gradient(147.63deg, rgb(14, 147, 132) 0%, rgb(159, 212, 206) 100%)",
@@ -174,7 +176,7 @@ export function BeneficiaryDetailPage() {
       name: "Tarjeta expirada",
       type: "physical",
       balance: 500000,
-      currency: "COP",
+      currency: currencyUpper,
       cardNumber: "5555444433332222",
       status: "expired",
       gradient: "linear-gradient(147.63deg, rgb(14, 147, 132) 0%, rgb(159, 212, 206) 100%)",
@@ -184,7 +186,7 @@ export function BeneficiaryDetailPage() {
       name: "Tarjeta temporal",
       type: "physical",
       balance: 250000,
-      currency: "COP",
+      currency: currencyUpper,
       cardNumber: "4444333322221111",
       status: "frozen",
       gradient: "linear-gradient(147.63deg, rgb(14, 147, 132) 0%, rgb(159, 212, 206) 100%)",
@@ -331,7 +333,7 @@ export function BeneficiaryDetailPage() {
         name: cardFormData.alias,
         type: cardType as "physical" | "virtual",
         balance: cardType === "virtual" ? parseFloat(cardFormData.monthlyAmount) || 0 : 0,
-        currency: "COP",
+        currency: currencyUpper,
         cardNumber: Math.random().toString().slice(2, 18),
         status: "active",
         gradient: cardType === "physical" 
@@ -766,7 +768,7 @@ export function BeneficiaryDetailPage() {
                         className="size-6"
                       />
                       <p className="text-sm font-semibold text-foreground">
-                        ${beneficiary.totalPaid.amount.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {beneficiary.totalPaid.currency}
+                        ${beneficiary.totalPaid.amount.toLocaleString(moneyLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {beneficiary.totalPaid.currency}
                       </p>
                     </div>
                     <Button 

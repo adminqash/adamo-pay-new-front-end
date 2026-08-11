@@ -1,16 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { MetricsQueryParams } from "@/lib/api/api.types";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { MetricsMapper } from "@/features/metrics/api/mappers/metrics.mapper";
 import { MetricsService } from "@/features/metrics/api/services/metrics.service";
+import { withCountryScope } from "@/lib/country/country-code";
 import { queryDefaults } from "@/lib/query/defaults";
 import { queryKeys } from "@/lib/query/query-keys";
 
 export function useMetricsDashboard(params?: MetricsQueryParams) {
   const { t } = useTranslation(["metrics"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.metrics.dashboard(params),
+    queryKey: withCountryScope(queryKeys.metrics.dashboard(params), countryCode),
     queryFn: () => MetricsService.getDashboard(params),
     ...queryDefaults,
     meta: {
@@ -20,7 +23,7 @@ export function useMetricsDashboard(params?: MetricsQueryParams) {
   });
 
   const dashboard = query.data?.data
-    ? MetricsMapper.toDashboard(query.data.data, t)
+    ? MetricsMapper.toDashboard(query.data.data, t, countryCode)
     : undefined;
 
   return {

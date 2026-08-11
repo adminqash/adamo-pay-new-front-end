@@ -39,6 +39,7 @@ import {
 } from "@adamosuiteservices/ui/pagination";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { Link, useParams, useLocation, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { PageContainer } from "@/features/common/components/layout/page-container";
@@ -51,6 +52,7 @@ import { CompactCreditCard, type CreditCardData } from "../components/compact-cr
  */
 export function CreditCardMovementsPage() {
   const { t } = useTranslation("beneficiaries");
+  const { currencyUpper, locale: moneyLocale } = useCountry();
   const { beneficiaryId, cardId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,7 +78,7 @@ export function CreditCardMovementsPage() {
     name: "Nombre de la tarjeta",
     type: "physical",
     balance: 0,
-    currency: "COP",
+    currency: currencyUpper,
     cardNumber: "1234567890120121",
     status: "active",
     gradient: "linear-gradient(147.63deg, rgb(14, 147, 132) 0%, rgb(159, 212, 206) 100%)",
@@ -121,7 +123,7 @@ export function CreditCardMovementsPage() {
   ];
 
   const formatAmount = (amount: number) => {
-    const formatted = Math.abs(amount).toLocaleString("es-CO", {
+    const formatted = Math.abs(amount).toLocaleString(moneyLocale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });

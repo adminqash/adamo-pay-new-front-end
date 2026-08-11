@@ -44,7 +44,7 @@ import {
 } from "@/features/beneficiaries/application/utils/beneficiary-form.utils";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
-import { getStoredCountryCodeAlpha3 } from "@/lib/country/country-code";
+import { useCountry } from "@/features/common/contexts/use-country";
 import {
   formatCurrencyDisplay,
   minorToMajor,
@@ -111,6 +111,7 @@ function formatAccountLabel(accountType: string, bank: string, accountNumber: st
  */
 export const CreatePaymentPage = () => {
   const { t } = useTranslation(["transactions", "beneficiaries"]);
+  const { countryCode, currency, locale } = useCountry();
   const navigate = useNavigate();
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -319,8 +320,8 @@ export const CreatePaymentPage = () => {
           accountNumber: selectedBeneficiary.accountNumber,
         },
         amount: parsedAmount,
-        currency: "cop",
-        countryCode: getStoredCountryCodeAlpha3(),
+        currency,
+        countryCode,
         metadata: {
           saveBeneficiary,
           channel: "web",
@@ -680,7 +681,7 @@ export const CreatePaymentPage = () => {
                     </p>
                     <div className="flex flex-col gap-2">
                       <AmountInputContainer className="gap-2">
-                        <AmountInputFlag locale="es-CO" currencySymbol="" />
+                        <AmountInputFlag locale={locale} currencySymbol="" />
                         <AmountInput
                           value={amountMinor > 0 ? Number(minorToMajor(amountMinor)) : undefined}
                           onValueChange={(value) => {
@@ -697,7 +698,7 @@ export const CreatePaymentPage = () => {
                             setAmount(rawValue);
                           }}
                           placeholder={t("transactions.create_payment.amount_placeholder")}
-                          locale="es-CO"
+                          locale={locale}
                           minimumFractionDigits={2}
                           maximumFractionDigits={2}
                         />

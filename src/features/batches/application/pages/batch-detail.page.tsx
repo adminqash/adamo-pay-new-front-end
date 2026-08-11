@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { createPortal } from "react-dom";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { useParams, Link, useNavigate } from "react-router";
 import {
   Breadcrumb,
@@ -80,6 +81,7 @@ export const BatchDetailPage = () => {
   const { t } = useTranslation(["batches", "transactions"]);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { currencyUpper, locale } = useCountry();
   const { batch, isLoading: isBatchLoading } = useBatchDetail(id ?? "");
   useBatchesRealtime(id);
 
@@ -122,9 +124,9 @@ export const BatchDetailPage = () => {
    * format currency amount
    */
   const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat("es-CO", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: "COP",
+      currency: currencyUpper,
       minimumFractionDigits: 2,
     }).format(amount);
   };

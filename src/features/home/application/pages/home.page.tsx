@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { useHome } from "@/features/home/application/hooks/use-home";
 import { usePaymentsRealtime } from "@/features/transactions/application/hooks/use-payments-realtime";
 import { useAccountBalanceRealtime } from "@/features/accounts/application/hooks/use-account-balance-realtime";
@@ -18,6 +19,7 @@ const DASHBOARD_QUERY_KEY = ["dashboard"];
 export function HomePage() {
   const { t } = useTranslation(["home"]);
   const navigate = useNavigate();
+  const { countryCode } = useCountry();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -51,7 +53,7 @@ export function HomePage() {
                   {t("home:home.wallet_card.title")}
                 </div>
                 <div className="inline-flex items-center gap-3 bg-background rounded-full px-4 py-4 h-14">
-                  <CountryFlag countryCode={home.data?.walletBalance.countryCode || "CO"} />
+                  <CountryFlag countryCode={home.data?.walletBalance.countryCode || countryCode} />
                   <span className="text-sm font-bold text-foreground">
                     {home.data?.walletBalance.amount}
                   </span>

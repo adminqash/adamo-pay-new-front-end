@@ -11,6 +11,12 @@ import type {
   TopBeneficiariesDTO,
   TransactionStatusDTO,
 } from "@/features/metrics/api/dtos/metrics.dto";
+import {
+  getCurrencyUpperForCountry,
+  getLocaleForCountry,
+  getStoredCountryCodeAlpha3,
+  toCountryCodeAlpha2,
+} from "@/lib/country/country-code";
 import { formatCurrencyDisplay } from "@/lib/utils/currency.utils";
 
 export type MetricsDashboard = {
@@ -71,20 +77,23 @@ function mapTrend(trend: string): "up" | "down" {
   return trend === "down" ? "down" : "up";
 }
 
-function formatCount(value: number): string {
-  return new Intl.NumberFormat("es-CO").format(value);
+function formatCount(value: number, countryCode?: string): string {
+  return new Intl.NumberFormat(getLocaleForCountry(countryCode)).format(value);
 }
 
 export class MetricsMapper {
-  public static toOverview(dto: MetricsOverviewDTO): MetricsOverview {
-    const currency = dto.totalVolume?.currency ?? "COP";
+  public static toOverview(
+    dto: MetricsOverviewDTO,
+    countryCode: string = getStoredCountryCodeAlpha3(),
+  ): MetricsOverview {
+    const currency = dto.totalVolume?.currency ?? getCurrencyUpperForCountry(countryCode);
 
     return {
       totalVolume: {
         value: dto.totalVolume
           ? formatCurrencyDisplay(dto.totalVolume.value, currency)
           : "$0,00",
-        countryCode: "CO",
+        countryCode: toCountryCodeAlpha2(countryCode),
         variation: {
           value: Math.abs(dto.totalVolume?.variation ?? 0),
           trend: mapTrend(dto.totalVolume?.trend ?? "up"),
@@ -92,7 +101,7 @@ export class MetricsMapper {
       },
       totalTransactions: {
         value: dto.totalTransactions
-          ? formatCount(dto.totalTransactions.value)
+          ? formatCount(dto.totalTransactions.value, countryCode)
           : "0",
         variation: {
           value: Math.abs(dto.totalTransactions?.variation ?? 0),
@@ -245,7 +254,11 @@ export class MetricsMapper {
     }));
   }
 
-  public static toDashboard(dto: MetricsDashboardDTO, t?: (key: string) => string): MetricsDashboard {
+  public static toDashboard(
+    dto: MetricsDashboardDTO,
+    t?: (key: string) => string,
+    countryCode: string = getStoredCountryCodeAlpha3(),
+  ): MetricsDashboard {
     const translate = t ?? ((key: string) => key);
     const statusDist = dto.transactionStatus.statusDistribution;
     const transactionStatusTotal
@@ -289,7 +302,7 @@ export class MetricsMapper {
     ];
 
     return {
-      overview: MetricsMapper.toOverview(dto.overview),
+      overview: MetricsMapper.toOverview(dto.overview, countryCode),
       paymentFrequency: MetricsMapper.toPaymentFrequency(dto.paymentFrequency),
       paymentFrequencyTotal: dto.paymentFrequency.totalPayments,
       transactionStatusData: MetricsMapper.toTransactionStatusChart(dto.transactionStatus, translate),

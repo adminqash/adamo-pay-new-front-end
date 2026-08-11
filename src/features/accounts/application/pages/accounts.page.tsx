@@ -39,10 +39,12 @@ import { buildAccountListParams } from "../utils/account-filters.utils";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { parseCurrencyToMinor } from "@/lib/money/money";
 
 export function AccountsPage() {
   const { t } = useTranslation("accounts");
+  const { countryCode, currency, currencyUpper, locale: moneyLocale } = useCountry();
   const [newAccountName, setNewAccountName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -186,7 +188,11 @@ export function AccountsPage() {
    * handle create account
    */
   const handleCreateAccount = () => {
-    createAccount.mutate({ name: newAccountName.trim() }, {
+    createAccount.mutate({
+      name: newAccountName.trim(),
+      countryCode,
+      currency,
+    }, {
       onSuccess: () => {
         setIsDialogOpen(false);
         setNewAccountName("");
@@ -218,9 +224,12 @@ export function AccountsPage() {
                   py-4
                 `}
                 >
-                  <CountryFlag countryCode="CO" />
+                  <CountryFlag countryCode={countryCode} />
                   <span className="text-sm font-bold text-foreground">
                     {totalBalance}
+                  </span>
+                  <span className="text-sm text-foreground">
+                    {currencyUpper}
                   </span>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -455,12 +464,12 @@ export function AccountsPage() {
                 {t("accounts.transfer_dialog.amount")}
               </Label>
               <AmountInputContainer className="gap-2">
-                <AmountInputFlag locale="es-CO" currencySymbol="" />
+                <AmountInputFlag locale={moneyLocale} currencySymbol="" />
                 <AmountInput
                   id="transfer-amount"
                   value={transferAmount}
                   onValueChange={(value) => setTransferAmount(value !== undefined ? String(value) : "")}
-                  locale="es-CO"
+                  locale={moneyLocale}
                   placeholder="0.00"
                   minimumFractionDigits={2}
                   maximumFractionDigits={2}

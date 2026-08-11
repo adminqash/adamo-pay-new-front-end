@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { createPortal } from "react-dom";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { useParams, Link, useNavigate } from "react-router";
 import {
   Breadcrumb,
@@ -59,6 +60,7 @@ export const TransactionDetailPage = () => {
   const { t } = useTranslation(["batches", "transactions"]);
   const { batchId, transactionId } = useParams<{ batchId: string, transactionId: string }>();
   const navigate = useNavigate();
+  const { currencyUpper, locale } = useCountry();
   const {
     transaction: originalTransaction,
     isLoading,
@@ -618,12 +620,12 @@ export const TransactionDetailPage = () => {
   };
 
   /**
-   * format amount in COP currency
+   * format amount in the selected country currency
    */
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat("es-CO", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: "COP",
+      currency: currencyUpper,
       minimumFractionDigits: 2,
     }).format(amount);
   };

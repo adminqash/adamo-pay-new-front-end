@@ -107,7 +107,11 @@ export class AccountsService {
   }
 
   public static async create(command: CreateAccountCommand): Promise<ServiceResult<Account>> {
-    const dto: CreateAccountDTO = { name: command.name };
+    const dto: CreateAccountDTO = {
+      name: command.name,
+      currency: command.currency,
+      countryCode: command.countryCode,
+    };
     return apiPost<AccountListItemDTO, Account>(
       coreApi,
       "/accounts",

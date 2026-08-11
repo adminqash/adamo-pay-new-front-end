@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useNavigate, useParams, useLocation } from "react-router";
 import { useState } from "react";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { useCountry } from "@/features/common/contexts/use-country";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -54,6 +55,7 @@ import { AddBankAccountDialog } from "../components/add-bank-account-dialog";
  * page for sending a quick payment to a beneficiary
  */
 export const QuickPaymentPage = () => {
+  const { locale: moneyLocale } = useCountry();
   const { t } = useTranslation(["transactions", "beneficiaries"]);
   const navigate = useNavigate();
   const { beneficiaryId } = useParams();
@@ -318,7 +320,7 @@ export const QuickPaymentPage = () => {
             </p>
             <div className="flex flex-col gap-2">
               <AmountInputContainer className="gap-2">
-                <AmountInputFlag locale="es-CO" currencySymbol="" />
+                <AmountInputFlag locale={moneyLocale} currencySymbol="" />
                 <AmountInput
                   id="amount"
                   value={amount ? parseFloat(amount.replace(',', '.')) : undefined}
@@ -328,7 +330,7 @@ export const QuickPaymentPage = () => {
                     setAmount(rawValue);
                   }}
                   placeholder={t("transactions.quick_payment.amount_placeholder")}
-                  locale="es-CO"
+                  locale={moneyLocale}
                   minimumFractionDigits={2}
                   maximumFractionDigits={2}
                 />

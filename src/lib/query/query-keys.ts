@@ -1,3 +1,8 @@
+/**
+ * Base React Query keys.
+ * Country-scoped data queries should wrap these with `withCountryScope(...)`
+ * so caches never collide across countries. Auth keys stay global.
+ */
 export const queryKeys = {
   auth: {
     all: ["auth"] as const,

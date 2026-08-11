@@ -17,7 +17,7 @@ import { Button } from "@adamosuiteservices/ui/button";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import { FileUpload } from "@adamosuiteservices/ui/file-upload";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
-import { getStoredCountryCodeAlpha3 } from "@/lib/country/country-code";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { useNavigate, useBlocker, useLocation } from "react-router";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
 import {
@@ -56,6 +56,7 @@ export const CreateBatchPage = () => {
   const { t } = useTranslation("batches");
   const navigate = useNavigate();
   const location = useLocation();
+  const { countryCode, currency, currencyUpper, locale } = useCountry();
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   // Get file from navigation state if coming from home
@@ -98,8 +99,6 @@ export const CreateBatchPage = () => {
 
   // balance from accounts summary
   const balance = totalBalance;
-  const currency = "COP";
-  const countryCode = getStoredCountryCodeAlpha3();
   const acceptedExtensions = [".xlsx", ".csv", ".numbers"];
   const maxSizeInMB = 50;
 
@@ -109,6 +108,15 @@ export const CreateBatchPage = () => {
     }
   }, [uploadProgress.requestId, uploadRequestId]);
 
+  // Country switch invalidates the in-progress batch; start clean for the new country.
+  useEffect(() => {
+    setBatchId(null);
+    setUploadId(null);
+    setUploadRequestId(null);
+    setSourceAccountId(undefined);
+    uploadStartedForBatchRef.current = null;
+  }, [countryCode]);
+
   useEffect(() => {
     if (!file || batchId || createBatch.isPending) {
       return;
@@ -117,14 +125,14 @@ export const CreateBatchPage = () => {
     void createBatch.mutateAsync({
       batchId: crypto.randomUUID(),
       name: file.name.replace(/\.[^.]+$/, ""),
-      currency: "cop",
+      currency,
       countryCode,
     }).then((result) => {
       if (result.data?.id) {
         setBatchId(result.data.id);
       }
     });
-  }, [file, batchId, createBatch]);
+  }, [file, batchId, createBatch, currency, countryCode]);
 
   useEffect(() => {
     if (!file || !batchId || uploadBatchFile.isPending) {
@@ -211,7 +219,7 @@ export const CreateBatchPage = () => {
    * format currency amount
    */
   const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat("es-CO", {
+    return new Intl.NumberFormat(locale, {
       style: "decimal",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -414,7 +422,7 @@ export const CreateBatchPage = () => {
                       {balance}
                     </span>
                     <span className="text-sm text-foreground">
-                      {currency}
+                      {currencyUpper}
                     </span>
                   </div>
 
@@ -589,7 +597,7 @@ export const CreateBatchPage = () => {
                           ? t("batches.create_batch.batch_summary.calculating", {
                               defaultValue: "Calculando...",
                             })
-                          : `${formatAmount(batchSummary.totalToPay)} ${currency}`}
+                          : `${formatAmount(batchSummary.totalToPay)} ${currencyUpper}`}
                       </p>
                     </div>
                   </div>
@@ -608,7 +616,7 @@ export const CreateBatchPage = () => {
                         className="text-[#384250]"
                       />
                       <p className="text-sm font-semibold text-[#384250]">
-                        {formatAmount(batchSummary.balanceAfter)} {currency}
+                        {formatAmount(batchSummary.balanceAfter)} {currencyUpper}
                       </p>
                     </div>
                   </div>

@@ -19,6 +19,7 @@ import {
 import { Combobox } from "@adamosuiteservices/ui/combobox";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useCountry } from "@/features/common/contexts/use-country";
 
 interface RechargeBalanceDialogProps {
   open: boolean;
@@ -37,14 +38,15 @@ export function RechargeBalanceDialog({
   cardNumber,
 }: RechargeBalanceDialogProps) {
   const { t } = useTranslation("beneficiaries");
+  const { currencyUpper, locale: moneyLocale } = useCountry();
   const [amount, setAmount] = useState("");
   const [sourceAccount, setSourceAccount] = useState("");
 
   // TODO: Replace with actual accounts from API
   const accounts = [
-    { id: "account1", name: "Cuenta 1", balance: "$90.784.510,46", currency: "COP" },
-    { id: "account2", name: "Cuenta 2", balance: "$50.000.000,00", currency: "COP" },
-    { id: "account3", name: "Cuenta 3", balance: "$25.500.000,00", currency: "COP" },
+    { id: "account1", name: "Cuenta 1", balance: "$90.784.510,46", currency: currencyUpper },
+    { id: "account2", name: "Cuenta 2", balance: "$50.000.000,00", currency: currencyUpper },
+    { id: "account3", name: "Cuenta 3", balance: "$25.500.000,00", currency: currencyUpper },
   ];
 
   const handleSubmit = () => {
@@ -81,12 +83,12 @@ export function RechargeBalanceDialog({
               {t("beneficiaries.credit_card_movements.recharge_dialog.amount_label")}
             </Label>
             <AmountInputContainer className="gap-2">
-              <AmountInputFlag locale="es-CO" currencySymbol="" />
+              <AmountInputFlag locale={moneyLocale} currencySymbol="" />
               <AmountInput
                 id="recharge-amount"
                 value={amount}
                 onValueChange={(value) => setAmount(value !== undefined ? String(value) : "")}
-                locale="es-CO"
+                locale={moneyLocale}
                 placeholder="0.00"
                 minimumFractionDigits={2}
                 maximumFractionDigits={2}

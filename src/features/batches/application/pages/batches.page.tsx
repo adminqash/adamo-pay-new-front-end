@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { useBatches } from "../hooks/use-batches";
 import { useBatchesRealtime } from "../hooks/use-batches-realtime";
 import { buildBatchListParams } from "../utils/batch-filters.utils";
@@ -200,6 +201,7 @@ export const BatchesPage = () => {
   const { t, i18n } = useTranslation("batches");
   const navigate = useNavigate();
   const location = useLocation();
+  const { currencyUpper, locale } = useCountry();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -347,9 +349,9 @@ export const BatchesPage = () => {
    * format currency amount
    */
   const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat("es-AR", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: "ARS",
+      currency: currencyUpper,
       minimumFractionDigits: 2,
     }).format(amount);
   };
@@ -358,7 +360,7 @@ export const BatchesPage = () => {
    * format transaction count
    */
   const formatTransactionCount = (count: number): string => {
-    return new Intl.NumberFormat("es-AR").format(count);
+    return new Intl.NumberFormat(locale).format(count);
   };
 
   return (

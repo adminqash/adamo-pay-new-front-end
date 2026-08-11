@@ -18,19 +18,16 @@ import {
   SidebarTrigger,
 } from "@adamosuiteservices/ui/sidebar";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
-import { useQueryClient } from "@tanstack/react-query";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
-import { useState } from "react";
+import { Fragment, type JSX } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, NavLink, Outlet, useLocation } from "react-router";
-import type { JSX } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { Logo } from "@/features/common/components/brand/logo";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
+import { useCountry } from "@/features/common/contexts/use-country";
 import {
-  ALPHA2_TO_ALPHA3,
-  ALPHA3_TO_ALPHA2,
-  COUNTRY_CODE_STORAGE_KEY,
-  getStoredCountryCodeAlpha3,
+  getCountrySwitchRedirect,
+  SELECTABLE_COUNTRIES,
 } from "@/lib/country/country-code";
 
 export type SidebarMenuItem = {
@@ -51,30 +48,24 @@ function isPathActive(pathname: string, path: string) {
 export function MainSidebar() {
   const { t } = useTranslation(["sidebar"]);
   const { pathname } = useLocation();
-  const queryClient = useQueryClient();
-  const [selectedCountry, setSelectedCountry] = useState(
-    () => ALPHA3_TO_ALPHA2[getStoredCountryCodeAlpha3()] ?? "CO",
-  );
+  const navigate = useNavigate();
+  const { countryCodeAlpha2, setCountry } = useCountry();
 
-  const countries: Record<string, string> = {
-    AR: "Argentina",
-    BR: "Brasil",
-    CO: "Colombia",
-    MX: "México",
-  };
-
-  function selectCountry(alpha2: string) {
-    if (alpha2 === selectedCountry) {
+  function selectCountry(alpha2: string, countryName: string) {
+    const changed = setCountry(alpha2);
+    if (!changed) {
       return;
     }
 
-    setSelectedCountry(alpha2);
-    localStorage.setItem(COUNTRY_CODE_STORAGE_KEY, ALPHA2_TO_ALPHA3[alpha2]);
+    const redirectTo = getCountrySwitchRedirect(pathname);
+    if (redirectTo) {
+      void navigate(redirectTo, { replace: true });
+    }
 
-    // Every list/dashboard query is implicitly scoped by countryCode via the
-    // axios interceptor (not part of the query key), so React Query has no
-    // way to know it changed on its own — force every active query to refetch.
-    void queryClient.invalidateQueries();
+    ToastManager.show({
+      message: `País cambiado a ${countryName}`,
+      variant: "success",
+    });
   }
 
   const menu: SidebarMenuItem[] = [
@@ -121,6 +112,10 @@ export function MainSidebar() {
     },
   ];
 
+  const selectedCountryName = SELECTABLE_COUNTRIES.find(
+    (country) => country.alpha2 === countryCodeAlpha2,
+  )?.name ?? countryCodeAlpha2;
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -145,17 +140,17 @@ export function MainSidebar() {
                       </SidebarMenuItem>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-1 pl-4">
-                      <SidebarMenu className="my-0">{item.menu.map((item) => (
-                        <SidebarMenuItem key={item.id} asChild isActive={isPathActive(pathname, item.path)}>
+                      <SidebarMenu className="my-0">{item.menu.map((subItem) => (
+                        <SidebarMenuItem key={subItem.id} asChild isActive={isPathActive(pathname, subItem.path)}>
                           <NavLink
-                            to={item.path}
+                            to={subItem.path}
                           >
-                            {item.icon}
-                            {item.label}
+                            {subItem.icon}
+                            {subItem.label}
                           </NavLink>
                         </SidebarMenuItem>
                       ))}
-                      </SidebarMenu>
+                    </SidebarMenu>
                     </CollapsibleContent>
                   </Collapsible>
                 );
@@ -203,101 +198,39 @@ export function MainSidebar() {
                     active:outline-none
                   `}
                 >
-                  <CountryFlag countryCode={selectedCountry} />
+                  <CountryFlag countryCode={countryCodeAlpha2} />
                   <span className={`
                     hidden text-sm font-semibold text-foreground
                     xl:inline
                   `}
                   >
-                    {countries[selectedCountry]}
+                    {selectedCountryName}
                   </span>
                   <Icon symbol="arrow_drop_down" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[200px] p-0">
-                <DropdownMenuItem
-                  onClick={() => {
-                    selectCountry("AR");
-                    ToastManager.show({
-                      message: "País cambiado a Argentina",
-                      variant: "success",
-                    });
-                  }}
-                  className={`
-                    h-11 cursor-pointer gap-3 px-4 py-0
-                    focus:bg-muted focus:outline-none
-                    focus-visible:ring-0
-                  `}
-                >
-                  <CountryFlag countryCode="AR" className="size-5" />
-                  <span className="flex-1">Argentina</span>
-                  {selectedCountry === "AR" && (
-                    <Icon symbol="check" className="ml-auto text-pay-500" />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-neutral-100" />
-                <DropdownMenuItem
-                  onClick={() => {
-                    selectCountry("BR");
-                    ToastManager.show({
-                      message: "País cambiado a Brasil",
-                      variant: "success",
-                    });
-                  }}
-                  className={`
-                    h-11 cursor-pointer gap-3 px-4 py-0
-                    focus:bg-muted focus:outline-none
-                    focus-visible:ring-0
-                  `}
-                >
-                  <CountryFlag countryCode="BR" className="size-5" />
-                  <span className="flex-1">Brasil</span>
-                  {selectedCountry === "BR" && (
-                    <Icon symbol="check" className="ml-auto text-pay-500" />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-neutral-100" />
-                <DropdownMenuItem
-                  onClick={() => {
-                    selectCountry("CO");
-                    ToastManager.show({
-                      message: "País cambiado a Colombia",
-                      variant: "success",
-                    });
-                  }}
-                  className={`
-                    h-11 cursor-pointer gap-3 px-4 py-0
-                    focus:bg-muted focus:outline-none
-                    focus-visible:ring-0
-                  `}
-                >
-                  <CountryFlag countryCode="CO" className="size-5" />
-                  <span className="flex-1">Colombia</span>
-                  {selectedCountry === "CO" && (
-                    <Icon symbol="check" className="ml-auto text-pay-500" />
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-neutral-100" />
-                <DropdownMenuItem
-                  onClick={() => {
-                    selectCountry("MX");
-                    ToastManager.show({
-                      message: "País cambiado a México",
-                      variant: "success",
-                    });
-                  }}
-                  className={`
-                    h-11 cursor-pointer gap-3 px-4 py-0
-                    focus:bg-muted focus:outline-none
-                    focus-visible:ring-0
-                  `}
-                >
-                  <CountryFlag countryCode="MX" className="size-5" />
-                  <span className="flex-1">México</span>
-                  {selectedCountry === "MX" && (
-                    <Icon symbol="check" className="ml-auto text-pay-500" />
-                  )}
-                </DropdownMenuItem>
+                {SELECTABLE_COUNTRIES.map((country, index) => (
+                  <Fragment key={country.alpha2}>
+                    {index > 0 && <DropdownMenuSeparator className="bg-neutral-100" />}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        selectCountry(country.alpha2, country.name);
+                      }}
+                      className={`
+                        h-11 cursor-pointer gap-3 px-4 py-0
+                        focus:bg-muted focus:outline-none
+                        focus-visible:ring-0
+                      `}
+                    >
+                      <CountryFlag countryCode={country.alpha2} className="size-5" />
+                      <span className="flex-1">{country.name}</span>
+                      {countryCodeAlpha2 === country.alpha2 && (
+                        <Icon symbol="check" className="ml-auto text-pay-500" />
+                      )}
+                    </DropdownMenuItem>
+                  </Fragment>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
             {/* Hamburger menu button - mobile/tablet only */}

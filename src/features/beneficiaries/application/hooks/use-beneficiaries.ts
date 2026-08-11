@@ -10,14 +10,17 @@ import type {
   UpdateBankAccountCommand,
   UpdateBeneficiaryCommand,
 } from "@/features/beneficiaries/application/commands/beneficiary.commands";
+import { useCountry } from "@/features/common/contexts/use-country";
+import { withCountryScope } from "@/lib/country/country-code";
 import { listQueryDefaults } from "@/lib/query/defaults";
 import { queryKeys } from "@/lib/query/query-keys";
 
 export function useBeneficiaries(params?: ListQueryParams) {
   const { t } = useTranslation(["beneficiaries"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.beneficiaries.all(params),
+    queryKey: withCountryScope(queryKeys.beneficiaries.all(params), countryCode),
     queryFn: () => BeneficiariesService.list(params),
     ...listQueryDefaults,
     meta: {
@@ -37,9 +40,10 @@ export function useBeneficiaries(params?: ListQueryParams) {
 
 export function useBeneficiaryDetail(beneficiaryId: string) {
   const { t } = useTranslation(["beneficiaries"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.beneficiaries.detail(beneficiaryId),
+    queryKey: withCountryScope(queryKeys.beneficiaries.detail(beneficiaryId), countryCode),
     queryFn: () => BeneficiariesService.getById(beneficiaryId),
     enabled: Boolean(beneficiaryId),
     ...listQueryDefaults,
@@ -59,9 +63,10 @@ export function useBeneficiaryDetail(beneficiaryId: string) {
 
 export function useBankAccounts(beneficiaryId: string, params?: ListQueryParams) {
   const { t } = useTranslation(["beneficiaries"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.beneficiaries.bankAccounts(beneficiaryId, params),
+    queryKey: withCountryScope(queryKeys.beneficiaries.bankAccounts(beneficiaryId, params), countryCode),
     queryFn: () => BeneficiariesService.listBankAccounts(beneficiaryId, params),
     enabled: Boolean(beneficiaryId),
     ...listQueryDefaults,
@@ -83,9 +88,10 @@ export function useBankAccounts(beneficiaryId: string, params?: ListQueryParams)
 
 export function useBeneficiaryTransactions(beneficiaryId: string, params?: ListQueryParams) {
   const { t } = useTranslation(["beneficiaries"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.beneficiaries.transactions(beneficiaryId, params),
+    queryKey: withCountryScope(queryKeys.beneficiaries.transactions(beneficiaryId, params), countryCode),
     queryFn: () => BeneficiariesService.listTransactions(beneficiaryId, params),
     enabled: Boolean(beneficiaryId),
     ...listQueryDefaults,
@@ -111,9 +117,13 @@ export function useCardMovements(
   params?: ListQueryParams,
 ) {
   const { t } = useTranslation(["beneficiaries"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.beneficiaries.cardMovements(beneficiaryId, cardId, params),
+    queryKey: withCountryScope(
+      queryKeys.beneficiaries.cardMovements(beneficiaryId, cardId, params),
+      countryCode,
+    ),
     queryFn: () => BeneficiariesService.listCardMovements(beneficiaryId, cardId, params),
     enabled: Boolean(beneficiaryId) && Boolean(cardId),
     ...listQueryDefaults,

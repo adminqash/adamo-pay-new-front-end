@@ -1,14 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { PaymentsService } from "@/features/transactions/api/services/payments.service";
+import { withCountryScope } from "@/lib/country/country-code";
 import { queryDefaults } from "@/lib/query/defaults";
 import { queryKeys } from "@/lib/query/query-keys";
 
 export function useTransactionDetail(paymentId: string | null, enabled = true) {
   const { t } = useTranslation(["transactions"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.payments.detail(paymentId ?? ""),
+    queryKey: withCountryScope(queryKeys.payments.detail(paymentId ?? ""), countryCode),
     queryFn: () => PaymentsService.getById(paymentId!),
     enabled: Boolean(paymentId) && enabled,
     ...queryDefaults,

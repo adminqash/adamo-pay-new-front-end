@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { BatchesService } from "@/features/batches/api/services/batches.service";
+import { useCountry } from "@/features/common/contexts/use-country";
+import { withCountryScope } from "@/lib/country/country-code";
 import { listQueryDefaults } from "@/lib/query/defaults";
 import { queryKeys } from "@/lib/query/query-keys";
 
@@ -9,9 +11,13 @@ export function useBatchTransactionDetail(
   transactionId: string | undefined,
 ) {
   const { t } = useTranslation(["batches"]);
+  const { countryCode } = useCountry();
 
   const query = useQuery({
-    queryKey: queryKeys.batches.transactionDetail(batchId ?? "", transactionId ?? ""),
+    queryKey: withCountryScope(
+      queryKeys.batches.transactionDetail(batchId ?? "", transactionId ?? ""),
+      countryCode,
+    ),
     queryFn: () => BatchesService.getTransaction(batchId!, transactionId!),
     enabled: Boolean(batchId && transactionId),
     ...listQueryDefaults,

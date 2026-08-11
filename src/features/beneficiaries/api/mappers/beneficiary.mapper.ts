@@ -12,6 +12,10 @@ import type {
   CardMovement,
 } from "@/features/beneficiaries/application/entities/beneficiary.entity";
 import type { PaymentListItemDTO } from "@/features/transactions/api/dtos/payment.dto";
+import {
+  getCurrencyUpperForCountry,
+  getStoredCountryCodeAlpha3,
+} from "@/lib/country/country-code";
 import { formatCurrencyDisplay } from "@/lib/utils/currency.utils";
 import { formatDisplayDate } from "@/lib/utils/date.utils";
 
@@ -76,8 +80,8 @@ export class BeneficiaryMapper {
         },
       totalPaid: dto.totalPaid ?? {
         amount: 0,
-        currency: "COP",
-        countryCode: "CO",
+        currency: getCurrencyUpperForCountry(getStoredCountryCodeAlpha3()),
+        countryCode: getStoredCountryCodeAlpha3(),
       },
     };
   }
