@@ -2,6 +2,7 @@ import type {
   BatchTransactionDTO,
   BatchTransactionValidationErrorDTO,
 } from "@/features/batches/api/dtos/batch-transaction.dto";
+import type { BatchTransactionDetail } from "@/features/batches/application/entities/batch-transaction-detail.entity";
 import type { TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
 import { normalizeBatchItemStatus } from "@/features/transactions/application/utils/transaction-status";
 import { minorToMajor } from "@/lib/money/money";

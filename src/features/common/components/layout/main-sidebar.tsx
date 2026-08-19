@@ -72,69 +72,90 @@ export function MainSidebar() {
     });
   }
 
-  const menu: SidebarNavItem[] = [
-    hasPermission(PERMISSIONS.DASHBOARD_VIEW) && {
-      id: "home",
-      label: t("sidebar:menu.home"),
-      icon: <Icon symbol="home" />,
-      path: "/",
-    },
-    hasPermission([...VIEW_TRANSACTIONS], "any") && {
-      id: "transactions",
-      label: t("sidebar:menu.transactions"),
-      icon: <Icon symbol="swap_horiz" />,
-      path: "/transactions",
-    },
-    hasPermission(PERMISSIONS.PAYMENTS_BATCH_LIST) && {
-      id: "batches",
-      label: t("sidebar:menu.batches"),
-      icon: <Icon symbol="folder_copy" />,
-      path: "/batches",
-    },
-    hasPermission(PERMISSIONS.ACCOUNTS_LIST) && {
-      id: "accounts",
-      label: t("sidebar:menu.accounts"),
-      icon: <Icon symbol="account_balance_wallet" />,
-      path: "/accounts",
-    },
-    hasPermission(PERMISSIONS.BENEFICIARIES_LIST) && {
-      id: "beneficiaries",
-      label: t("sidebar:menu.beneficiaries"),
-      icon: <Icon symbol="account_circle" />,
-      path: "/beneficiaries",
-    },
-    hasPermission(PERMISSIONS.METRICS_COUNTRY) && {
-      id: "metrics",
-      label: t("sidebar:menu.metrics"),
-      icon: <Icon symbol="query_stats" />,
-      path: "/metrics",
-    },
-    hasPermission(PERMISSIONS.COLLECTIONS_LIST) && countryCode === "COL" && {
-      id: "collections",
-      label: t("sidebar:menu.collections"),
-      icon: <Icon symbol="payments" />,
-      path: "/collections",
-    },
-    hasPermission(PERMISSIONS.COMPLIANCE_PENDING_LIST) && {
-      id: "compliance",
-      label: t("sidebar:menu.compliance"),
-      icon: <Icon symbol="verified_user" />,
-      path: "/compliance",
-    },
-    hasPermission(PERMISSIONS.REPORTS_OWN) && {
-      id: "reports",
-      label: t("sidebar:menu.reports"),
-      icon: <Icon symbol="table_chart_view" />,
-      path: "/reports",
-    },
-    capabilities.canManageUsers && env.VITE_ID_FRONT_BASE_URL && {
-      id: "users",
-      label: t("sidebar:menu.users"),
-      icon: <Icon symbol="group" />,
-      path: env.VITE_ID_FRONT_BASE_URL,
-      external: true,
-    },
-  ].filter((item): item is SidebarNavItem => Boolean(item));
+  const menuItems: Array<SidebarNavItem | null> = [
+    hasPermission(PERMISSIONS.DASHBOARD_VIEW)
+      ? {
+          id: "home",
+          label: t("sidebar:menu.home"),
+          icon: <Icon symbol="home" />,
+          path: "/",
+        }
+      : null,
+    hasPermission([...VIEW_TRANSACTIONS], "any")
+      ? {
+          id: "transactions",
+          label: t("sidebar:menu.transactions"),
+          icon: <Icon symbol="swap_horiz" />,
+          path: "/transactions",
+        }
+      : null,
+    hasPermission(PERMISSIONS.PAYMENTS_BATCH_LIST)
+      ? {
+          id: "batches",
+          label: t("sidebar:menu.batches"),
+          icon: <Icon symbol="folder_copy" />,
+          path: "/batches",
+        }
+      : null,
+    hasPermission(PERMISSIONS.ACCOUNTS_LIST)
+      ? {
+          id: "accounts",
+          label: t("sidebar:menu.accounts"),
+          icon: <Icon symbol="account_balance_wallet" />,
+          path: "/accounts",
+        }
+      : null,
+    hasPermission(PERMISSIONS.BENEFICIARIES_LIST)
+      ? {
+          id: "beneficiaries",
+          label: t("sidebar:menu.beneficiaries"),
+          icon: <Icon symbol="account_circle" />,
+          path: "/beneficiaries",
+        }
+      : null,
+    hasPermission(PERMISSIONS.METRICS_COUNTRY)
+      ? {
+          id: "metrics",
+          label: t("sidebar:menu.metrics"),
+          icon: <Icon symbol="query_stats" />,
+          path: "/metrics",
+        }
+      : null,
+    hasPermission(PERMISSIONS.COLLECTIONS_LIST) && countryCode === "COL"
+      ? {
+          id: "collections",
+          label: t("sidebar:menu.collections"),
+          icon: <Icon symbol="payments" />,
+          path: "/collections",
+        }
+      : null,
+    hasPermission(PERMISSIONS.COMPLIANCE_PENDING_LIST)
+      ? {
+          id: "compliance",
+          label: t("sidebar:menu.compliance"),
+          icon: <Icon symbol="verified_user" />,
+          path: "/compliance",
+        }
+      : null,
+    hasPermission(PERMISSIONS.REPORTS_OWN)
+      ? {
+          id: "reports",
+          label: t("sidebar:menu.reports"),
+          icon: <Icon symbol="table_chart_view" />,
+          path: "/reports",
+        }
+      : null,
+    capabilities.canManageUsers && env.VITE_ID_FRONT_BASE_URL
+      ? {
+          id: "users",
+          label: t("sidebar:menu.users"),
+          icon: <Icon symbol="group" />,
+          path: env.VITE_ID_FRONT_BASE_URL,
+          external: true,
+        }
+      : null,
+  ];
+  const menu = menuItems.filter((item): item is SidebarNavItem => item !== null);
 
   const selectedCountryName = selectableCountries.find(
     (country) => country.alpha2 === countryCodeAlpha2,

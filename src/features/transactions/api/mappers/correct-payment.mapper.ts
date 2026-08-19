@@ -47,6 +47,7 @@ export class CorrectPaymentMapper {
         notFound: !detail.reference,
       },
       restrictiveList: null,
+      screening: null,
     };
   }
 
