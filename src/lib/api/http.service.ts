@@ -103,18 +103,56 @@ function extractFileName(contentDisposition: string | undefined, fallback: strin
  * parsed JSON, so failures are handled separately here rather than reusing
  * handleAPIError, which expects `error.response.data` to already be JSON.
  */
+async function assertDownloadBlob(blob: Blob): Promise<void> {
+  const header = new Uint8Array(await blob.slice(0, 2).arrayBuffer());
+  if (header[0] === 0x50 && header[1] === 0x4b) {
+    return;
+  }
+
+  const text = await blob.text();
+  try {
+    const parsed = JSON.parse(text) as APIResponse<unknown>;
+    throw ServiceResult.builder()
+      .setSuccess(false)
+      .setMessage(parsed.message ?? "Download failed")
+      .setCode(parsed.code ?? null)
+      .setTimestamp(parsed.timestamp ?? new Date().toISOString())
+      .build();
+  } catch (error) {
+    if (error instanceof ServiceResult) {
+      throw error;
+    }
+    throw ServiceResult.builder()
+      .setSuccess(false)
+      .setMessage("Download failed")
+      .setCode("download_error")
+      .setTimestamp(new Date().toISOString())
+      .build();
+  }
+}
+
 export async function apiDownload(
   client: AxiosInstance,
   path: string,
   fallbackFileName = "download",
 ): Promise<{ blob: Blob, fileName: string }> {
   try {
-    const response = await client.get(path, { responseType: "blob" });
+    const response = await client.get(path, {
+      responseType: "blob",
+      headers: {
+        Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/octet-stream",
+      },
+    });
+    const blob = response.data as Blob;
+    await assertDownloadBlob(blob);
     return {
-      blob: response.data as Blob,
+      blob,
       fileName: extractFileName(response.headers?.["content-disposition"], fallbackFileName),
     };
   } catch(error) {
+    if (error instanceof ServiceResult) {
+      throw error;
+    }
     if (isAxiosError(error) && error.response?.data instanceof Blob) {
       try {
         const text = await error.response.data.text();

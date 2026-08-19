@@ -1,0 +1,17 @@
+{
+  "page_title": "Pagos pendientes de cumplimiento",
+  "empty": "No hay pagos pendientes de aprobación por cumplimiento.",
+  "columns": {
+    "id": "ID",
+    "type": "Tipo",
+    "batch": "Lote",
+    "subject": "Beneficiario",
+    "document": "Documento",
+    "verdict": "Veredicto",
+    "status": "Estado",
+    "created_at": "Creado"
+  },
+  "errors": {
+    "load_failed": "Error al cargar los pagos de cumplimiento"
+  }
+}

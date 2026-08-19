@@ -50,7 +50,15 @@ import {
   minorToMajor,
   parseCurrencyToMinor,
 } from "@/lib/money/money";
+import {
+  canonicalizeDocumentType,
+  DOCUMENT_TYPE_CODES,
+  DOCUMENT_TYPE_LABELS,
+} from "@/lib/document-type";
 import { useCreatePayment } from "@/features/transactions/application/hooks/use-payment-mutations";
+import { useAutoSelectDebitAccount } from "@/features/auth/application/hooks/use-auto-select-debit-account";
+import { DebitAccountPicker } from "@/features/accounts/application/components/debit-account-picker";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import {
   InputGroup,
   InputGroupAddon,
@@ -111,7 +119,7 @@ function formatAccountLabel(accountType: string, bank: string, accountNumber: st
  */
 export const CreatePaymentPage = () => {
   const { t } = useTranslation(["transactions", "beneficiaries"]);
-  const { countryCode, currency, locale } = useCountry();
+  const { countryCode, currency, currencyUpper, locale } = useCountry();
   const navigate = useNavigate();
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -120,6 +128,7 @@ export const CreatePaymentPage = () => {
   const [selectedBeneficiary, setSelectedBeneficiary] = useState<SelectedBeneficiary | null>(null);
   const createPayment = useCreatePayment();
   const { accounts, isLoading: isAccountsLoading } = useAccounts({ limit: 20 });
+  const { capabilities } = usePermissions();
   const { bankAccounts } = useBankAccounts(selectedBeneficiary?.id ?? "");
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,10 +153,16 @@ export const CreatePaymentPage = () => {
   const [bank, setBank] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [saveBeneficiary, setSaveBeneficiary] = useState(true);
+  useEffect(() => {
+    if (!capabilities.canCreateBeneficiary) {
+      setSaveBeneficiary(false);
+    }
+  }, [capabilities.canCreateBeneficiary]);
 
   // Step 2 states
   const [selectedAccount, setSelectedAccount] = useState<string>();
   const [amount, setAmount] = useState("");
+  useAutoSelectDebitAccount(accounts, selectedAccount, setSelectedAccount);
 
   // Beneficiary bank account selection
   const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>();
@@ -205,7 +220,7 @@ export const CreatePaymentPage = () => {
     setSelectedBeneficiary({
       id: beneficiary.id,
       name: detail?.fullName ?? beneficiary.name,
-      docType: detail?.identificationDocument.type ?? "cc",
+      docType: canonicalizeDocumentType(detail?.identificationDocument.type) ?? "CC",
       docNumber: detail?.identificationDocument.number ?? beneficiary.idNumber,
       accountType: detail?.bankAccount.type ?? "corriente",
       bank: detail?.bankAccount.bank ?? "",
@@ -476,9 +491,11 @@ export const CreatePaymentPage = () => {
                               <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="cc">Cédula de ciudadanía</SelectItem>
-                              <SelectItem value="ce">Cédula de extranjería</SelectItem>
-                              <SelectItem value="passport">Pasaporte</SelectItem>
+                            {DOCUMENT_TYPE_CODES.map((code) => (
+                              <SelectItem key={code} value={code}>
+                                {DOCUMENT_TYPE_LABELS[code]}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -584,6 +601,7 @@ export const CreatePaymentPage = () => {
                           />
                         </div>
                         {/* Save Beneficiary Checkbox - Full Width */}
+                        {capabilities.canCreateBeneficiary && (
                         <div className="col-span-full flex items-center gap-3">
                           <Checkbox
                             id="saveBeneficiary"
@@ -597,6 +615,7 @@ export const CreatePaymentPage = () => {
                             {t("transactions.create_payment.save_beneficiary")}
                           </Label>
                         </div>
+                        )}
                       </div>
                     </Card>
                   )}
@@ -645,34 +664,12 @@ export const CreatePaymentPage = () => {
                     <p className="text-xs text-foreground">
                       {t("transactions.create_payment.source_account_label")}
                     </p>
-                    <SelectableCardGroup
+                    <DebitAccountPicker
+                      accounts={accounts}
                       value={selectedAccount}
                       onValueChange={setSelectedAccount}
-                      className="w-full"
-                    >
-                      <div className="flex w-full flex-wrap gap-4">
-                        {!isAccountsLoading && accounts.map((account) => (
-                          <SelectableCard
-                            key={account.id}
-                            value={account.id}
-                            className="min-w-[250px] flex-1"
-                          >
-                            <div className="flex h-16 items-center">
-                              <div className="flex flex-1 flex-col gap-2">
-                                <SelectableCardTitle>{account.name}</SelectableCardTitle>
-                                <div className={`
-                                  flex h-10 items-center gap-2 pl-2
-                                `}
-                                >
-                                  <Icon symbol="paid" className="text-2xl" />
-                                  <SelectableCardDescription>{account.balance}</SelectableCardDescription>
-                                </div>
-                              </div>
-                            </div>
-                          </SelectableCard>
-                        ))}
-                      </div>
-                    </SelectableCardGroup>
+                      isLoading={isAccountsLoading}
+                    />
                   </Card>
                   {/* Amount Section */}
                   <Card className="flex flex-col gap-4 border-0 bg-muted p-4">
@@ -702,11 +699,13 @@ export const CreatePaymentPage = () => {
                           minimumFractionDigits={2}
                           maximumFractionDigits={2}
                         />
-                        <AmountInputAction onClick={handleUseAll}>
-                          {t("transactions.create_payment.use_all")}
-                        </AmountInputAction>
+                        {capabilities.canViewBalance && (
+                          <AmountInputAction onClick={handleUseAll}>
+                            {t("transactions.create_payment.use_all")}
+                          </AmountInputAction>
+                        )}
                       </AmountInputContainer>
-                      {selectedAccount && (
+                      {selectedAccount && capabilities.canViewBalance && (
                         <p className="text-xs text-foreground">
                           {t("transactions.create_payment.available")}: {accounts.find((acc) => acc.id === selectedAccount)?.balance}
                         </p>
@@ -850,7 +849,7 @@ export const CreatePaymentPage = () => {
                                 text-sm font-semibold text-foreground
                               `}
                               >
-                                {formatCurrencyDisplay(amountMinor, "COP")}
+                                {formatCurrencyDisplay(amountMinor, currencyUpper)}
                               </p>
                             </div>
                           </div>

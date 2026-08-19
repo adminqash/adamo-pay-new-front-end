@@ -16,6 +16,13 @@ import {
 import { Card } from "@adamosuiteservices/ui/card";
 import { Badge } from "@adamosuiteservices/ui/badge";
 import { Button } from "@adamosuiteservices/ui/button";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import {
+  DOCUMENT_TYPE_CODES,
+  DOCUMENT_TYPE_LABELS,
+  documentTypeFromLabel,
+} from "@/lib/document-type";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import {
   Dialog,
@@ -163,17 +170,7 @@ export const TransactionDetailPage = () => {
    * map document type from display name to code
    */
   const mapDocumentTypeToCode = (displayType: string): string => {
-    const normalizedType = displayType.toLowerCase();
-    if (normalizedType.includes("ciudadanía") || normalizedType.includes("ciudadania")) {
-      return "cc";
-    }
-    if (normalizedType.includes("extranjería") || normalizedType.includes("extranjeria")) {
-      return "ce";
-    }
-    if (normalizedType.includes("pasaporte") || normalizedType.includes("passport")) {
-      return "passport";
-    }
-    return "";
+    return documentTypeFromLabel(displayType);
   };
 
   /**
@@ -272,7 +269,7 @@ export const TransactionDetailPage = () => {
   }
 
   const beneficiaryData = {
-    documentType: "cc",
+    documentType: "CC",
     documentNumber: transaction.beneficiary.idNumber,
     firstName: transaction.beneficiary.fullName.split(" ")[0],
     lastName: transaction.beneficiary.fullName.split(" ").slice(1).join(" "),
@@ -309,16 +306,7 @@ export const TransactionDetailPage = () => {
    * map document type code back to display name
    */
   const mapDocumentTypeToDisplay = (code: string): string => {
-    switch (code) {
-      case "cc":
-        return "Cédula de ciudadanía";
-      case "ce":
-        return "Cédula de extranjería";
-      case "passport":
-        return "Pasaporte";
-      default:
-        return code;
-    }
+    return DOCUMENT_TYPE_LABELS[code] || code;
   };
 
   /**
@@ -638,12 +626,16 @@ export const TransactionDetailPage = () => {
       case "paid":
         return "success-medium";
       case "validated":
+      case "reviewed":
+        return "warning-medium";
+      case "for-review":
+      case "waiting-for-resolution":
+      case "in_review":
         return "warning-medium";
       case "returned":
       case "rejected":
         return "destructive-medium";
       case "pending":
-      case "in_review":
       default:
         return "muted";
     }
@@ -737,7 +729,7 @@ export const TransactionDetailPage = () => {
         {/* main content card */}
         <Card className="flex flex-col gap-6 rounded-3xl p-6">
           {/* payment status header */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <p className="text-sm text-[#41454c]">{t("batches.transaction_detail.payment_status")}</p>
             <Badge
               variant={getStatusVariant(transaction.status)}
@@ -745,6 +737,22 @@ export const TransactionDetailPage = () => {
             >
               {getStatusLabel()}
             </Badge>
+            {transaction.screening?.verdict && (
+              <Badge
+                variant={
+                  transaction.screening.verdict === "allow"
+                    ? "success-medium"
+                    : transaction.screening.verdict === "blocked"
+                      ? "destructive-medium"
+                      : "warning-medium"
+                }
+                className="h-8 px-2 text-sm leading-5"
+              >
+                {t(`batches.screening.verdict.${transaction.screening.verdict}`, {
+                  defaultValue: transaction.screening.verdict,
+                })}
+              </Badge>
+            )}
           </div>
 
           {/* 2x2 grid of sections */}
@@ -828,9 +836,11 @@ export const TransactionDetailPage = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="cc">Cédula de ciudadanía</SelectItem>
-                              <SelectItem value="ce">Cédula de extranjería</SelectItem>
-                              <SelectItem value="passport">Pasaporte</SelectItem>
+                            {DOCUMENT_TYPE_CODES.map((code) => (
+                              <SelectItem key={code} value={code}>
+                                {DOCUMENT_TYPE_LABELS[code]}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1127,6 +1137,19 @@ export const TransactionDetailPage = () => {
               </Card>
             </div>
 
+            {transaction.screening?.detail && !transaction.restrictiveList && (
+              <div className="flex flex-col gap-3 rounded-3xl bg-[#f8f8f9] p-6">
+                <p className="text-sm text-[#41454c]">
+                  {t("batches.transaction_detail.screening.title", {
+                    defaultValue: "Veredicto de cumplimiento",
+                  })}
+                </p>
+                <p className="text-sm font-semibold text-[#161719]">
+                  {transaction.screening.detail}
+                </p>
+              </div>
+            )}
+
             {/* restrictive list section */}
             {transaction.restrictiveList && (
               <div className="flex flex-col gap-6 rounded-3xl bg-[#e5f3fa] p-6">
@@ -1169,6 +1192,7 @@ export const TransactionDetailPage = () => {
           `}
           >
             <div className="flex items-center gap-6">
+              <PermissionGate permission={PERMISSIONS.PAYMENTS_BATCH_CREATE}>
               <Button variant="destructive-medium" onClick={() => setIsRejectDialogOpen(true)}>
                 {t("batches.transaction_detail.actions.reject")}
               </Button>
@@ -1176,6 +1200,7 @@ export const TransactionDetailPage = () => {
                 <Icon symbol="check" weight={200} />
                 {t("batches.transaction_detail.actions.approve")}
               </Button>
+              </PermissionGate>
             </div>
             <Button variant="default" onClick={handleReviewLater}>
               <Icon symbol="schedule" weight={200} />

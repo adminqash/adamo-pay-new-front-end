@@ -1,3 +1,4 @@
+import { getEnvAccessToken } from "@/lib/auth/env-access-token";
 import { apiUrls } from "@/lib/env";
 
 export type RealtimeEventMessage = {
@@ -22,6 +23,10 @@ function buildWsUrl(baseUrl: string): string {
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   const basePath = url.pathname.replace(/\/$/, "");
   url.pathname = `${basePath}/realtime/ws`;
+  const accessToken = getEnvAccessToken();
+  if (accessToken) {
+    url.searchParams.set("access_token", accessToken);
+  }
   return url.toString();
 }
 

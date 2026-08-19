@@ -20,7 +20,12 @@ const BATCH_STATUS_GROUPS: Record<string, string[]> = {
 };
 
 const TRANSACTION_TO_BATCH_ITEM_STATUS: Record<string, string[]> = {
-  pending: ["pending", "valid", "processing"],
+  pending: ["pending"],
+  reviewed: ["valid"],
+  "for-review": ["client_review"],
+  "waiting-for-resolution": ["review"],
+  in_review: ["client_review", "review"],
+  validated: ["processing"],
   paid: ["paid"],
   returned: ["returned"],
   rejected: ["rejected", "invalid"],

@@ -29,8 +29,11 @@
       "status": "STATUS"
     },
     "status": {
-      "pending": "Pending",
-      "in_review": "In review",
+      "reviewed": "Ready to send",
+      "pending": "Ready to send",
+      "for-review": "Compliance",
+      "waiting-for-resolution": "Compliance (Adamo)",
+      "in_review": "Compliance",
       "validated": "Validated",
       "paid": "Paid",
       "returned": "Returned",

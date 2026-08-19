@@ -2,20 +2,10 @@ import type {
   BatchTransactionDTO,
   BatchTransactionValidationErrorDTO,
 } from "@/features/batches/api/dtos/batch-transaction.dto";
-import type {
-  BatchTransactionDetail,
-  BatchTransactionDetailStatus,
-} from "@/features/batches/application/entities/batch-transaction-detail.entity";
+import type { TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
+import { normalizeBatchItemStatus } from "@/features/transactions/application/utils/transaction-status";
 import { minorToMajor } from "@/lib/money/money";
-
-const ID_TYPE_LABELS: Record<string, string> = {
-  cc: "Cédula de ciudadanía",
-  ce: "Cédula de extranjería",
-  nit: "NIT",
-  passport: "Pasaporte",
-  ti: "Tarjeta de identidad",
-  ppt: "PPT",
-};
+import { documentTypeLabel } from "@/lib/document-type";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   savings: "Ahorros",
@@ -24,32 +14,12 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   corriente: "Corriente",
 };
 
-function mapStatus(status: string): BatchTransactionDetailStatus {
-  switch (status) {
-    case "paid":
-      return "paid";
-    case "returned":
-      return "returned";
-    case "rejected":
-    case "invalid":
-      return "rejected";
-    case "valid":
-      return "validated";
-    case "pending":
-    case "processing":
-    case "skipped":
-    default:
-      return "pending";
-  }
+function mapStatus(status: string): TransactionStatus {
+  return normalizeBatchItemStatus(status);
 }
 
 function formatIdType(value?: string): string {
-  if (!value) {
-    return "Documento";
-  }
-
-  const normalized = value.trim().toLowerCase();
-  return ID_TYPE_LABELS[normalized] ?? value;
+  return documentTypeLabel(value);
 }
 
 function formatAccountType(value?: string): string {
@@ -81,15 +51,35 @@ function hasReferenceIssue(errors: BatchTransactionValidationErrorDTO[]): boolea
   });
 }
 
-function mapRestrictiveList(errors: BatchTransactionValidationErrorDTO[]) {
+function mapRestrictiveList(
+  errors: BatchTransactionValidationErrorDTO[],
+  screening?: BatchTransactionDTO["screening"],
+) {
+  if (screening?.verdict && screening.verdict !== "allow") {
+    const firstReason = screening.reasons?.[0];
+    const riskLevel
+      = screening.verdict === "blocked"
+        ? "high"
+        : screening.verdict === "review" || screening.verdict === "client-review"
+          ? "medium"
+          : "low";
+
+    return {
+      listName: firstReason?.detail || firstReason?.code || screening.verdict,
+      riskLevel: riskLevel as "low" | "medium" | "high",
+    };
+  }
+
   const complianceError = errors.find((error) => {
     const field = error.field.toLowerCase();
     const code = error.code.toLowerCase();
     return (
       field.includes("compliance")
       || field.includes("restrictive")
+      || field.includes("screening")
       || code.includes("compliance")
       || code.includes("restrictive")
+      || code.includes("blocked")
     );
   });
 
@@ -139,7 +129,17 @@ export class BatchTransactionDetailMapper {
         number: reference || null,
         notFound: !reference || hasReferenceIssue(validationErrors),
       },
-      restrictiveList: mapRestrictiveList(validationErrors),
+      restrictiveList: mapRestrictiveList(validationErrors, dto.screening),
+      screening: dto.screening
+        ? {
+            verdict: dto.screening.verdict,
+            sendable: dto.screening.sendable === true || dto.status === "valid",
+            detail:
+              dto.screening.reasons?.[0]?.detail
+              ?? dto.screening.reasons?.[0]?.code
+              ?? validationErrors.find((error) => error.field === "screening")?.message,
+          }
+        : null,
     };
   }
 }

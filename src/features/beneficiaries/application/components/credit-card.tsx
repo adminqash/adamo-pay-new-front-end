@@ -24,6 +24,8 @@ import { RechargeBalanceDialog } from "./recharge-balance-dialog";
 import { FreezeCardDialog } from "./freeze-card-dialog";
 import { UnfreezeCardDialog } from "./unfreeze-card-dialog";
 import { ReportReplacementDialog } from "./report-replacement-dialog";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
 
 export interface CreditCardData {
   id: string;
@@ -45,6 +47,8 @@ interface CreditCardProps {
 export function CreditCard({ card, beneficiaryId, onUpdateCardStatus }: CreditCardProps) {
   const { t } = useTranslation("beneficiaries");
   const navigate = useNavigate();
+  const { hasPermission, isLoading } = usePermissions();
+  const canMutateBeneficiary = !isLoading && hasPermission(PERMISSIONS.BENEFICIARIES_CREATE);
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
   const [freezeDialogOpen, setFreezeDialogOpen] = useState(false);
@@ -247,7 +251,7 @@ export function CreditCard({ card, beneficiaryId, onUpdateCardStatus }: CreditCa
                       {t("beneficiaries.detail.card_menu_view_movements")}
                     </DropdownMenuItem>
                     {/* Hide recharge option for reported and expired cards */}
-                    {card.status !== "reported" && card.status !== "expired" && (
+                    {canMutateBeneficiary && card.status !== "reported" && card.status !== "expired" && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -258,7 +262,7 @@ export function CreditCard({ card, beneficiaryId, onUpdateCardStatus }: CreditCa
                       </DropdownMenuItem>
                     )}
                     {/* Hide freeze option for reported, frozen, and expired cards */}
-                    {card.status !== "reported" && card.status !== "frozen" && card.status !== "expired" && (
+                    {canMutateBeneficiary && card.status !== "reported" && card.status !== "frozen" && card.status !== "expired" && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -269,7 +273,7 @@ export function CreditCard({ card, beneficiaryId, onUpdateCardStatus }: CreditCa
                       </DropdownMenuItem>
                     )}
                     {/* Show unfreeze option only for frozen cards */}
-                    {card.status === "frozen" && (
+                    {canMutateBeneficiary && card.status === "frozen" && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -280,7 +284,7 @@ export function CreditCard({ card, beneficiaryId, onUpdateCardStatus }: CreditCa
                       </DropdownMenuItem>
                     )}
                     {/* Hide report option for reported and expired cards */}
-                    {card.status !== "reported" && card.status !== "expired" && (
+                    {canMutateBeneficiary && card.status !== "reported" && card.status !== "expired" && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -290,6 +294,7 @@ export function CreditCard({ card, beneficiaryId, onUpdateCardStatus }: CreditCa
                         {t("beneficiaries.detail.card_menu_report_replacement")}
                       </DropdownMenuItem>
                     )}
+                    {canMutateBeneficiary && (
                     <DropdownMenuItem
                       variant="destructive"
                       onClick={(e) => {
@@ -299,6 +304,7 @@ export function CreditCard({ card, beneficiaryId, onUpdateCardStatus }: CreditCa
                     >
                       {t("beneficiaries.detail.card_menu_delete_card")}
                     </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

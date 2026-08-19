@@ -69,6 +69,16 @@ export function subscribeToBatchUploadEvents(
       }
 
       const eventType = message.eventType ?? "";
+      if (
+        eventType !== "batch.upload.accepted"
+        && eventType !== "batch.upload.completed"
+        && eventType !== "batch.upload.failed"
+        && eventType !== "batch.upload.cancelled"
+        && eventType !== "batch.progress.updated"
+      ) {
+        return;
+      }
+
       const data = message.data ?? {};
       const progress = Number(data.progress ?? 0);
       const summary = data.summary as BatchUploadProgressState["summary"] | undefined;

@@ -32,6 +32,9 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { useBeneficiaries, useCreateBeneficiary } from "../hooks/use-beneficiaries";
 import { usePaymentsRealtime } from "@/features/transactions/application/hooks/use-payments-realtime";
 import { buildBeneficiaryListParams } from "../utils/beneficiary-filters.utils";
@@ -45,6 +48,7 @@ import {
 } from "@adamosuiteservices/ui/pagination";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
+import { DOCUMENT_TYPE_CODES } from "@/lib/document-type";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 
 const BENEFICIARIES_QUERY_KEY = ["beneficiaries"];
@@ -164,6 +168,7 @@ export function BeneficiariesPage() {
                 </p>
               </div>
               <div className="flex items-center gap-4">
+                <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="default">
@@ -190,10 +195,11 @@ export function BeneficiariesPage() {
                               <SelectValue placeholder={t("beneficiaries.dialog.document_type_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="dni">{t("beneficiaries.dialog.document_types.dni")}</SelectItem>
-                              <SelectItem value="cuit">{t("beneficiaries.dialog.document_types.cuit")}</SelectItem>
-                              <SelectItem value="cuil">{t("beneficiaries.dialog.document_types.cuil")}</SelectItem>
-                              <SelectItem value="passport">{t("beneficiaries.dialog.document_types.passport")}</SelectItem>
+                            {DOCUMENT_TYPE_CODES.map((code) => (
+                              <SelectItem key={code} value={code}>
+                                {t(`beneficiaries.dialog.document_types.${code}`)}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -332,6 +338,8 @@ export function BeneficiariesPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </PermissionGate>
+                <PermissionGate permission={[...EXPORT_DATA]} mode="any">
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="secondary">
@@ -416,6 +424,7 @@ export function BeneficiariesPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </PermissionGate>
               </div>
               <div className={`
                 basis-full

@@ -44,6 +44,12 @@
         "full_name_placeholder": "Enter full name",
         "id_type_label": "ID type",
         "id_types": {
+          "CC": "Citizenship card",
+          "CE": "Foreign ID",
+          "NIT": "Tax ID",
+          "PA": "Passport",
+          "TI": "Identity card",
+          "PPT": "Temporary protection permit",
           "cc": "Citizenship card",
           "ce": "Foreign ID",
           "passport": "Passport",
@@ -309,10 +315,12 @@
       "document_type": "Type of document",
       "document_type_placeholder": "Select document type",
       "document_types": {
-        "dni": "DNI",
-        "cuit": "CUIT",
-        "cuil": "CUIL",
-        "passport": "Passport"
+        "CC": "Citizenship card",
+        "CE": "Foreign ID",
+        "NIT": "Tax ID",
+        "PA": "Passport",
+        "TI": "Identity card",
+        "PPT": "Temporary protection permit"
       },
       "document_number": "Document number",
       "document_number_placeholder": "Enter document number",

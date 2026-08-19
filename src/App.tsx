@@ -2,6 +2,7 @@ import { FullScreenLoader } from "@adamosuiteservices/ui/full-screen-loader";
 import { Toaster } from "@adamosuiteservices/ui/toaster";
 import { RouterProvider } from "react-router";
 import { AuthProvider } from "@/features/auth/application/contexts/auth.context";
+import { AccessProvider } from "@/features/auth/application/contexts/access.context";
 import { GlobalQueryLoader } from "@/features/common/components/layout/global-query-loader";
 import { RefetchProgressBar } from "@/features/common/components/layout/refetch-progress-bar";
 import { AvatarProvider } from "@/features/common/contexts/avatar-context";
@@ -11,7 +12,8 @@ import { router } from "@/router";
 function App() {
   return (
     <AuthProvider>
-      <CountryProvider>
+      <AccessProvider>
+        <CountryProvider>
         <AvatarProvider>
           <RefetchProgressBar />
           <FullScreenLoader />
@@ -19,7 +21,8 @@ function App() {
           <RouterProvider router={router} />
           <Toaster />
         </AvatarProvider>
-      </CountryProvider>
+        </CountryProvider>
+      </AccessProvider>
     </AuthProvider>
   );
 }

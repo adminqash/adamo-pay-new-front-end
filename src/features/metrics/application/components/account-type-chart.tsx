@@ -2,6 +2,7 @@ import { Card } from "@adamosuiteservices/ui/card";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useCountry } from "@/features/common/contexts/use-country";
+import { formatCurrencyDisplay } from "@/lib/money/money";
 
 interface TransactionData {
   name: string
@@ -63,12 +64,7 @@ export function AccountTransactionAmountChart({
   const { currencyUpper, locale } = useCountry();
 
   const formatCurrency = (value: number): string =>
-    new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: currencyUpper,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+    formatCurrencyDisplay(value, currencyUpper, locale);
 
   const data = propData ?? [];
   const totalAmount = data.reduce((sum, item) => sum + item.value, 0);

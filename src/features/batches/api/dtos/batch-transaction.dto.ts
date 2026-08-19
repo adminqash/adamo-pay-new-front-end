@@ -16,6 +16,18 @@ export type BatchTransactionRawDataDTO = {
   reference?: string
 };
 
+export type BatchTransactionScreeningDTO = {
+  screeningId?: string
+  verdict?: "allow" | "client-review" | "review" | "blocked" | "failed"
+  caseId?: string
+  reasons?: Array<{ code: string, rule?: string, detail?: string }>
+  alerts?: Array<{ code: string, rule?: string, detail?: string }>
+  deferredScreening?: boolean
+  screenedAt?: string
+  sendable?: boolean
+  resolution?: "none" | "client" | "adamo" | "final"
+};
+
 export type BatchTransactionDTO = {
   id: string
   batchId: string
@@ -29,6 +41,8 @@ export type BatchTransactionDTO = {
     currency?: string
   }
   validationErrors?: BatchTransactionValidationErrorDTO[]
+  screening?: BatchTransactionScreeningDTO
+  sendable?: boolean
   paymentId?: string
   createdAt: string
 };

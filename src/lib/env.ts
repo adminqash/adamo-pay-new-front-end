@@ -1,16 +1,42 @@
 import { z } from "zod";
 
+const optionalUrl = z
+  .string()
+  .optional()
+  .transform((value) => {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : undefined;
+  })
+  .pipe(z.url().optional());
+
+const optionalText = z
+  .string()
+  .optional()
+  .transform((value) => {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : undefined;
+  });
+
 const ENVSchema = z.object({
   VITE_API_BASE_URL: z.url(),
-  VITE_API_CORE_URL: z.url().optional(),
-  VITE_API_BENEFICIARIES_URL: z.url().optional(),
-  VITE_API_ANALYTICS_URL: z.url().optional(),
-  VITE_API_REALTIME_URL: z.url().optional(),
-  VITE_ADAMO_API_BASE_URL: z.url(),
-  VITE_ADAMO_LANDING_BASE_URL: z.string().optional(),
-  VITE_ID_FRONT_BASE_URL: z.string().optional(),
-  VITE_SIGN_FRONT_BASE_URL: z.string().optional(),
-  VITE_CHECK_FRONT_BASE_URL: z.string().optional(),
+  VITE_API_CORE_URL: optionalUrl,
+  VITE_API_BENEFICIARIES_URL: optionalUrl,
+  VITE_API_ANALYTICS_URL: optionalUrl,
+  VITE_API_REALTIME_URL: optionalUrl,
+  VITE_ADAMO_API_BASE_URL: optionalUrl,
+  VITE_ADAMO_LANDING_BASE_URL: optionalText,
+  VITE_ID_FRONT_BASE_URL: optionalText,
+  VITE_SIGN_FRONT_BASE_URL: optionalText,
+  VITE_CHECK_FRONT_BASE_URL: optionalText,
+  VITE_ACCESS_TOKEN: optionalText,
+}).superRefine((data, ctx) => {
+  if (!data.VITE_ACCESS_TOKEN && !data.VITE_ADAMO_API_BASE_URL) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["VITE_ACCESS_TOKEN"],
+      message: "Set VITE_ACCESS_TOKEN to boot without SSO, or set VITE_ADAMO_API_BASE_URL for Identity login",
+    });
+  }
 });
 
 const result = ENVSchema.safeParse(import.meta.env);
@@ -33,10 +59,12 @@ if (!env.VITE_API_REALTIME_URL) {
   );
 }
 
+const identityBaseUrl = env.VITE_ADAMO_API_BASE_URL?.replace(/\/$/, "");
+
 export const apiUrls = {
   core: env.VITE_API_CORE_URL ?? env.VITE_API_BASE_URL,
   beneficiaries: env.VITE_API_BENEFICIARIES_URL ?? env.VITE_API_BASE_URL,
   analytics: env.VITE_API_ANALYTICS_URL ?? env.VITE_API_BASE_URL,
   realtime: env.VITE_API_REALTIME_URL ?? env.VITE_API_BASE_URL,
-  auth: `${env.VITE_ADAMO_API_BASE_URL}/api/v1`,
+  auth: identityBaseUrl ? `${identityBaseUrl}/api/v1` : "",
 } as const;

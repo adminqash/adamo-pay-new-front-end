@@ -8,6 +8,9 @@ export const ALPHA2_TO_ALPHA3: Record<string, string> = {
   AR: "ARG",
   BR: "BRA",
   MX: "MEX",
+  PE: "PER",
+  CL: "CHL",
+  BO: "BOL",
 };
 
 export const ALPHA3_TO_ALPHA2: Record<string, string> = {
@@ -15,6 +18,9 @@ export const ALPHA3_TO_ALPHA2: Record<string, string> = {
   ARG: "AR",
   BRA: "BR",
   MEX: "MX",
+  PER: "PE",
+  CHL: "CL",
+  BOL: "BO",
 };
 
 /** Alpha-3 → ISO 4217 lowercase (same map as core/beneficiaries/analytics/realtime). */
@@ -47,9 +53,12 @@ export const COUNTRY_CODE_STORAGE_KEY = "countryCode";
 
 export const SELECTABLE_COUNTRIES: Array<{ alpha2: string, alpha3: string, name: string }> = [
   { alpha2: "AR", alpha3: "ARG", name: "Argentina" },
+  { alpha2: "BO", alpha3: "BOL", name: "Bolivia" },
   { alpha2: "BR", alpha3: "BRA", name: "Brasil" },
+  { alpha2: "CL", alpha3: "CHL", name: "Chile" },
   { alpha2: "CO", alpha3: "COL", name: "Colombia" },
   { alpha2: "MX", alpha3: "MEX", name: "México" },
+  { alpha2: "PE", alpha3: "PER", name: "Perú" },
 ];
 
 export function normalizeCountryCodeAlpha3(value?: string | null): string {

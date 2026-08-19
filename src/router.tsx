@@ -1,7 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, type ReactNode, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import { MainLayout } from "@/features/common/components/layout/main-layout";
 import { PageLoader } from "@/features/common/components/layout/page-loader";
+import { RequirePermission } from "@/features/auth/application/components/require-permission";
+import { PERMISSIONS, type PermissionMode } from "@/features/auth/domain/permissions";
+import { VIEW_TRANSACTIONS } from "@/features/auth/domain/permission-ui";
 
 const HomePage = lazy(() => import("@/features/home/application/pages/home.page").then((module) => ({ default: module.HomePage })));
 const DocumentsPage = lazy(() => import("@/features/documents/application/pages/documents.page").then((module) => ({ default: module.DocumentsPage })));
@@ -24,6 +27,22 @@ const MetricsPage = lazy(() => import("@/features/metrics/application/pages/metr
 const ProfilePage = lazy(() => import("@/features/profile/application/pages/profile.page").then((module) => ({ default: module.ProfilePage })));
 const ReportsPage = lazy(() => import("@/features/reports/application/pages/reports.page").then((module) => ({ default: module.ReportsPage })));
 const NotificationsPage = lazy(() => import("@/features/notifications/application/pages/notifications.page").then((module) => ({ default: module.NotificationsPage })));
+const CompliancePage = lazy(() => import("@/features/compliance/application/pages/compliance.page").then((module) => ({ default: module.CompliancePage })));
+const CollectionsPage = lazy(() => import("@/features/collections/application/pages/collections.page").then((module) => ({ default: module.CollectionsPage })));
+
+function guarded(
+  permission: string | string[],
+  element: ReactNode,
+  mode: PermissionMode = "all",
+) {
+  return (
+    <RequirePermission permission={permission} mode={mode}>
+      <Suspense fallback={<PageLoader />}>
+        {element}
+      </Suspense>
+    </RequirePermission>
+  );
+}
 
 export const router = createBrowserRouter([
   {
@@ -32,11 +51,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <HomePage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.DASHBOARD_VIEW, <HomePage />),
       },
       {
         path: "documents",
@@ -56,123 +71,67 @@ export const router = createBrowserRouter([
       },
       {
         path: "transactions",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <TransactionsPage />
-          </Suspense>
+        element: guarded(
+          [...VIEW_TRANSACTIONS],
+          <TransactionsPage />,
+          "any",
         ),
       },
       {
         path: "transactions/create",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CreatePaymentPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE, <CreatePaymentPage />),
       },
       {
         path: "transactions/correct/:id",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CorrectPaymentPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE, <CorrectPaymentPage />),
       },
       {
         path: "batches",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <BatchesPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.PAYMENTS_BATCH_LIST, <BatchesPage />),
       },
       {
         path: "batches/create",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CreateBatchPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.PAYMENTS_BATCH_CREATE, <CreateBatchPage />),
       },
       {
         path: "batches/:id",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <BatchDetailPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.PAYMENTS_BATCH_LIST, <BatchDetailPage />),
       },
       {
         path: "batches/:batchId/transactions/:transactionId",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <TransactionDetailPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.PAYMENTS_BATCH_LIST, <TransactionDetailPage />),
       },
       {
         path: "accounts",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <AccountsPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.ACCOUNTS_LIST, <AccountsPage />),
       },
       {
         path: "accounts/:accountId/movements",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <AccountMovementsPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.ACCOUNTS_LIST, <AccountMovementsPage />),
       },
       {
         path: "beneficiaries",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <BeneficiariesPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.BENEFICIARIES_LIST, <BeneficiariesPage />),
       },
       {
         path: "beneficiaries/:beneficiaryId",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <BeneficiaryDetailPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.BENEFICIARIES_LIST, <BeneficiaryDetailPage />),
       },
       {
         path: "beneficiaries/:beneficiaryId/quick-payment",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <QuickPaymentPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE, <QuickPaymentPage />),
       },
       {
         path: "beneficiaries/:beneficiaryId/bank-accounts",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <BankAccountsPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.BENEFICIARIES_LIST, <BankAccountsPage />),
       },
       {
         path: "beneficiaries/:beneficiaryId/cards/:cardId/movements",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <CreditCardMovementsPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.BENEFICIARIES_LIST, <CreditCardMovementsPage />),
       },
       {
         path: "metrics",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <MetricsPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.METRICS_COUNTRY, <MetricsPage />),
       },
       {
         path: "profile",
@@ -184,11 +143,15 @@ export const router = createBrowserRouter([
       },
       {
         path: "reports",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ReportsPage />
-          </Suspense>
-        ),
+        element: guarded(PERMISSIONS.REPORTS_OWN, <ReportsPage />),
+      },
+      {
+        path: "compliance",
+        element: guarded(PERMISSIONS.COMPLIANCE_PENDING_LIST, <CompliancePage />),
+      },
+      {
+        path: "collections",
+        element: guarded(PERMISSIONS.COLLECTIONS_LIST, <CollectionsPage />),
       },
       {
         path: "notifications",

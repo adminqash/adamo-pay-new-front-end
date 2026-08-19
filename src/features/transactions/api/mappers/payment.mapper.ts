@@ -1,5 +1,6 @@
 import type { PaymentListItemDTO } from "@/features/transactions/api/dtos/payment.dto";
 import type { Transaction } from "@/features/transactions/application/entities/transaction.entity";
+import { normalizePaymentStatus } from "@/features/transactions/application/utils/transaction-status";
 import { formatDisplayDate } from "@/lib/utils/date.utils";
 
 export class PaymentMapper {
@@ -11,7 +12,7 @@ export class PaymentMapper {
       idNumber: dto.idNumber,
       amount: dto.amount,
       reference: dto.reference,
-      status: dto.status,
+      status: normalizePaymentStatus(dto.status),
     };
   }
 

@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { useParams, Link, useNavigate } from "react-router";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -69,7 +71,7 @@ import {
   TimelineDescription,
   TimelineTime,
 } from "@adamosuiteservices/ui/timeline";
-import type { TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
+import type { Transaction, TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
 import { useState, useMemo } from "react";
 
 /**
@@ -139,12 +141,32 @@ export const BatchDetailPage = () => {
       case "paid":
         return "success-medium";
       case "validated":
+      case "reviewed":
+        return "warning-medium";
+      case "for-review":
+      case "waiting-for-resolution":
+      case "in_review":
         return "warning-medium";
       case "returned":
       case "rejected":
         return "destructive-medium";
       case "pending":
-      case "in_review":
+      default:
+        return "muted";
+    }
+  };
+
+  const getScreeningVariant = (
+    verdict?: Transaction["screeningVerdict"],
+  ): "muted" | "success-medium" | "warning-medium" | "destructive-medium" => {
+    switch (verdict) {
+      case "allow":
+        return "success-medium";
+      case "blocked":
+        return "destructive-medium";
+      case "review":
+      case "client-review":
+        return "warning-medium";
       default:
         return "muted";
     }
@@ -285,6 +307,28 @@ export const BatchDetailPage = () => {
                 </div>
               </Card>
             </div>
+            {batch.screening && (
+              <div className="mt-4 flex flex-wrap gap-4">
+                <p className="w-full text-xs font-semibold text-[#41454c]">
+                  {t("batches.screening.title")}
+                </p>
+                <span className="text-sm text-[#41454c]">
+                  {t("batches.screening.allow")}: {batch.screening.allow}
+                </span>
+                <span className="text-sm text-[#41454c]">
+                  {t("batches.screening.blocked")}: {batch.screening.blocked}
+                </span>
+                <span className="text-sm text-[#41454c]">
+                  {t("batches.screening.review")}: {batch.screening.review + batch.screening.clientReview}
+                </span>
+                <span className="text-sm text-[#41454c]">
+                  {t("batches.screening.pending")}: {batch.screening.pending}
+                </span>
+                <span className="text-sm text-[#41454c]">
+                  {t("batches.screening.invalid")}: {batch.invalidItems}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* transactions table section */}
@@ -300,6 +344,7 @@ export const BatchDetailPage = () => {
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <PermissionGate permission={[...EXPORT_DATA]} mode="any">
               <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="secondary">
@@ -324,7 +369,10 @@ export const BatchDetailPage = () => {
                           icon="search_activity"
                           options={[
                             { value: "all", label: t("batches.filters.all_status") },
-                            { value: "pending", label: t("transactions:transactions.status.pending") },
+                            { value: "reviewed", label: t("transactions:transactions.status.reviewed") },
+                            { value: "for-review", label: t("transactions:transactions.status.for-review") },
+                            { value: "waiting-for-resolution", label: t("transactions:transactions.status.waiting-for-resolution") },
+                            { value: "validated", label: t("transactions:transactions.status.validated") },
                             { value: "paid", label: t("transactions:transactions.status.paid") },
                             { value: "returned", label: t("transactions:transactions.status.returned") },
                             { value: "rejected", label: t("transactions:transactions.status.rejected") },
@@ -387,6 +435,7 @@ export const BatchDetailPage = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </PermissionGate>
             </div>
             <div className={`
               basis-full
@@ -453,13 +502,19 @@ export const BatchDetailPage = () => {
                 >
                   {t("batches.detail.table.status")}
                 </TableHead>
+                <TableHead className={`
+                  text-xs font-semibold text-[#41454c] uppercase
+                `}
+                >
+                  {t("batches.detail.table.compliance")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {!isTransactionsLoading && transactions.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="py-8 text-center text-sm text-[#41454c]"
                   >
                     {t("batches.detail.no_transactions", { defaultValue: "No hay transacciones para este lote" })}
@@ -496,6 +551,16 @@ export const BatchDetailPage = () => {
                       className="h-8 px-2 text-sm leading-5"
                     >
                       {t(`transactions:transactions.status.${transaction.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={getScreeningVariant(transaction.screeningVerdict)}
+                      className="h-8 px-2 text-sm leading-5"
+                    >
+                      {transaction.screeningVerdict
+                        ? t(`batches.screening.verdict.${transaction.screeningVerdict}`)
+                        : t("batches.screening.verdict.pending")}
                     </Badge>
                   </TableCell>
                 </TableRow>

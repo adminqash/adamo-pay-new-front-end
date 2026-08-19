@@ -43,6 +43,8 @@ import { useCountry } from "@/features/common/contexts/use-country";
 import { Link, useParams, useLocation, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { CompactCreditCard, type CreditCardData } from "../components/compact-credit-card";
 
 /**
@@ -174,6 +176,7 @@ export function CreditCardMovementsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-4">
+              <PermissionGate permission={[...EXPORT_DATA]} mode="any">
               <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="secondary" size="default">
@@ -226,6 +229,7 @@ export function CreditCardMovementsPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </PermissionGate>
             </div>
               <div className="min-w-[500px] basis-full lg:basis-0 lg:flex-1">
                 <InputGroup>

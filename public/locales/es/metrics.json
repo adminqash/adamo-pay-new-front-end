@@ -76,7 +76,10 @@
         "validated": "Validadas",
         "returned": "Retornadas",
         "rejected": "Rechazadas",
-        "pending": "Pendientes"
+        "pending": "Listas para enviar",
+        "reviewed": "Listas para enviar",
+        "for-review": "Cumplimiento",
+        "waiting-for-resolution": "Cumplimiento Adamo"
       }
     },
     "rejection_reasons": {

@@ -51,6 +51,9 @@ import type { DateRange } from "react-day-picker";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { useCountry } from "@/features/common/contexts/use-country";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 
 /**
  * custom date range picker component
@@ -200,6 +203,7 @@ const DateRangePicker = ({
 
 export function MetricsPage() {
   const { t, i18n } = useTranslation("metrics");
+  const { capabilities } = usePermissions();
   const { countryCodeAlpha2 } = useCountry();
   const [filterTab, setFilterTab] = useStateReact("today");
   const [chartTab, setChartTab] = useStateReact("transactions");
@@ -353,6 +357,7 @@ export function MetricsPage() {
                   )}
               </div>
             </div>
+            <PermissionGate permission={[...EXPORT_DATA]} mode="any">
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="secondary">
@@ -457,6 +462,7 @@ export function MetricsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </PermissionGate>
           </div>
           {/* Metrics Cards */}
           <div className="flex flex-wrap gap-4">
@@ -480,12 +486,14 @@ export function MetricsPage() {
               icon="confirmation_number"
               variation={metricsData.averageTicket.variation}
             />
+            <PermissionGate when={capabilities.canViewFundings}>
             <MetricCard
               title={t("metrics.cards.average_funding")}
               value={metricsData.averageFunding.value}
               icon="paid"
               variation={metricsData.averageFunding.variation}
             />
+            </PermissionGate>
           </div>
           {/* Chart Section */}
           <div className="flex flex-col gap-4">
@@ -501,9 +509,11 @@ export function MetricsPage() {
                 <TabsUnderlineTrigger value="beneficiaries">
                   {t("metrics.tabs.beneficiaries")}
                 </TabsUnderlineTrigger>
-                <TabsUnderlineTrigger value="accounts">
-                  {t("metrics.tabs.accounts")}
-                </TabsUnderlineTrigger>
+                {capabilities.canViewFundings && (
+                  <TabsUnderlineTrigger value="accounts">
+                    {t("metrics.tabs.accounts")}
+                  </TabsUnderlineTrigger>
+                )}
               </TabsUnderlineList>
             </TabsUnderline>
             {/* Chart Container */}
@@ -646,7 +656,7 @@ export function MetricsPage() {
                 <RecurringFailuresTable _filterPeriod={filterTab} failures={dashboard?.recurringFailures} />
               </>
             )}
-            {chartTab === "accounts" && (
+            {chartTab === "accounts" && capabilities.canViewFundings && (
               <>
                 {/* Account Transaction Count and Amount */}
                 <Card className={`

@@ -19,7 +19,11 @@ import {
 import { Combobox } from "@adamosuiteservices/ui/combobox";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
+import { useAutoSelectDebitAccount } from "@/features/auth/application/hooks/use-auto-select-debit-account";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import { useCountry } from "@/features/common/contexts/use-country";
+import { minorToMajor } from "@/lib/money/money";
 
 interface RechargeBalanceDialogProps {
   open: boolean;
@@ -38,28 +42,25 @@ export function RechargeBalanceDialog({
   cardNumber,
 }: RechargeBalanceDialogProps) {
   const { t } = useTranslation("beneficiaries");
-  const { currencyUpper, locale: moneyLocale } = useCountry();
+  const { locale: moneyLocale } = useCountry();
+  const { accounts } = useAccounts({ limit: 20 });
+  const { capabilities } = usePermissions();
   const [amount, setAmount] = useState("");
-  const [sourceAccount, setSourceAccount] = useState("");
+  const [sourceAccount, setSourceAccount] = useState<string>();
+  useAutoSelectDebitAccount(accounts, sourceAccount, setSourceAccount);
 
-  // TODO: Replace with actual accounts from API
-  const accounts = [
-    { id: "account1", name: "Cuenta 1", balance: "$90.784.510,46", currency: currencyUpper },
-    { id: "account2", name: "Cuenta 2", balance: "$50.000.000,00", currency: currencyUpper },
-    { id: "account3", name: "Cuenta 3", balance: "$25.500.000,00", currency: currencyUpper },
-  ];
+  const visibleAccounts = capabilities.canChooseDebitAccount
+    ? accounts
+    : accounts.filter((account) => account.id === sourceAccount);
 
   const handleSubmit = () => {
-    // TODO: Implement recharge logic
-    console.log("Recharging:", { amount, sourceAccount, cardNumber });
     onOpenChange(false);
   };
 
-  // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       setAmount("");
-      setSourceAccount("");
+      setSourceAccount(undefined);
     }
   }, [open]);
 
@@ -93,22 +94,22 @@ export function RechargeBalanceDialog({
                 minimumFractionDigits={2}
                 maximumFractionDigits={2}
               />
-              <AmountInputAction
-                onClick={() => {
-                  const fromAccount = accounts.find(a => a.id === sourceAccount);
-                  if (fromAccount) {
-                    // Extract numeric value from balance (e.g., "$90.784.510,46" -> "90784510.46")
-                    const numericBalance = fromAccount.balance.replace(/[^0-9,]/g, '').replace('.', '').replace(',', '.');
-                    setAmount(numericBalance);
-                  }
-                }}
-              >
-                {t("beneficiaries.credit_card_movements.recharge_dialog.use_all")}
-              </AmountInputAction>
+              {capabilities.canViewBalance && (
+                <AmountInputAction
+                  onClick={() => {
+                    const fromAccount = accounts.find((account) => account.id === sourceAccount);
+                    if (fromAccount) {
+                      setAmount(minorToMajor(fromAccount.availableMinor));
+                    }
+                  }}
+                >
+                  {t("beneficiaries.credit_card_movements.recharge_dialog.use_all")}
+                </AmountInputAction>
+              )}
             </AmountInputContainer>
-            {sourceAccount && (
+            {sourceAccount && capabilities.canViewBalance && (
               <p className="text-xs text-foreground">
-                {t("beneficiaries.credit_card_movements.recharge_dialog.available_balance")}: {accounts.find(a => a.id === sourceAccount)?.balance}
+                {t("beneficiaries.credit_card_movements.recharge_dialog.available_balance")}: {accounts.find((account) => account.id === sourceAccount)?.balance}
               </p>
             )}
           </div>
@@ -119,15 +120,15 @@ export function RechargeBalanceDialog({
             valuePosition="right"
             selectedFeedback="check"
             icon="account_balance"
-            value={sourceAccount}
+            value={sourceAccount ?? ""}
             onValueChange={(value) => setSourceAccount(value as string)}
             labels={{
               placeholder: t("beneficiaries.credit_card_movements.recharge_dialog.source_account_label"),
             }}
-            options={accounts.map(account => ({
+            options={visibleAccounts.map((account) => ({
               value: account.id,
               label: account.name,
-              supportiveText: `${account.balance} ${account.currency}`,
+              supportiveText: capabilities.canViewBalance ? account.balance : undefined,
             }))}
             classNames={{
               trigger: "h-10 w-full",

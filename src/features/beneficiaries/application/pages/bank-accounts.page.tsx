@@ -51,6 +51,10 @@ import {
   PaginationNext,
 } from "@adamosuiteservices/ui/pagination";
 import { PageContainer } from "@/features/common/components/layout/page-container";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
+import { canonicalizeDocumentType } from "@/lib/document-type";
 
 export function BankAccountsPage() {
   const { t } = useTranslation("beneficiaries");
@@ -111,7 +115,7 @@ export function BankAccountsPage() {
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   const beneficiaryData = {
-    documentType: beneficiary?.identificationDocument.type ?? "cc",
+    documentType: canonicalizeDocumentType(beneficiary?.identificationDocument.type) ?? "CC",
     documentNumber: beneficiary?.identificationDocument.number ?? "",
     firstName: beneficiary?.fullName.split(" ")[0] ?? "",
     lastName: beneficiary?.fullName.split(" ").slice(1).join(" ") ?? "",
@@ -314,9 +318,12 @@ export function BankAccountsPage() {
               <Button variant="secondary" size="icon" onClick={() => refetch()}>
                 <Icon symbol="refresh" weight={200} />
               </Button>
+              <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
               <Button variant="default" size="default" onClick={() => setIsAddDialogOpen(true)}>
                 {t("beneficiaries.bank_accounts.add_button")}
               </Button>
+              </PermissionGate>
+              <PermissionGate permission={[...EXPORT_DATA]} mode="any">
               <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="secondary" size="default">
@@ -375,6 +382,7 @@ export function BankAccountsPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </PermissionGate>
             </div>
           </div>
           {/* Table */}
@@ -453,6 +461,7 @@ export function BankAccountsPage() {
                           {t("beneficiaries.bank_accounts.primary_label")}
                         </Badge>
                       )}
+                      <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
@@ -489,6 +498,7 @@ export function BankAccountsPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </PermissionGate>
                     </div>
                   </TableCell>
                 </TableRow>

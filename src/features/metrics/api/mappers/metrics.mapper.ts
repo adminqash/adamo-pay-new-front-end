@@ -144,6 +144,8 @@ export class MetricsMapper {
       { name: t("metrics.transaction_status.status.returned"), value: dist.returned, color: "#f59e0b" },
       { name: t("metrics.transaction_status.status.rejected"), value: dist.rejected, color: "#fca5a5" },
       { name: t("metrics.transaction_status.status.pending"), value: dist.pending, color: "#9ca3af" },
+      { name: t("metrics.transaction_status.status.for-review"), value: dist.forReview ?? 0, color: "#c4b5fd" },
+      { name: t("metrics.transaction_status.status.waiting-for-resolution"), value: dist.waitingForResolution ?? 0, color: "#818cf8" },
     ];
   }
 
@@ -263,6 +265,8 @@ export class MetricsMapper {
     const statusDist = dto.transactionStatus.statusDistribution;
     const transactionStatusTotal
       = statusDist.pending
+        + (statusDist.forReview ?? 0)
+        + (statusDist.waitingForResolution ?? 0)
         + statusDist.validated
         + statusDist.paid
         + statusDist.returned

@@ -5,9 +5,14 @@ import type { ReactNode } from "react";
 import type { User } from "@/features/auth/application/entities/user.entity";
 import { redirectToLogin, redirectToProductLanding } from "@/features/auth/api/services/auth-redirect";
 import { roleToKey } from "@/features/auth/api/mappers/user.mapper";
+import { normalizePermissions } from "@/features/auth/domain/permissions";
 import { useAuthorize } from "@/features/auth/application/hooks/use-authorize";
 import { useUserProfile } from "@/features/auth/application/hooks/use-user-profile";
 import { signOut as logout } from "@/features/auth/api/services/auth.service";
+import {
+  isEnvJwtAuth,
+  userFromEnvAccessToken,
+} from "@/lib/auth/env-access-token";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -24,10 +29,14 @@ export type AuthProviderProps = Readonly<{
 }>;
 
 const REQUIRED_PRODUCT = "adamo_pay";
+const envJwtUser = userFromEnvAccessToken();
+const jwtAuthEnabled = isEnvJwtAuth();
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [status, setStatus] = useState<AuthStatus>("loading");
-  const [user, setUser] = useState<User | null>(null);
+  const [status, setStatus] = useState<AuthStatus>(
+    envJwtUser ? "authenticated" : jwtAuthEnabled ? "unauthenticated" : "loading",
+  );
+  const [user, setUser] = useState<User | null>(envJwtUser);
 
   const { data: profileUser, isLoading: isLoadingProfile, error: profileError } = useUserProfile();
   const { data: authorizeData } = useAuthorize();
@@ -35,6 +44,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const hasRequiredProductAccess = (candidate: User) => candidate.allowedProducts.includes(REQUIRED_PRODUCT);
 
   useEffect(() => {
+    if (jwtAuthEnabled) {
+      return;
+    }
+
     if (!profileUser) {
       return;
     }
@@ -50,6 +63,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [profileUser]);
 
   useEffect(() => {
+    if (jwtAuthEnabled) {
+      return;
+    }
+
     if (profileError && !isLoadingProfile) {
       setStatus("unauthenticated");
       redirectToLogin();
@@ -60,6 +77,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // it overrides whatever getProfile returned, and re-runs after every silent
   // token refresh (see src/lib/api/refresh-interceptor.ts invalidating both queries).
   useEffect(() => {
+    if (jwtAuthEnabled) {
+      return;
+    }
+
     const authorizedUser = authorizeData?.data?.authorized ? authorizeData.data.user : null;
     if (!authorizedUser) {
       return;
@@ -70,10 +91,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return current;
       }
 
-      const authorizedPermissions = [
+      const authorizedPermissions = normalizePermissions([
         ...(authorizedUser.permissions ?? []),
         ...(authorizedUser.additionalPermissions ?? []),
-      ];
+      ]);
       const authorizedRoles = (authorizedUser.roles ?? [])
         .map(roleToKey)
         .filter((role): role is string => Boolean(role));
@@ -85,6 +106,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       };
     });
   }, [authorizeData]);
+
+  if (jwtAuthEnabled && !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6 text-sm text-neutrals-700">
+        VITE_ACCESS_TOKEN is set but is not a valid JWT.
+      </div>
+    );
+  }
 
   if (status !== "authenticated") {
     return null;

@@ -71,7 +71,8 @@
         "id_number": "Nº DE ID",
         "amount": "MONTO",
         "reference": "REFERENCIA",
-        "status": "ESTADO"
+        "status": "ESTADO",
+        "compliance": "CUMPLIMIENTO"
       },
       "timeline_dialog": {
         "title": "Timeline del lote",
@@ -106,6 +107,9 @@
         "title": "Lista restrictiva",
         "list_name": "Nombre de la lista",
         "view_in_risk": "Ver en Adamo Risk"
+      },
+      "screening": {
+        "title": "Veredicto de cumplimiento"
       },
       "edit_dialog": {
         "title": "Editar información del beneficiario",
@@ -205,6 +209,7 @@
         "uploading": "Subiendo archivo...",
         "parsing": "Leyendo filas del archivo...",
         "ingesting": "Registrando beneficiarios en el lote...",
+        "screening": "Validando cumplimiento de cada fila...",
         "completed": "Archivo procesado correctamente. Revisa el resumen.",
         "failed": "No se pudo completar el procesamiento del archivo."
       },
@@ -219,6 +224,24 @@
       "batch_created": "Lote creado con éxito",
       "batch_saved": "Lote guardado con éxito",
       "template_downloaded": "Plantilla descargada correctamente"
+    },
+    "screening": {
+      "title": "Cumplimiento",
+      "allow": "Permitidos",
+      "blocked": "Bloqueados",
+      "review": "En revisión",
+      "pending": "Pendientes",
+      "invalid": "Inválidos",
+      "processing_row": "Procesando fila {{row}} de {{total}}: {{name}}",
+      "row_label": "Fila {{row}} {{name}}",
+      "verdict": {
+        "allow": "Permitido",
+        "blocked": "Bloqueado",
+        "review": "Revisión Adamo",
+        "client-review": "Revisión cliente",
+        "failed": "Error de screening",
+        "pending": "Pendiente"
+      }
     }
   }
 }

@@ -25,17 +25,20 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { Logo } from "@/features/common/components/brand/logo";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { useCountry } from "@/features/common/contexts/use-country";
-import {
-  getCountrySwitchRedirect,
-  SELECTABLE_COUNTRIES,
-} from "@/lib/country/country-code";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { VIEW_TRANSACTIONS } from "@/features/auth/domain/permission-ui";
+import { env } from "@/lib/env";
+import { firstAllowedPath } from "@/features/auth/application/components/require-permission";
+import { getCountrySwitchRedirect } from "@/lib/country/country-code";
 
-export type SidebarMenuItem = {
+export type SidebarNavItem = {
   id: string
   label: string
   path: string
   icon?: JSX.Element
-  menu?: SidebarMenuItem[]
+  external?: boolean
+  menu?: SidebarNavItem[]
 };
 
 function isPathActive(pathname: string, path: string) {
@@ -49,7 +52,8 @@ export function MainSidebar() {
   const { t } = useTranslation(["sidebar"]);
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { countryCodeAlpha2, setCountry } = useCountry();
+  const { countryCodeAlpha2, countryCode, setCountry, selectableCountries } = useCountry();
+  const { hasPermission, capabilities } = usePermissions();
 
   function selectCountry(alpha2: string, countryName: string) {
     const changed = setCountry(alpha2);
@@ -68,51 +72,71 @@ export function MainSidebar() {
     });
   }
 
-  const menu: SidebarMenuItem[] = [
-    { id: "home",
+  const menu: SidebarNavItem[] = [
+    hasPermission(PERMISSIONS.DASHBOARD_VIEW) && {
+      id: "home",
       label: t("sidebar:menu.home"),
       icon: <Icon symbol="home" />,
       path: "/",
     },
-    {
+    hasPermission([...VIEW_TRANSACTIONS], "any") && {
       id: "transactions",
       label: t("sidebar:menu.transactions"),
       icon: <Icon symbol="swap_horiz" />,
       path: "/transactions",
     },
-    {
+    hasPermission(PERMISSIONS.PAYMENTS_BATCH_LIST) && {
       id: "batches",
       label: t("sidebar:menu.batches"),
       icon: <Icon symbol="folder_copy" />,
       path: "/batches",
     },
-    {
+    hasPermission(PERMISSIONS.ACCOUNTS_LIST) && {
       id: "accounts",
       label: t("sidebar:menu.accounts"),
       icon: <Icon symbol="account_balance_wallet" />,
       path: "/accounts",
     },
-    {
+    hasPermission(PERMISSIONS.BENEFICIARIES_LIST) && {
       id: "beneficiaries",
       label: t("sidebar:menu.beneficiaries"),
       icon: <Icon symbol="account_circle" />,
       path: "/beneficiaries",
     },
-    {
+    hasPermission(PERMISSIONS.METRICS_COUNTRY) && {
       id: "metrics",
       label: t("sidebar:menu.metrics"),
       icon: <Icon symbol="query_stats" />,
       path: "/metrics",
     },
-    {
+    hasPermission(PERMISSIONS.COLLECTIONS_LIST) && countryCode === "COL" && {
+      id: "collections",
+      label: t("sidebar:menu.collections"),
+      icon: <Icon symbol="payments" />,
+      path: "/collections",
+    },
+    hasPermission(PERMISSIONS.COMPLIANCE_PENDING_LIST) && {
+      id: "compliance",
+      label: t("sidebar:menu.compliance"),
+      icon: <Icon symbol="verified_user" />,
+      path: "/compliance",
+    },
+    hasPermission(PERMISSIONS.REPORTS_OWN) && {
       id: "reports",
       label: t("sidebar:menu.reports"),
       icon: <Icon symbol="table_chart_view" />,
       path: "/reports",
     },
-  ];
+    capabilities.canManageUsers && env.VITE_ID_FRONT_BASE_URL && {
+      id: "users",
+      label: t("sidebar:menu.users"),
+      icon: <Icon symbol="group" />,
+      path: env.VITE_ID_FRONT_BASE_URL,
+      external: true,
+    },
+  ].filter((item): item is SidebarNavItem => Boolean(item));
 
-  const selectedCountryName = SELECTABLE_COUNTRIES.find(
+  const selectedCountryName = selectableCountries.find(
     (country) => country.alpha2 === countryCodeAlpha2,
   )?.name ?? countryCodeAlpha2;
 
@@ -120,7 +144,7 @@ export function MainSidebar() {
     <Sidebar>
       <SidebarContent>
         <SidebarHeader className="pb-4">
-          <Link to="/" className="mx-auto">
+          <Link to={firstAllowedPath(hasPermission)} className="mx-auto">
             <Logo />
           </Link>
         </SidebarHeader>
@@ -153,6 +177,17 @@ export function MainSidebar() {
                     </SidebarMenu>
                     </CollapsibleContent>
                   </Collapsible>
+                );
+              }
+
+              if (item.external) {
+                return (
+                  <SidebarMenuItem key={item.id} asChild>
+                    <a href={item.path} target="_blank" rel="noreferrer">
+                      {item.icon}
+                      {item.label}
+                    </a>
+                  </SidebarMenuItem>
                 );
               }
 
@@ -210,7 +245,7 @@ export function MainSidebar() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[200px] p-0">
-                {SELECTABLE_COUNTRIES.map((country, index) => (
+                {selectableCountries.map((country, index) => (
                   <Fragment key={country.alpha2}>
                     {index > 0 && <DropdownMenuSeparator className="bg-neutral-100" />}
                     <DropdownMenuItem

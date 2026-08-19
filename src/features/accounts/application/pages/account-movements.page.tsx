@@ -58,6 +58,10 @@ import type { DateRange } from "react-day-picker";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { parseCurrencyToMinor } from "@/lib/money/money";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 
 /**
  * custom date range picker component
@@ -207,6 +211,7 @@ const DateRangePicker = ({
 
 export function AccountMovementsPage() {
   const { t, i18n } = useTranslation("accounts");
+  const { capabilities } = usePermissions();
   const { accountId } = useParams<{ accountId: string }>();
   const navigate = useNavigate();
   const { countryCode, currencyUpper, locale: moneyLocale } = useCountry();
@@ -378,6 +383,11 @@ export function AccountMovementsPage() {
     id: accountId ?? "",
     name: t("accounts.unknown_account", { defaultValue: "Cuenta desconocida" }),
     balance: "$0,00",
+    balanceMinor: 0,
+    availableMinor: 0,
+    reservedMinor: 0,
+    pendingMinor: 0,
+    assignedMinor: 0,
     currency: currencyUpper,
     countryCode,
   };
@@ -428,6 +438,7 @@ export function AccountMovementsPage() {
                 {account.name}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
+                <PermissionGate when={capabilities.canViewBalance}>
                 <div className={`
                   inline-flex h-14 items-center gap-3 rounded-full bg-white px-4
                   py-4
@@ -440,7 +451,9 @@ export function AccountMovementsPage() {
                     {account.currency}
                   </span>
                 </div>
+                </PermissionGate>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-8">
+                  <PermissionGate permission={PERMISSIONS.ACCOUNTS_TRANSFER}>
                   <Button
                     variant="default"
                     onClick={handleOpenTransferDialog}
@@ -448,6 +461,7 @@ export function AccountMovementsPage() {
                     <Icon symbol="swap_horiz" />
                     Transferir
                   </Button>
+                  </PermissionGate>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
@@ -471,9 +485,11 @@ export function AccountMovementsPage() {
                       <DropdownMenuItem>
                         {t("accounts.dropdown_menu.add_balance")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={handleOpenTransferDialog}>
-                        {t("accounts.dropdown_menu.transfer")}
-                      </DropdownMenuItem>
+                      <PermissionGate permission={PERMISSIONS.ACCOUNTS_TRANSFER}>
+                        <DropdownMenuItem onSelect={handleOpenTransferDialog}>
+                          {t("accounts.dropdown_menu.transfer")}
+                        </DropdownMenuItem>
+                      </PermissionGate>
                       <DropdownMenuItem onSelect={handleOpenEditNameDialog}>
                         {t("accounts.dropdown_menu.edit_name")}
                       </DropdownMenuItem>
@@ -496,6 +512,7 @@ export function AccountMovementsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-4">
+                <PermissionGate permission={[...EXPORT_DATA]} mode="any">
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="secondary">
@@ -597,6 +614,7 @@ export function AccountMovementsPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </PermissionGate>
               </div>
               <div className={`
                 basis-full

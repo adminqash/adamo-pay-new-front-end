@@ -8,6 +8,11 @@ export const queryKeys = {
     all: ["auth"] as const,
     profile: ["auth", "profile"] as const,
     authorize: ["auth", "authorize"] as const,
+    access: ["auth", "access"] as const,
+    operatingCountries: ["auth", "operating-countries"] as const,
+  },
+  organizations: {
+    countries: ["organizations", "countries"] as const,
   },
   dashboard: {
     summary: ["dashboard", "summary"] as const,
@@ -67,5 +72,8 @@ export const queryKeys = {
     all: (params?: unknown) => ["reports", params] as const,
     detail: (id: string) => ["reports", id] as const,
     download: (id: string) => ["reports", id, "download"] as const,
+  },
+  compliance: {
+    checks: (params?: unknown) => ["compliance", "checks", params] as const,
   },
 } as const;

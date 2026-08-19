@@ -1,18 +1,46 @@
+import { useMemo } from "react";
 import { useAuth } from "@/features/auth/application/contexts/auth.context";
+import { useAccessOptional } from "@/features/auth/application/contexts/access.context";
+import {
+  hasPermission as hasPermissionCheck,
+  normalizePermissions,
+  resolveAccessCapabilities,
+  type AccessCapabilities,
+  type PermissionMode,
+} from "@/features/auth/domain/permissions";
 
 export function usePermissions() {
+  const access = useAccessOptional();
   const { user } = useAuth();
-  const permissions = user?.permissions ?? [];
+  const authPermissions = useMemo(
+    () => normalizePermissions(user?.permissions ?? []),
+    [user?.permissions],
+  );
+  const authCapabilities = useMemo(
+    () => resolveAccessCapabilities(authPermissions),
+    [authPermissions],
+  );
 
-  const hasPermission = (requiredPermissions: string | string[], mode: "all" | "any" = "all"): boolean => {
-    const permissionList = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+  if (access) {
+    return {
+      permissions: access.permissions,
+      capabilities: access.capabilities,
+      hasPermission: access.hasPermission,
+      isLoading: access.isLoading,
+    };
+  }
 
-    if (mode === "any") {
-      return permissionList.some((permission) => permissions.includes(permission));
-    }
+  const hasPermission = (
+    requiredPermissions: string | string[],
+    mode: PermissionMode = "all",
+  ): boolean => hasPermissionCheck(authPermissions, requiredPermissions, mode);
 
-    return permissionList.every((permission) => permissions.includes(permission));
+  return {
+    permissions: authPermissions,
+    capabilities: authCapabilities,
+    hasPermission,
+    isLoading: false,
   };
-
-  return { permissions, hasPermission };
 }
+
+export type { AccessCapabilities };

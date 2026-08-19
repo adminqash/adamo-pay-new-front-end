@@ -1,33 +1,59 @@
 import { connectRealtimeChannel } from "./realtime-connection";
 
-export type BatchStatusEvent = {
+export type BatchScreeningSummary = {
+  pending: number
+  allow: number
+  clientReview: number
+  review: number
+  blocked: number
+  failed: number
+};
+
+export type BatchLiveEvent = {
   batchId: string
+  eventType: string
   status: string
+  lastAction?: string
+  screening?: BatchScreeningSummary
   processing?: {
     processedCount: number
     paidCount: number
     rejectedCount: number
     returnedCount: number
   }
+  rowNumber?: number
+  itemStatus?: string
+  beneficiaryName?: string
+  screeningVerdict?: string
+  currentIndex?: number
+  totalItems?: number
 };
 
+export type BatchStatusEvent = BatchLiveEvent;
+
+const BATCH_LIVE_EVENTS = new Set([
+  "batch.status.updated",
+  "batch.item.screening",
+  "batch.item.screened",
+  "batch.screening.progress",
+  "batch.screening.completed",
+  "batch.cancelled",
+]);
+
 /**
- * Subscribes to batch lifecycle updates (`batch.status.updated`) pushed by
- * adamo-pay-core-microservice-v2 whenever a batch or one of its linked
- * payments changes status. Pass a `batchId` to follow just that batch (the
- * detail page); omit it to receive every batch update for the org (the
- * /batches list page) — the realtime gateway supports both subscription
- * modes on the "batches" channel.
+ * Subscribes to batch lifecycle and compliance screening updates pushed by
+ * core/realtime. Pass a `batchId` to follow just that batch (the detail and
+ * create pages); omit it to receive every batch update for the org.
  */
 export function subscribeToBatchStatusEvents(
-  onUpdate: (event: BatchStatusEvent) => void,
+  onUpdate: (event: BatchLiveEvent) => void,
   batchId?: string,
 ): () => void {
   return connectRealtimeChannel({
     channel: "batches",
     resourceId: batchId,
     onEvent: (message) => {
-      if (message.eventType !== "batch.status.updated") {
+      if (!message.eventType || !BATCH_LIVE_EVENTS.has(message.eventType)) {
         return;
       }
 
@@ -37,10 +63,35 @@ export function subscribeToBatchStatusEvents(
         return;
       }
 
+      const screeningPayload = (data.screening ?? data.summary) as
+        | { screening?: BatchScreeningSummary }
+        | BatchScreeningSummary
+        | undefined;
+      const screeningSummary
+        = screeningPayload && "pending" in screeningPayload
+          ? screeningPayload
+          : screeningPayload && "screening" in screeningPayload
+            ? screeningPayload.screening
+            : undefined;
+
       onUpdate({
         batchId: eventBatchId,
+        eventType: message.eventType,
         status: typeof data.status === "string" ? data.status : "",
-        processing: data.processing as BatchStatusEvent["processing"],
+        lastAction: typeof data.lastAction === "string" ? data.lastAction : undefined,
+        screening: (data.summary as { screening?: BatchScreeningSummary } | undefined)?.screening
+          ?? screeningSummary,
+        processing: data.processing as BatchLiveEvent["processing"],
+        rowNumber: typeof data.rowNumber === "number" ? data.rowNumber : undefined,
+        itemStatus: typeof data.status === "string" ? data.status : undefined,
+        beneficiaryName:
+          typeof data.beneficiaryName === "string" ? data.beneficiaryName : undefined,
+        screeningVerdict:
+          typeof (data.screening as { verdict?: string } | undefined)?.verdict === "string"
+            ? (data.screening as { verdict: string }).verdict
+            : undefined,
+        currentIndex: typeof data.currentIndex === "number" ? data.currentIndex : undefined,
+        totalItems: typeof data.totalItems === "number" ? data.totalItems : undefined,
       });
     },
   });

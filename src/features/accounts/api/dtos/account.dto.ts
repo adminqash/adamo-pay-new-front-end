@@ -7,6 +7,8 @@ export type AccountListItemDTO = {
   balance: number
   reservedBalance: number
   assignedBalance: number
+  pendingBalance: number
+  availableBalance: number
   status: string
   isDefault: boolean
   createdAt: string
@@ -17,11 +19,14 @@ export type AccountBalanceSummaryDTO = {
   totalBalance: number
   totalReserved: number
   totalAssigned: number
+  totalPending: number
+  totalAvailable: number
   byCurrency: Array<{
     currency: string
     accountCount: number
     totalBalance: number
     totalReserved: number
+    totalPending: number
     availableBalance: number
   }>
 };

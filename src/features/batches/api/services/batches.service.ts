@@ -1,4 +1,3 @@
-import type { BatchTemplateDTO } from "@/features/batches/api/dtos/batch-template.dto";
 import type { BatchTimelineDTO } from "@/features/batches/api/dtos/batch-timeline.dto";
 import type { BatchTransactionDTO } from "@/features/batches/api/dtos/batch-transaction.dto";
 import type { BatchListItemDTO } from "@/features/batches/api/dtos/batch.dto";
@@ -19,10 +18,10 @@ import { BatchTimelineMapper } from "@/features/batches/api/mappers/batch-timeli
 import { BatchTransactionDetailMapper } from "@/features/batches/api/mappers/batch-transaction-detail.mapper";
 import { BatchTransactionMapper } from "@/features/batches/api/mappers/batch-transaction.mapper";
 import { BatchMapper } from "@/features/batches/api/mappers/batch.mapper";
-import { downloadBatchTemplateFile } from "@/features/batches/api/utils/batch-template.utils";
 import { coreApi } from "@/lib/api/api";
 import { handleAPIError, handleAPIResponse } from "@/lib/api/api.utils";
-import { apiGet, apiGetList, apiGetRaw, apiPatch, apiPost } from "@/lib/api/http.service";
+import { apiDownload, apiGet, apiGetList, apiGetRaw, apiPatch, apiPost } from "@/lib/api/http.service";
+import { triggerBrowserDownload } from "@/lib/utils/file.utils";
 
 export class BatchesService {
   public static GET_BATCHES_KEY = "get_batches_key";
@@ -42,23 +41,13 @@ export class BatchesService {
     };
   }
 
-  public static async getTemplate(): Promise<ServiceResult<BatchTemplateDTO>> {
-    const result = await apiGetRaw<BatchTemplateDTO>(coreApi, "/batches/template");
-
-    if (!result?.data) {
-      throw new Error("Batch template not found");
-    }
-
-    return result as ServiceResult<BatchTemplateDTO>;
-  }
-
   public static async downloadTemplate(): Promise<void> {
-    const result = await BatchesService.getTemplate();
-    if (!result.data) {
-      throw new Error("Batch template not found");
-    }
-
-    downloadBatchTemplateFile(result.data);
+    const { blob, fileName } = await apiDownload(
+      coreApi,
+      "/batches/template",
+      "plantilla-lote-pagos.xlsx",
+    );
+    triggerBrowserDownload(blob, fileName);
   }
 
   public static async list(

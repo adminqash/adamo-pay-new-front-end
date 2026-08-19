@@ -76,7 +76,10 @@
         "validated": "Validated",
         "returned": "Returned",
         "rejected": "Rejected",
-        "pending": "Pending"
+        "pending": "Ready to send",
+        "reviewed": "Ready to send",
+        "for-review": "Compliance",
+        "waiting-for-resolution": "Compliance (Adamo)"
       }
     },
     "rejection_reasons": {

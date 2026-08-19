@@ -31,6 +31,10 @@ import { usePaymentsRealtime } from "../hooks/use-payments-realtime";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
 import { buildTransactionListParams } from "../utils/transaction-filters.utils";
 import { formatCurrencyDisplay } from "@/lib/money/money";
+import { useCountry } from "@/features/common/contexts/use-country";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { Input } from "@adamosuiteservices/ui/input";
 import {
   Sheet,
@@ -220,6 +224,7 @@ const DateRangePicker = ({
  */
 export const TransactionsPage = () => {
   const { t, i18n } = useTranslation("transactions");
+  const { currencyUpper } = useCountry();
   const { accounts } = useAccounts({ page: 1, limit: 20 });
   const [searchParams] = useSearchParams();
 
@@ -240,8 +245,8 @@ export const TransactionsPage = () => {
   const [accountFilter, setAccountFilter] = useState<string[]>(["all"]);
   const [statusFilter, setStatusFilter] = useState<string[]>(() => {
     const statusParam = searchParams.get("status");
-    if (statusParam && ["pending", "in_review", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
-      return [statusParam];
+    if (statusParam && ["reviewed", "pending", "for-review", "waiting-for-resolution", "in_review", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
+      return [statusParam === "pending" ? "reviewed" : statusParam === "in_review" ? "for-review" : statusParam];
     }
     return ["all"];
   });
@@ -388,12 +393,16 @@ export const TransactionsPage = () => {
       case "paid":
         return "success-medium";
       case "validated":
+      case "reviewed":
+        return "warning-medium";
+      case "for-review":
+      case "waiting-for-resolution":
+      case "in_review":
         return "warning-medium";
       case "returned":
       case "rejected":
         return "destructive-medium";
       case "pending":
-      case "in_review":
       default:
         return "muted";
     }
@@ -403,7 +412,7 @@ export const TransactionsPage = () => {
    * format currency amount (API amounts are integer minor units)
    */
   const formatAmount = (amountMinor: number): string => {
-    return formatCurrencyDisplay(amountMinor, "COP");
+    return formatCurrencyDisplay(amountMinor, currencyUpper);
   };
 
   return (
@@ -431,15 +440,17 @@ export const TransactionsPage = () => {
               </div>
               {/* action buttons */}
               <div className="flex items-center gap-4">
-                <Button
-                  variant="default"
-                  asChild
-                >
-                  <Link to="/transactions/create">
-                    {t("transactions.header.new_payment")}
-                  </Link>
-                </Button>
-                <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                <PermissionGate permission={PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE}>
+                  <Button
+                    variant="default"
+                    asChild
+                  >
+                    <Link to="/transactions/create">
+                      {t("transactions.header.new_payment")}
+                    </Link>
+                  </Button>
+                </PermissionGate>
+                <PermissionGate permission={[...EXPORT_DATA]} mode="any">
                   <DialogTrigger asChild>
                     <Button
                       variant="secondary"
@@ -483,8 +494,9 @@ export const TransactionsPage = () => {
                             icon="search_activity"
                             options={[
                               { value: "all", label: t("transactions.export_dialog.status_all") },
-                              { value: "pending", label: t("transactions.status.pending") },
-                              { value: "in_review", label: t("transactions.status.in_review") },
+                              { value: "reviewed", label: t("transactions.status.reviewed") },
+                              { value: "for-review", label: t("transactions.status.for-review") },
+                              { value: "waiting-for-resolution", label: t("transactions.status.waiting-for-resolution") },
                               { value: "validated", label: t("transactions.status.validated") },
                               { value: "paid", label: t("transactions.status.paid") },
                               { value: "returned", label: t("transactions.status.returned") },
@@ -551,6 +563,7 @@ export const TransactionsPage = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </PermissionGate>
               </div>
               {/* search input */}
               <div className={`
@@ -623,8 +636,9 @@ export const TransactionsPage = () => {
                   icon="search_activity"
                   options={[
                     { value: "all", label: t("transactions.filters.all_status") },
-                    { value: "pending", label: t("transactions.status.pending") },
-                    { value: "in_review", label: t("transactions.status.in_review") },
+                    { value: "reviewed", label: t("transactions.status.reviewed") },
+                    { value: "for-review", label: t("transactions.status.for-review") },
+                    { value: "waiting-for-resolution", label: t("transactions.status.waiting-for-resolution") },
                     { value: "validated", label: t("transactions.status.validated") },
                     { value: "paid", label: t("transactions.status.paid") },
                     { value: "returned", label: t("transactions.status.returned") },
@@ -924,6 +938,7 @@ export const TransactionsPage = () => {
           </SheetBody>
           {/* Action button - only show for returned/rejected */}
           {displayedTransaction && (displayedTransaction.status === "returned" || displayedTransaction.status === "rejected") && (
+            <PermissionGate permission={PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE}>
             <SheetFooter>
               <Button
                 variant="default"
@@ -936,6 +951,7 @@ export const TransactionsPage = () => {
                 </Link>
               </Button>
             </SheetFooter>
+            </PermissionGate>
           )}
         </SheetContent>
       </Sheet>

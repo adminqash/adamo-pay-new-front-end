@@ -13,8 +13,8 @@ export const analyticsApi = createApiClient(apiUrls.analytics);
 /** Realtime microservice (WebSocket gateway + batch uploads) */
 export const realtimeApi = createApiClient(apiUrls.realtime);
 
-/** Identity/SSO microservice (adamo-services-identity-microservice) */
-export const authApi = createApiClient(apiUrls.auth);
+/** Identity/SSO microservice. Unused when VITE_ACCESS_TOKEN is set. */
+export const authApi = createApiClient(apiUrls.auth || apiUrls.core);
 
 /**
  * @deprecated Use coreApi, beneficiariesApi, or analyticsApi.

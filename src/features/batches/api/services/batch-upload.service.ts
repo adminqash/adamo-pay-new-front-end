@@ -4,6 +4,7 @@ import type { APIResponse } from "@/lib/api/api.types";
 import type { AxiosResponse } from "axios";
 import { redirectToLogin } from "@/features/auth/api/services/auth-redirect";
 import { handleAPIError, handleAPIResponse } from "@/lib/api/api.utils";
+import { getEnvAccessToken, isEnvJwtAuth } from "@/lib/auth/env-access-token";
 import { apiUrls } from "@/lib/env";
 
 export type BatchUploadAcceptedDTO = {
@@ -48,11 +49,16 @@ export class BatchUploadService {
   public static GET_UPLOAD_STATUS_KEY = "get_upload_status_key";
 
   private static authHeaders(requestId?: string): Record<string, string> {
-    return {
+    const headers: Record<string, string> = {
       Accept: "application/json",
       "Accept-Language": i18next.language,
       "X-Request-ID": requestId ?? crypto.randomUUID(),
     };
+    const accessToken = getEnvAccessToken();
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return headers;
   }
 
   public static async upload(
@@ -73,7 +79,7 @@ export class BatchUploadService {
 
       const payload = (await response.json()) as APIResponse<BatchUploadAcceptedDTO>;
 
-      if (response.status === 401) {
+      if (response.status === 401 && !isEnvJwtAuth()) {
         redirectToLogin();
       }
 
@@ -115,7 +121,7 @@ export class BatchUploadService {
 
       const payload = (await response.json()) as APIResponse<BatchUploadStatusDTO>;
 
-      if (response.status === 401) {
+      if (response.status === 401 && !isEnvJwtAuth()) {
         redirectToLogin();
       }
 

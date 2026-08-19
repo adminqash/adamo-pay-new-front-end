@@ -8,6 +8,9 @@
     "accounts": "Cuentas",
     "beneficiaries": "Beneficiarios",
     "metrics": "Métricas",
-    "reports": "Reportes"
+    "reports": "Reportes",
+    "collections": "Recaudos",
+    "compliance": "Cumplimiento",
+    "users": "Gestión de usuarios"
   }
 }

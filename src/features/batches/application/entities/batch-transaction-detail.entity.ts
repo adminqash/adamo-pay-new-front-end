@@ -1,9 +1,6 @@
-export type BatchTransactionDetailStatus
-  = | "pending"
-    | "validated"
-    | "paid"
-    | "returned"
-    | "rejected";
+import type { TransactionStatus } from "@/features/transactions/application/entities/transaction.entity";
+
+export type BatchTransactionDetailStatus = TransactionStatus
 
 export type BatchTransactionDetail = {
   id: string
@@ -28,5 +25,10 @@ export type BatchTransactionDetail = {
   restrictiveList: {
     listName: string
     riskLevel: "low" | "medium" | "high"
+  } | null
+  screening: {
+    verdict?: string
+    sendable: boolean
+    detail?: string
   } | null
 };

@@ -41,9 +41,13 @@ import { PageContainer } from "@/features/common/components/layout/page-containe
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { parseCurrencyToMinor } from "@/lib/money/money";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 
 export function AccountsPage() {
   const { t } = useTranslation("accounts");
+  const { capabilities } = usePermissions();
   const { countryCode, currency, currencyUpper, locale: moneyLocale } = useCountry();
   const [newAccountName, setNewAccountName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -210,6 +214,7 @@ export function AccountsPage() {
       <PageContainer>
         <Card className="flex flex-col gap-6 p-6">
           {/* wallet card with gradient */}
+          <PermissionGate when={capabilities.canViewBalance}>
           <Card className={`
             border-0 bg-gradient-to-r from-[#e5f3fa] to-background p-6
           `}
@@ -275,6 +280,7 @@ export function AccountsPage() {
               </div>
             </div>
           </Card>
+          </PermissionGate>
           {/* accounts grid */}
           <div className="flex flex-wrap gap-6">
             {accounts.map((account) => (
@@ -309,9 +315,11 @@ export function AccountsPage() {
                     <DropdownMenuItem>
                       {t("accounts.dropdown_menu.add_balance")}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleOpenTransferDialog(account.id)}>
-                      {t("accounts.dropdown_menu.transfer")}
-                    </DropdownMenuItem>
+                    <PermissionGate permission={PERMISSIONS.ACCOUNTS_TRANSFER}>
+                      <DropdownMenuItem onSelect={() => handleOpenTransferDialog(account.id)}>
+                        {t("accounts.dropdown_menu.transfer")}
+                      </DropdownMenuItem>
+                    </PermissionGate>
                     <DropdownMenuItem asChild>
                       <Link to={`/accounts/${account.id}/movements`}>
                         {t("accounts.dropdown_menu.view_movements")}
@@ -330,18 +338,20 @@ export function AccountsPage() {
                     <h3 className="text-sm leading-5 font-bold text-foreground">
                       {account.name}
                     </h3>
-                    <div className={`
-                      inline-flex h-14 w-fit items-center gap-3 rounded-full
-                      bg-white px-4 py-4
-                    `}
-                    >
-                      <span className="text-sm font-bold text-foreground">
-                        {account.balance}
-                      </span>
-                      <span className="text-sm text-foreground">
-                        {account.currency}
-                      </span>
-                    </div>
+                    <PermissionGate when={capabilities.canViewBalance}>
+                      <div className={`
+                        inline-flex h-14 w-fit items-center gap-3 rounded-full
+                        bg-white px-4 py-4
+                      `}
+                      >
+                        <span className="text-sm font-bold text-foreground">
+                          {account.balance}
+                        </span>
+                        <span className="text-sm text-foreground">
+                          {account.currency}
+                        </span>
+                      </div>
+                    </PermissionGate>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-8">
                     <Button variant="default" className="w-fit" asChild>
@@ -349,14 +359,16 @@ export function AccountsPage() {
                         {t("accounts.card.view_movements")}
                       </Link>
                     </Button>
-                    <Button
-                      variant="link"
-                      className="h-6 p-0 text-primary"
-                      onClick={() => handleOpenTransferDialog(account.id)}
-                    >
-                      <Icon symbol="swap_horiz" />
-                      {t("accounts.card.transfer")}
-                    </Button>
+                    <PermissionGate permission={PERMISSIONS.ACCOUNTS_TRANSFER}>
+                      <Button
+                        variant="link"
+                        className="h-6 p-0 text-primary"
+                        onClick={() => handleOpenTransferDialog(account.id)}
+                      >
+                        <Icon symbol="swap_horiz" />
+                        {t("accounts.card.transfer")}
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               </Card>

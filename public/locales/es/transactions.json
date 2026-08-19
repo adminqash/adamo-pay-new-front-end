@@ -29,12 +29,15 @@
       "status": "ESTADO"
     },
     "status": {
-      "pending": "Pendiente",
-      "in_review": "En revisión",
-      "validated": "Validada",
-      "paid": "Pagada",
-      "returned": "Retornada",
-      "rejected": "Rechazada"
+      "reviewed": "Listo para enviar",
+      "pending": "Listo para enviar",
+      "for-review": "Cumplimiento",
+      "waiting-for-resolution": "Cumplimiento Adamo",
+      "in_review": "Cumplimiento",
+      "validated": "Validado",
+      "paid": "Pagado",
+      "returned": "Retornado",
+      "rejected": "Rechazado"
     },
     "export_dialog": {
       "title": "Exportar datos",

@@ -3,18 +3,11 @@ import type {
   PaymentTimelineDTO,
 } from "@/features/transactions/api/dtos/payment-detail.dto";
 import type { TransactionDetail, TransactionTimelineItem } from "@/features/transactions/application/entities/transaction-detail.entity";
+import { normalizePaymentStatus } from "@/features/transactions/application/utils/transaction-status";
 import { formatDisplayDate } from "@/lib/utils/date.utils";
+import { documentTypeLabel } from "@/lib/document-type";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-const ID_TYPE_LABELS: Record<string, string> = {
-  cc: "Cédula de Ciudadanía",
-  ce: "Cédula de Extranjería",
-  nit: "NIT",
-  passport: "Pasaporte",
-  ti: "Tarjeta de Identidad",
-  ppt: "PPT",
-};
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   savings: "Ahorros",
@@ -72,8 +65,8 @@ export class PaymentDetailMapper {
       idNumber: detail.beneficiary.idNumber,
       amount: detail.amount,
       reference: detail.reference,
-      status: detail.status,
-      idTypeLabel: ID_TYPE_LABELS[detail.beneficiary.idType] ?? detail.beneficiary.idType,
+      status: normalizePaymentStatus(detail.status),
+      idTypeLabel: documentTypeLabel(detail.beneficiary.idType),
       destinationAccountLabel: `${accountType}. ${detail.destination.bank} Nº ${detail.destination.accountNumber}`,
       sourceAccountName: detail.sourceAccountName ?? "Cuenta",
       statusReason: detail.returnReason ?? detail.rejectionReason,

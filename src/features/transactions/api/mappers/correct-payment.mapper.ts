@@ -1,15 +1,7 @@
 import type { PaymentDetailDTO } from "@/features/transactions/api/dtos/payment-detail.dto";
 import type { BatchTransactionDetail } from "@/features/batches/application/entities/batch-transaction-detail.entity";
 import type { CorrectPaymentCommand } from "@/features/transactions/application/commands/payment.commands";
-
-const ID_TYPE_LABELS: Record<string, string> = {
-  cc: "Cédula de ciudadanía",
-  ce: "Cédula de extranjería",
-  nit: "NIT",
-  passport: "Pasaporte",
-  ti: "Tarjeta de identidad",
-  ppt: "PPT",
-};
+import { documentTypeFromLabel, documentTypeLabel } from "@/lib/document-type";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   savings: "Ahorros",
@@ -19,8 +11,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 function formatIdType(value: string): string {
-  const normalized = value.trim().toLowerCase();
-  return ID_TYPE_LABELS[normalized] ?? value;
+  return documentTypeLabel(value);
 }
 
 function formatAccountType(value: string): string {
@@ -82,15 +73,5 @@ export class CorrectPaymentMapper {
 }
 
 function mapDocumentTypeToCode(displayType: string): string {
-  const normalizedType = displayType.toLowerCase();
-  if (normalizedType.includes("ciudadanía") || normalizedType.includes("ciudadania")) {
-    return "cc";
-  }
-  if (normalizedType.includes("extranjería") || normalizedType.includes("extranjeria")) {
-    return "ce";
-  }
-  if (normalizedType.includes("pasaporte") || normalizedType.includes("passport")) {
-    return "passport";
-  }
-  return displayType;
+  return documentTypeFromLabel(displayType);
 }

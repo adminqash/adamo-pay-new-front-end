@@ -1,5 +1,6 @@
 import type { ProfileDto, ProfileRoleDto } from "@/features/auth/api/dtos/user-profile.dto";
 import type { User } from "@/features/auth/application/entities/user.entity";
+import { normalizePermissions } from "@/features/auth/domain/permissions";
 
 export function roleToKey(role: ProfileRoleDto): string | undefined {
   return role.roleKey ?? role.roleName ?? role.role ?? role.displayName;
@@ -18,7 +19,7 @@ export const UserMapper = {
       organizationId: dto.organizationId,
       allowedProducts: dto.allowedProducts ?? [],
       roles: (dto.roles ?? []).map(roleToKey).filter((role): role is string => Boolean(role)),
-      permissions: dto.permissions ?? [],
+      permissions: normalizePermissions(dto.permissions ?? []),
       organization: {
         id: dto.organization?.uuid ?? dto.organizationId,
         name: dto.organization?.name ?? "",

@@ -13,6 +13,10 @@ import { useCountry } from "@/features/common/contexts/use-country";
 import { useHome } from "@/features/home/application/hooks/use-home";
 import { usePaymentsRealtime } from "@/features/transactions/application/hooks/use-payments-realtime";
 import { useAccountBalanceRealtime } from "@/features/accounts/application/hooks/use-account-balance-realtime";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { VIEW_TRANSACTIONS } from "@/features/auth/domain/permission-ui";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 
 const DASHBOARD_QUERY_KEY = ["dashboard"];
 
@@ -20,6 +24,7 @@ export function HomePage() {
   const { t } = useTranslation(["home"]);
   const navigate = useNavigate();
   const { countryCode } = useCountry();
+  const { capabilities } = usePermissions();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -46,32 +51,35 @@ export function HomePage() {
         <div className="flex flex-col gap-4 w-full">
           {/* top cards section */}
           <div className="flex flex-wrap gap-4 w-full">
-            {/* wallet card with gradient */}
-            <Card className="flex-1 min-w-[320px] bg-gradient-to-r from-[#e5f3fa] to-white border-0 p-6 flex flex-col justify-between min-h-[212px]">
-              <div className="flex flex-col gap-4 items-start">
-                <div className="text-sm text-foreground font-bold leading-5">
-                  {t("home:home.wallet_card.title")}
+            <PermissionGate when={capabilities.canViewBalance}>
+              <Card className="flex-1 min-w-[320px] bg-gradient-to-r from-[#e5f3fa] to-white border-0 p-6 flex flex-col justify-between min-h-[212px]">
+                <div className="flex flex-col gap-4 items-start">
+                  <div className="text-sm text-foreground font-bold leading-5">
+                    {t("home:home.wallet_card.title")}
+                  </div>
+                  <div className="inline-flex items-center gap-3 bg-background rounded-full px-4 py-4 h-14">
+                    <CountryFlag countryCode={home.data?.walletBalance.countryCode || countryCode} />
+                    <span className="text-sm font-bold text-foreground">
+                      {home.data?.walletBalance.amount}
+                    </span>
+                    <span className="text-sm text-foreground">
+                      {home.data?.walletBalance.currency}
+                    </span>
+                  </div>
                 </div>
-                <div className="inline-flex items-center gap-3 bg-background rounded-full px-4 py-4 h-14">
-                  <CountryFlag countryCode={home.data?.walletBalance.countryCode || countryCode} />
-                  <span className="text-sm font-bold text-foreground">
-                    {home.data?.walletBalance.amount}
-                  </span>
-                  <span className="text-sm text-foreground">
-                    {home.data?.walletBalance.currency}
-                  </span>
-                </div>
-              </div>
-              <Button variant="link" className="justify-start p-0 h-6 text-pay-500 w-auto" asChild>
-                <Link to="/accounts">
-                  {t("home:home.wallet_card.manage_accounts")}
-                  <Icon symbol="chevron_forward" />
-                </Link>
-              </Button>
-            </Card>
+                <PermissionGate permission={PERMISSIONS.ACCOUNTS_LIST}>
+                  <Button variant="link" className="justify-start p-0 h-6 text-pay-500 w-auto" asChild>
+                    <Link to="/accounts">
+                      {t("home:home.wallet_card.manage_accounts")}
+                      <Icon symbol="chevron_forward" />
+                    </Link>
+                  </Button>
+                </PermissionGate>
+              </Card>
+            </PermissionGate>
 
-            {/* send payment card */}
-            <Card className="flex-1 min-w-[320px] bg-primary-50 border-transparent p-6 flex flex-col gap-8">
+            <PermissionGate permission={PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE}>
+              <Card className="flex-1 min-w-[320px] bg-primary-50 border-transparent p-6 flex flex-col gap-8">
               <div className="flex flex-col gap-4 items-start">
                 <div className="inline-flex items-center gap-3 bg-background rounded-full px-4 py-4 h-14">
                   <Icon symbol="price_check" weight={300} className="text-foreground" />
@@ -89,9 +97,10 @@ export function HomePage() {
                 </Link>
               </Button>
             </Card>
+            </PermissionGate>
           </div>
 
-          {/* file upload section */}
+          <PermissionGate permission={PERMISSIONS.PAYMENTS_BATCH_CREATE}>
           <Card className="w-full p-6 flex flex-col gap-6">
             <div className="flex items-center gap-8">
               <h2 className="text-sm text-foreground leading-5">
@@ -114,8 +123,9 @@ export function HomePage() {
               }}
             />
           </Card>
+          </PermissionGate>
 
-          {/* transaction stats section */}
+          <PermissionGate permission={[...VIEW_TRANSACTIONS]} mode="any">
           <Card className="w-full p-6 flex flex-col gap-6">
             <div className="flex items-center gap-8">
               <h2 className="text-sm text-foreground leading-5">
@@ -142,7 +152,7 @@ export function HomePage() {
                   </p>
                 </div>
                 <Button variant="default" className="w-fit" asChild>
-                  <Link to="/transactions?status=pending">
+                  <Link to="/transactions?status=reviewed">
                     {t("home:home.transactions.pending.button")}
                   </Link>
                 </Button>
@@ -229,6 +239,7 @@ export function HomePage() {
               </Card>
             </div>
           </Card>
+          </PermissionGate>
         </div>
       </PageContainer>
     </>

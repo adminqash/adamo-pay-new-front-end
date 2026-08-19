@@ -13,7 +13,7 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: DEFAULT_LANGUAGE,
-    ns: ["common", "sidebar", "suite-header", "documents", "home", "transactions", "batches"],
+    ns: ["common", "sidebar", "suite-header", "documents", "home", "transactions", "batches", "compliance"],
     defaultNS: "common",
     backend: {
       loadPath: "/locales/{{lng}}/{{ns}}.json",

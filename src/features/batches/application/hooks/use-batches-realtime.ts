@@ -1,6 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { subscribeToBatchStatusEvents } from "@/lib/realtime/batch-status.realtime";
+
+export type LiveScreeningRow = {
+  rowNumber: number
+  beneficiaryName?: string
+  phase: "screening" | "screened"
+  status?: string
+  verdict?: string
+  currentIndex?: number
+  totalItems?: number
+};
 
 /**
  * Keeps batch data live without a manual reload. Call with no `batchId` on
@@ -22,4 +32,58 @@ export function useBatchesRealtime(batchId?: string): void {
 
     return unsubscribe;
   }, [batchId, queryClient]);
+}
+
+export function useBatchScreeningLive(batchId?: string) {
+  const [current, setCurrent] = useState<LiveScreeningRow | null>(null);
+  const [rows, setRows] = useState<LiveScreeningRow[]>([]);
+
+  useEffect(() => {
+    setCurrent(null);
+    setRows([]);
+
+    if (!batchId) {
+      return;
+    }
+
+    const unsubscribe = subscribeToBatchStatusEvents((event) => {
+      if (event.batchId !== batchId || event.rowNumber == null) {
+        if (event.eventType === "batch.screening.completed") {
+          setCurrent(null);
+        }
+        return;
+      }
+
+      const nextRow: LiveScreeningRow = {
+        rowNumber: event.rowNumber,
+        beneficiaryName: event.beneficiaryName,
+        phase: event.eventType === "batch.item.screened" ? "screened" : "screening",
+        status: event.itemStatus,
+        verdict: event.screeningVerdict,
+        currentIndex: event.currentIndex,
+        totalItems: event.totalItems,
+      };
+
+      if (event.eventType === "batch.item.screening") {
+        setCurrent(nextRow);
+      }
+
+      if (event.eventType === "batch.item.screened") {
+        setCurrent(nextRow);
+      }
+
+      setRows((previous) => {
+        const withoutCurrent = previous.filter((row) => row.rowNumber !== nextRow.rowNumber);
+        return [...withoutCurrent, nextRow].sort((left, right) => left.rowNumber - right.rowNumber);
+      });
+
+      if (event.eventType === "batch.screening.completed") {
+        setCurrent(null);
+      }
+    }, batchId);
+
+    return unsubscribe;
+  }, [batchId]);
+
+  return { current, rows };
 }

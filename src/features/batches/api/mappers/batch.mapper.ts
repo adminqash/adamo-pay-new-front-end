@@ -25,6 +25,10 @@ export class BatchMapper {
       amount: Number(minorToMajor(dto.summary?.totalAmount ?? 0)),
       batchId: dto.batchId,
       status: mapStatus(dto.status),
+      lastAction: dto.lastAction,
+      validItems: dto.summary?.validItems ?? 0,
+      invalidItems: dto.summary?.invalidItems ?? 0,
+      screening: dto.summary?.screening,
     };
   }
 

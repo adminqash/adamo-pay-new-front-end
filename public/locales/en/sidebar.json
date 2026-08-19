@@ -8,6 +8,9 @@
     "accounts": "Accounts",
     "beneficiaries": "Beneficiaries",
     "metrics": "Metrics",
-    "reports": "Reports"
+    "reports": "Reports",
+    "collections": "Collections",
+    "compliance": "Compliance",
+    "users": "User management"
   }
 }

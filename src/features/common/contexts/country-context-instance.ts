@@ -11,6 +11,7 @@ export type CountryContextValue = {
   currencyUpper: string
   /** BCP 47 locale for money formatting */
   locale: string
+  selectableCountries: Array<{ alpha2: string, alpha3: string, name: string }>
   /**
    * Persist a new country (alpha-2), clear country-scoped React Query cache,
    * and return whether the country actually changed.

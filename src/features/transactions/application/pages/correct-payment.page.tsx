@@ -52,6 +52,11 @@ import { CorrectPaymentMapper } from "@/features/transactions/api/mappers/correc
 import { PaymentsService } from "@/features/transactions/api/services/payments.service";
 import { useCorrectPayment } from "@/features/transactions/application/hooks/use-payment-mutations";
 import { withCountryScope } from "@/lib/country/country-code";
+import {
+  DOCUMENT_TYPE_CODES,
+  DOCUMENT_TYPE_LABELS,
+  documentTypeFromLabel,
+} from "@/lib/document-type";
 import { queryKeys } from "@/lib/query/query-keys";
 import {
   formatCurrencyDisplay,
@@ -92,7 +97,7 @@ export const CorrectPaymentPage = () => {
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
   const correctPayment = useCorrectPayment();
-  const { countryCode } = useCountry();
+  const { countryCode, currencyUpper } = useCountry();
 
   const paymentQuery = useQuery({
     queryKey: withCountryScope(queryKeys.payments.detail(id ?? ""), countryCode),
@@ -188,17 +193,7 @@ export const CorrectPaymentPage = () => {
    * map document type from display name to code
    */
   const mapDocumentTypeToCode = (displayType: string): string => {
-    const normalizedType = displayType.toLowerCase();
-    if (normalizedType.includes("ciudadanía") || normalizedType.includes("ciudadania")) {
-      return "cc";
-    }
-    if (normalizedType.includes("extranjería") || normalizedType.includes("extranjeria")) {
-      return "ce";
-    }
-    if (normalizedType.includes("pasaporte") || normalizedType.includes("passport")) {
-      return "passport";
-    }
-    return "";
+    return documentTypeFromLabel(displayType);
   };
 
   /**
@@ -327,11 +322,7 @@ export const CorrectPaymentPage = () => {
    * handle save beneficiary
    */
   const handleSaveBeneficiary = () => {
-    const documentTypeMap: Record<string, string> = {
-      cc: "Cédula de ciudadanía",
-      ce: "Cédula de extranjería",
-      passport: "Pasaporte",
-    };
+    const documentTypeMap: Record<string, string> = { ...DOCUMENT_TYPE_LABELS };
 
     const formattedNumber = documentNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
@@ -579,7 +570,7 @@ export const CorrectPaymentPage = () => {
    * format currency amount
    */
   const formatAmount = (amount: number): string => {
-    return formatCurrencyDisplay(amount, "COP");
+    return formatCurrencyDisplay(amount, currencyUpper);
   };
 
   /**
@@ -597,7 +588,7 @@ export const CorrectPaymentPage = () => {
   }
 
   const beneficiaryData = {
-    documentType: "cc",
+    documentType: "CC",
     documentNumber: transaction.beneficiary.idNumber,
     firstName: transaction.beneficiary.fullName.split(" ")[0],
     lastName: transaction.beneficiary.fullName.split(" ").slice(1).join(" "),
@@ -732,9 +723,11 @@ export const CorrectPaymentPage = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="cc">Cédula de ciudadanía</SelectItem>
-                              <SelectItem value="ce">Cédula de extranjería</SelectItem>
-                              <SelectItem value="passport">Pasaporte</SelectItem>
+                            {DOCUMENT_TYPE_CODES.map((code) => (
+                              <SelectItem key={code} value={code}>
+                                {DOCUMENT_TYPE_LABELS[code]}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>

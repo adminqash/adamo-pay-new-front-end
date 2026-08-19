@@ -1,5 +1,6 @@
 import i18next from "i18next";
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { getEnvAccessToken } from "@/lib/auth/env-access-token";
 import { getStoredCountryCodeAlpha3 } from "@/lib/country/country-code";
 
 function generateRequestId(): string {
@@ -17,6 +18,11 @@ export function attachRequestInterceptors(instance: AxiosInstance): void {
 
     if (!config.params?.countryCode) {
       config.params = { ...config.params, countryCode: getStoredCountryCodeAlpha3() };
+    }
+
+    const accessToken = getEnvAccessToken();
+    if (accessToken) {
+      config.headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
     return config;

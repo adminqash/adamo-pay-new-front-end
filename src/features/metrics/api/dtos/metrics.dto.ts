@@ -33,6 +33,8 @@ export type PaymentFrequencyDTO = {
 export type TransactionStatusDTO = {
   statusDistribution: {
     pending: number
+    forReview?: number
+    waitingForResolution?: number
     validated: number
     paid: number
     returned: number

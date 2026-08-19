@@ -48,6 +48,14 @@ import {
 } from "@adamosuiteservices/ui/dialog";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import { AddBankAccountDialog } from "../components/add-bank-account-dialog";
+import { DebitAccountPicker } from "@/features/accounts/application/components/debit-account-picker";
+import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { useAutoSelectDebitAccount } from "@/features/auth/application/hooks/use-auto-select-debit-account";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { canonicalizeDocumentType } from "@/lib/document-type";
+import { minorToMajor } from "@/lib/money/money";
 
 /**
  * quick payment page
@@ -65,7 +73,7 @@ export const QuickPaymentPage = () => {
   // Get beneficiary data from location state or use default
   const beneficiaryData = {
     fullName: location.state?.beneficiary?.fullName || "Juan Carlos Gutierrez Díaz",
-    documentType: location.state?.beneficiary?.documentType || "cc",
+    documentType: canonicalizeDocumentType(location.state?.beneficiary?.documentType) || "CC",
     documentNumber: location.state?.beneficiary?.documentNumber || "112.393.994",
     firstName: location.state?.beneficiary?.firstName || "Juan Carlos",
     lastName: location.state?.beneficiary?.lastName || "Gutierrez Díaz",
@@ -98,8 +106,11 @@ export const QuickPaymentPage = () => {
 
   // Payment states
   const [selectedBankAccountId, setSelectedBankAccountId] = useState<string>(beneficiaryBankAccounts.find(acc => acc.isPrimary)?.id || beneficiaryBankAccounts[0].id);
-  const [selectedAccount, setSelectedAccount] = useState<string>("principal");
+  const [selectedAccount, setSelectedAccount] = useState<string>();
   const [amount, setAmount] = useState("");
+  const { accounts, isLoading: isAccountsLoading } = useAccounts({ limit: 20 });
+  const { capabilities } = usePermissions();
+  useAutoSelectDebitAccount(accounts, selectedAccount, setSelectedAccount);
 
   // Dialog states
   const [showBankAccountDialog, setShowBankAccountDialog] = useState(false);
@@ -108,20 +119,11 @@ export const QuickPaymentPage = () => {
   const [show2faDialog, setShow2faDialog] = useState(false);
   const [otpCode, setOtpCode] = useState("");
 
-  // TODO: Replace with actual accounts data from API
-  const accounts = [
-    { id: "principal", name: t("transactions.create_payment.account_principal"), balance: "124.400.321,52 COP" },
-    { id: "payroll", name: t("transactions.create_payment.account_payroll"), balance: "45.000.000,00 COP" },
-    { id: "savings", name: t("transactions.create_payment.account_savings"), balance: "15.000.000,00 COP" },
-  ];
-
   const handleUseAll = () => {
     if (selectedAccount) {
       const account = accounts.find(acc => acc.id === selectedAccount);
       if (account) {
-        // Extract numeric value from balance
-        const numericBalance = account.balance.replace(/[^0-9,]/g, '').replace(/\./g, '').replace(',', '.');
-        setAmount(numericBalance);
+        setAmount(minorToMajor(account.availableMinor));
       }
     }
   };
@@ -290,27 +292,12 @@ export const QuickPaymentPage = () => {
             <p className="text-xs text-foreground">
               {t("transactions.quick_payment.source_account_label")}
             </p>
-            <SelectableCardGroup value={selectedAccount} onValueChange={setSelectedAccount} className="w-full">
-              <div className="flex flex-wrap gap-4 w-full">
-                {accounts.map((account) => (
-                  <SelectableCard
-                    key={account.id}
-                    value={account.id}
-                    className="flex-1 min-w-[250px]"
-                  >
-                    <div className="flex items-center h-16">
-                      <div className="flex-1 flex flex-col gap-2">
-                        <SelectableCardTitle>{account.name}</SelectableCardTitle>
-                        <div className="flex items-center gap-2 pl-2 h-10">
-                          <Icon symbol="paid" className="text-2xl" />
-                          <SelectableCardDescription>{account.balance}</SelectableCardDescription>
-                        </div>
-                      </div>
-                    </div>
-                  </SelectableCard>
-                ))}
-              </div>
-            </SelectableCardGroup>
+            <DebitAccountPicker
+              accounts={accounts}
+              value={selectedAccount}
+              onValueChange={setSelectedAccount}
+              isLoading={isAccountsLoading}
+            />
           </Card>
 
           {/* Amount Section */}
@@ -334,11 +321,13 @@ export const QuickPaymentPage = () => {
                   minimumFractionDigits={2}
                   maximumFractionDigits={2}
                 />
-                <AmountInputAction onClick={handleUseAll}>
-                  {t("transactions.quick_payment.use_all")}
-                </AmountInputAction>
+                {capabilities.canViewBalance && (
+                  <AmountInputAction onClick={handleUseAll}>
+                    {t("transactions.quick_payment.use_all")}
+                  </AmountInputAction>
+                )}
               </AmountInputContainer>
-              {selectedAccount && (
+              {selectedAccount && capabilities.canViewBalance && (
                 <p className="text-xs text-foreground">
                   {t("transactions.quick_payment.available")}: {accounts.find(acc => acc.id === selectedAccount)?.balance}
                 </p>
@@ -413,10 +402,12 @@ export const QuickPaymentPage = () => {
               )}
 
               <div className="mt-5">
+                <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
                 <Button variant="link" onClick={handleAddNewBankAccount} className="h-6 p-0">
                   <Icon symbol="add" />
                   {t("transactions.quick_payment.add_bank_account")}
                 </Button>
+                </PermissionGate>
               </div>
             </DialogBody>
             <DialogFooter>

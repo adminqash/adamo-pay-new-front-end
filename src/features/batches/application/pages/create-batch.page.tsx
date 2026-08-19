@@ -18,13 +18,19 @@ import { Icon } from "@adamosuiteservices/ui/icon";
 import { FileUpload } from "@adamosuiteservices/ui/file-upload";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { useCountry } from "@/features/common/contexts/use-country";
+import { majorToMinor, minorToMajor, toMinorInt } from "@/lib/money/money";
 import { useNavigate, useBlocker, useLocation } from "react-router";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
+import { DebitAccountPicker } from "@/features/accounts/application/components/debit-account-picker";
+import { useAutoSelectDebitAccount } from "@/features/auth/application/hooks/use-auto-select-debit-account";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
 import {
   useCreateBatch,
   useProcessBatch,
   useUpdateBatch,
 } from "@/features/batches/application/hooks/use-batch-mutations";
+import { useBatchesRealtime, useBatchScreeningLive } from "@/features/batches/application/hooks/use-batches-realtime";
 import {
   useBatchUploadProgress,
   useDownloadBatchTemplate,
@@ -40,12 +46,6 @@ import {
   DialogTitle,
 } from "@adamosuiteservices/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@adamosuiteservices/ui/input-otp";
-import {
-  SelectableCard,
-  SelectableCardGroup,
-  SelectableCardTitle,
-  SelectableCardDescription,
-} from "@adamosuiteservices/ui/selectable-card";
 
 /**
  * create batch page
@@ -76,8 +76,12 @@ export const CreateBatchPage = () => {
   const processBatch = useProcessBatch();
   const updateBatch = useUpdateBatch();
   const { totalBalance, accounts, isLoading: isAccountsLoading } = useAccounts();
+  const { capabilities } = usePermissions();
   const { batch } = useBatchDetail(batchId ?? "");
+  useBatchesRealtime(batchId ?? undefined);
+  const screeningLive = useBatchScreeningLive(batchId ?? undefined);
   const [sourceAccountId, setSourceAccountId] = useState<string>();
+  useAutoSelectDebitAccount(accounts, sourceAccountId, setSourceAccountId);
   const uploadProgress = useBatchUploadProgress(batchId, uploadId);
   
   // Track if we're processing the batch to avoid blocker interference
@@ -116,6 +120,13 @@ export const CreateBatchPage = () => {
     setSourceAccountId(undefined);
     uploadStartedForBatchRef.current = null;
   }, [countryCode]);
+
+  useEffect(() => {
+    setBatchId(null);
+    setUploadId(null);
+    setUploadRequestId(null);
+    uploadStartedForBatchRef.current = null;
+  }, [file]);
 
   useEffect(() => {
     if (!file || batchId || createBatch.isPending) {
@@ -189,18 +200,30 @@ export const CreateBatchPage = () => {
       || uploadStatusKey === "ingesting";
 
   const isUploadReady = uploadProgress.status === "completed";
+  const screening = batch?.screening;
+  const isScreening
+    = isUploadReady
+      && (batch?.lastAction === "screening"
+        || (screening?.pending ?? 0) > 0);
+  const sendableCount = screening?.allow ?? batch?.validItems ?? 0;
+  const canConfirmProcess
+    = isUploadReady
+      && uploadProgress.status !== "failed"
+      && Boolean(sourceAccountId)
+      && !isScreening
+      && sendableCount > 0;
 
   const uploadSummary = uploadProgress.summary;
-  const resolvedTotalAmount
+  const resolvedTotalAmountMinor
     = uploadSummary?.totalAmount && uploadSummary.totalAmount > 0
-      ? uploadSummary.totalAmount
+      ? toMinorInt(uploadSummary.totalAmount)
       : batch?.amount && batch.amount > 0
-        ? batch.amount
-        : uploadSummary?.totalAmount ?? batch?.amount ?? 0;
+        ? majorToMinor(String(batch.amount))
+        : 0;
   const hasUploadSummary = Boolean(
     uploadSummary
     && uploadSummary.totalItems > 0
-    && resolvedTotalAmount > 0,
+    && resolvedTotalAmountMinor > 0,
   );
   const batchSummary = file
     ? {
@@ -208,7 +231,7 @@ export const CreateBatchPage = () => {
           uploadSummary?.totalItems
           ?? batch?.transactions
           ?? 0,
-        totalToPay: resolvedTotalAmount,
+        totalToPay: resolvedTotalAmountMinor,
         balanceAfter: 0,
         isReady: isUploadReady || (batch?.transactions ?? 0) > 0,
         isCalculating: isUploadProcessing && !hasUploadSummary,
@@ -218,12 +241,13 @@ export const CreateBatchPage = () => {
   /**
    * format currency amount
    */
-  const formatAmount = (amount: number): string => {
-    return new Intl.NumberFormat(locale, {
-      style: "decimal",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
+  const formatAmount = (amountMinor: number): string => {
+    const [whole, fraction = "00"] = minorToMajor(amountMinor).replace("-", "").split(".");
+    const sign = amountMinor < 0 ? "-" : "";
+    const wholeFormatted = new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0,
+    }).format(Number(whole));
+    return `${sign}${wholeFormatted},${fraction}`;
   };
 
   /**
@@ -400,7 +424,7 @@ export const CreateBatchPage = () => {
         <Card className="flex flex-col gap-4 border-[#e2e3e5] p-6">
           {/* content section: wallet + file upload */}
           <div className="flex flex-col gap-4">
-            {/* wallet card with gradient */}
+            <PermissionGate when={capabilities.canViewBalance}>
             <div className={`
               rounded-3xl bg-gradient-to-r from-[#e5f3fa] to-white p-6
             `}
@@ -441,6 +465,7 @@ export const CreateBatchPage = () => {
                 </div>
               </div>
             </div>
+            </PermissionGate>
 
             {/* file upload */}
             <FileUpload
@@ -493,7 +518,14 @@ export const CreateBatchPage = () => {
                         className="animate-spin text-[#384250]"
                       />
                     )}
-                    {isUploadReady && (
+                    {isUploadReady && isScreening && (
+                      <Icon
+                        symbol="progress_activity"
+                        weight={200}
+                        className="animate-spin text-[#384250]"
+                      />
+                    )}
+                    {isUploadReady && !isScreening && (
                       <Icon
                         symbol="check_circle"
                         weight={200}
@@ -508,7 +540,11 @@ export const CreateBatchPage = () => {
                       />
                     )}
                     <span className="text-sm font-semibold text-[#384250]">
-                      {uploadPhaseLabel}
+                      {isScreening
+                        ? t("batches.create_batch.upload_status.screening", {
+                            defaultValue: "Validando cumplimiento de cada fila...",
+                          })
+                        : uploadPhaseLabel}
                     </span>
                     {isUploadProcessing && (
                       <span className="text-xs font-medium text-[#6c737f]">
@@ -541,7 +577,7 @@ export const CreateBatchPage = () => {
                 )}
 
                 {uploadProgress.status === "failed" && (
-                  <p className="text-sm text-[#bf3636]">
+                  <p className="whitespace-pre-wrap text-sm text-[#bf3636]">
                     {uploadProgress.errorMessage
                       ?? t("batches.create_batch.upload_failed", {
                         defaultValue: "No se pudo procesar el archivo. Intenta subirlo de nuevo.",
@@ -622,6 +658,64 @@ export const CreateBatchPage = () => {
                   </div>
                 </Card>
               </div>
+
+              {isUploadReady && screening && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap gap-4">
+                    <Card className="min-w-[140px] flex-1 border-0 bg-white p-4">
+                      <p className="text-xs text-[#6c737f]">{t("batches.screening.allow")}</p>
+                      <p className="text-sm font-semibold text-[#384250]">{screening.allow}</p>
+                    </Card>
+                    <Card className="min-w-[140px] flex-1 border-0 bg-white p-4">
+                      <p className="text-xs text-[#6c737f]">{t("batches.screening.blocked")}</p>
+                      <p className="text-sm font-semibold text-[#384250]">{screening.blocked}</p>
+                    </Card>
+                    <Card className="min-w-[140px] flex-1 border-0 bg-white p-4">
+                      <p className="text-xs text-[#6c737f]">{t("batches.screening.review")}</p>
+                      <p className="text-sm font-semibold text-[#384250]">
+                        {screening.review + screening.clientReview}
+                      </p>
+                    </Card>
+                    <Card className="min-w-[140px] flex-1 border-0 bg-white p-4">
+                      <p className="text-xs text-[#6c737f]">{t("batches.screening.pending")}</p>
+                      <p className="text-sm font-semibold text-[#384250]">{screening.pending}</p>
+                    </Card>
+                  </div>
+
+                  {isScreening && screeningLive.current && (
+                    <p className="text-sm text-[#384250]">
+                      {t("batches.screening.processing_row", {
+                        row: screeningLive.current.currentIndex ?? screeningLive.current.rowNumber,
+                        total: screeningLive.current.totalItems ?? batch?.transactions ?? screeningLive.rows.length,
+                        name: screeningLive.current.beneficiaryName ?? `#${screeningLive.current.rowNumber}`,
+                      })}
+                    </p>
+                  )}
+
+                  {screeningLive.rows.length > 0 && (
+                    <div className="max-h-48 overflow-y-auto rounded-xl bg-white p-4">
+                      {screeningLive.rows.map((row) => (
+                        <div
+                          key={row.rowNumber}
+                          className="flex items-center justify-between gap-3 py-1 text-sm text-[#384250]"
+                        >
+                          <span>
+                            {t("batches.screening.row_label", {
+                              row: row.rowNumber,
+                              name: row.beneficiaryName ?? "",
+                            })}
+                          </span>
+                          <span className="font-semibold">
+                            {row.phase === "screening"
+                              ? t("batches.screening.verdict.pending")
+                              : t(`batches.screening.verdict.${row.verdict ?? "pending"}`)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           )}
 
@@ -633,45 +727,16 @@ export const CreateBatchPage = () => {
                   defaultValue: "Cuenta de origen",
                 })}
               </p>
-              <SelectableCardGroup
+              <DebitAccountPicker
+                accounts={accounts}
                 value={sourceAccountId}
                 onValueChange={setSourceAccountId}
-                className="w-full"
-              >
-                <div className="flex w-full flex-wrap gap-4">
-                  {!isAccountsLoading && accounts.map((account) => {
-                    const insufficientBalance = account.availableMinor < batchSummary.totalToPay;
-
-                    return (
-                      <SelectableCard
-                        key={account.id}
-                        value={account.id}
-                        disabled={insufficientBalance}
-                        className="min-w-[250px] flex-1"
-                      >
-                        <div className="flex h-16 items-center">
-                          <div className="flex flex-1 flex-col gap-2">
-                            <SelectableCardTitle>{account.name}</SelectableCardTitle>
-                            <div className="flex h-10 items-center gap-2 pl-2">
-                              <Icon symbol="paid" className="text-2xl" />
-                              <SelectableCardDescription>
-                                {account.balance}
-                                {insufficientBalance && (
-                                  <span className="ml-2 text-xs text-[#bf3636]">
-                                    {t("batches.create_batch.source_account.insufficient_balance", {
-                                      defaultValue: "Saldo insuficiente",
-                                    })}
-                                  </span>
-                                )}
-                              </SelectableCardDescription>
-                            </div>
-                          </div>
-                        </div>
-                      </SelectableCard>
-                    );
-                  })}
-                </div>
-              </SelectableCardGroup>
+                isLoading={isAccountsLoading}
+                insufficientBalanceOf={batchSummary.totalToPay}
+                insufficientLabel={t("batches.create_batch.source_account.insufficient_balance", {
+                  defaultValue: "Saldo insuficiente",
+                })}
+              />
             </Card>
           )}
 
@@ -682,14 +747,16 @@ export const CreateBatchPage = () => {
                 <Button variant="secondary" onClick={handleCancelBatch}>
                   {t("batches.create_batch.actions.cancel")}
                 </Button>
-                <Button
-                  variant="default"
-                  onClick={handleConfirmBatch}
-                  disabled={!isUploadReady || uploadProgress.status === "failed" || !sourceAccountId}
-                >
-                  <Icon symbol="check" weight={200} />
-                  {t("batches.create_batch.actions.confirm")}
-                </Button>
+                {capabilities.canDispatchBatch && (
+                  <Button
+                    variant="default"
+                    onClick={handleConfirmBatch}
+                    disabled={!canConfirmProcess}
+                  >
+                    <Icon symbol="check" weight={200} />
+                    {t("batches.create_batch.actions.confirm")}
+                  </Button>
+                )}
               </div>
               <div className="flex-1" />
               <Button variant="link" onClick={handleSaveForLater}>

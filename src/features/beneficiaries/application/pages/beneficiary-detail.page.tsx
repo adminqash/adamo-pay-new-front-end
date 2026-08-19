@@ -58,6 +58,15 @@ import { Link, useParams, useNavigate } from "react-router";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { CountryFlag } from "@/features/common/components/flags/country-flag";
 import { useCountry } from "@/features/common/contexts/use-country";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import {
+  canonicalizeDocumentType,
+  DOCUMENT_TYPE_CODES,
+  DOCUMENT_TYPE_LABELS,
+  documentTypeFromLabel,
+} from "@/lib/document-type";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { CreditCard, type CreditCardData } from "../components/credit-card";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useBeneficiaryDetail, useBeneficiaryTransactions, useUpdateBeneficiary } from "../hooks/use-beneficiaries";
@@ -128,7 +137,7 @@ export function BeneficiaryDetailPage() {
   const [isEditBeneficiaryDialogOpen, setIsEditBeneficiaryDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     fullName: "",
-    idType: "cc",
+    idType: "CC",
     idNumber: "",
   });
 
@@ -264,26 +273,14 @@ export function BeneficiaryDetailPage() {
    * map id type full name to code
    */
   const getIdTypeCode = (idTypeName: string): string => {
-    const typeMap: Record<string, string> = {
-      "Cédula de ciudadanía": "cc",
-      "Cédula de extranjería": "ce",
-      Pasaporte: "passport",
-      NIT: "nit",
-    };
-    return typeMap[idTypeName] || "cc";
+    return documentTypeFromLabel(idTypeName);
   };
 
   /**
    * map id type code to full name
    */
   const getIdTypeName = (idType: string): string => {
-    const typeMap: Record<string, string> = {
-      cc: "Cédula de ciudadanía",
-      ce: "Cédula de extranjería",
-      passport: "Pasaporte",
-      nit: "NIT",
-    };
-    return typeMap[idType] || idType;
+    return DOCUMENT_TYPE_LABELS[idType] || idType;
   };
 
   /**
@@ -305,7 +302,7 @@ export function BeneficiaryDetailPage() {
     if (!beneficiary) return true;
     return (
       editFormData.fullName === beneficiary.fullName
-      && editFormData.idType === beneficiary.identificationDocument.type
+      && canonicalizeDocumentType(editFormData.idType) === canonicalizeDocumentType(beneficiary.identificationDocument.type)
       && editFormData.idNumber === beneficiary.identificationDocument.number
     );
   };
@@ -536,6 +533,7 @@ export function BeneficiaryDetailPage() {
               <p className="text-sm text-foreground">
                 {t("beneficiaries.detail.info_title")}
               </p>
+              <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
               <Dialog 
                 open={isEditBeneficiaryDialogOpen} 
                 onOpenChange={(open) => {
@@ -544,14 +542,14 @@ export function BeneficiaryDetailPage() {
                   if (open) {
                     setEditFormData({
                       fullName: beneficiary.fullName,
-                      idType: beneficiary.identificationDocument.type,
+                      idType: canonicalizeDocumentType(beneficiary.identificationDocument.type) ?? "CC",
                       idNumber: beneficiary.identificationDocument.number,
                     });
                   } else {
                     setTimeout(() => {
                       setEditFormData({
                         fullName: beneficiary.fullName,
-                        idType: beneficiary.identificationDocument.type,
+                        idType: canonicalizeDocumentType(beneficiary.identificationDocument.type) ?? "CC",
                         idNumber: beneficiary.identificationDocument.number,
                       });
                     }, 200);
@@ -598,10 +596,11 @@ export function BeneficiaryDetailPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="cc">{t("beneficiaries.detail.edit_dialog.id_types.cc")}</SelectItem>
-                            <SelectItem value="ce">{t("beneficiaries.detail.edit_dialog.id_types.ce")}</SelectItem>
-                            <SelectItem value="passport">{t("beneficiaries.detail.edit_dialog.id_types.passport")}</SelectItem>
-                            <SelectItem value="nit">{t("beneficiaries.detail.edit_dialog.id_types.nit")}</SelectItem>
+                            {DOCUMENT_TYPE_CODES.map((code) => (
+                              <SelectItem key={code} value={code}>
+                                {t(`beneficiaries.detail.edit_dialog.id_types.${code}`)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -638,6 +637,7 @@ export function BeneficiaryDetailPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </PermissionGate>
             </div>
 
             {/* Info Fields */}
@@ -771,6 +771,7 @@ export function BeneficiaryDetailPage() {
                         ${beneficiary.totalPaid.amount.toLocaleString(moneyLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {beneficiary.totalPaid.currency}
                       </p>
                     </div>
+                    <PermissionGate permission={PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE}>
                     <Button 
                       variant="secondary" 
                       size="default"
@@ -785,6 +786,7 @@ export function BeneficiaryDetailPage() {
                     >
                       {t("beneficiaries.detail.quick_payment_button")}
                     </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               </div>
@@ -810,6 +812,7 @@ export function BeneficiaryDetailPage() {
                   </TabsList>
                 </Tabs>
               </div>
+              <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
               <Dialog 
                 open={isCreateCardDialogOpen} 
                 onOpenChange={(open) => {
@@ -1030,6 +1033,7 @@ export function BeneficiaryDetailPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </PermissionGate>
             </div>
 
             {/* Credit Cards Grid */}
@@ -1052,6 +1056,7 @@ export function BeneficiaryDetailPage() {
                     <p className="text-sm text-foreground-secondary">
                       {t("beneficiaries.detail.cards_empty_message")}
                     </p>
+                    <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
                     <Button 
                       variant="link" 
                       size="sm" 
@@ -1063,6 +1068,7 @@ export function BeneficiaryDetailPage() {
                     >
                       {t("beneficiaries.detail.cards_empty_action")}
                     </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ) : (
@@ -1172,6 +1178,7 @@ export function BeneficiaryDetailPage() {
                 </p>
               </div>
               <div className="flex items-center gap-4">
+                <PermissionGate permission={[...EXPORT_DATA]} mode="any">
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="secondary" size="default">
@@ -1315,6 +1322,7 @@ export function BeneficiaryDetailPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </PermissionGate>
               </div>
               <div className={`
                 basis-full

@@ -2,6 +2,8 @@ import { Icon } from "@adamosuiteservices/ui/icon";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import adamoServicesMarkUrl from "@/assets/adamo-services-mark.svg";
+import { firstAllowedPath } from "@/features/auth/application/components/require-permission";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import { NotificationsPopover } from "@/features/common/components/suite-header/notifications-popover";
 import { ProductSwitcher } from "@/features/common/components/suite-header/product-switcher";
 import { ProfileMenu } from "@/features/common/components/suite-header/profile-menu";
@@ -19,6 +21,8 @@ const iconButtonClass = `
 
 export function SuiteHeader() {
   const { t } = useTranslation("suite-header");
+  const { hasPermission } = usePermissions();
+  const homePath = firstAllowedPath(hasPermission);
 
   const brand = (
     <>
@@ -56,7 +60,7 @@ export function SuiteHeader() {
             </a>
           )
         : (
-            <Link to="/" className="flex items-center gap-4">
+            <Link to={homePath} className="flex items-center gap-4">
               {brand}
             </Link>
           )}

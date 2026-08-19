@@ -18,6 +18,7 @@ import {
 } from "@/lib/country/country-code";
 import { formatCurrencyDisplay } from "@/lib/utils/currency.utils";
 import { formatDisplayDate } from "@/lib/utils/date.utils";
+import { canonicalizeDocumentType } from "@/lib/document-type";
 
 function mapListStatus(flags: BeneficiaryListItemDTO["flags"]): "warning" | "success" {
   if (flags.hasComplianceIssues || flags.hasPendingPayments || flags.hasUpdates) {
@@ -62,7 +63,7 @@ export class BeneficiaryMapper {
       hasUpdates: dto.flags.hasUpdates ?? false,
       hasPendingPayments: dto.flags.hasPendingPayments ?? false,
       identificationDocument: {
-        type: dto.identificationDocument?.type ?? "cc",
+        type: canonicalizeDocumentType(dto.identificationDocument?.type) ?? "CC",
         number: dto.identificationDocument?.numberFormatted
           ?? dto.identificationDocument?.number
           ?? "",

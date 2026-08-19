@@ -1,0 +1,17 @@
+{
+  "page_title": "Payments pending compliance",
+  "empty": "There are no payments pending compliance approval.",
+  "columns": {
+    "id": "ID",
+    "type": "Type",
+    "batch": "Batch",
+    "subject": "Beneficiary",
+    "document": "Document",
+    "verdict": "Verdict",
+    "status": "Status",
+    "created_at": "Created"
+  },
+  "errors": {
+    "load_failed": "Failed to load compliance payments"
+  }
+}

@@ -22,7 +22,7 @@
       "title": "Transactions",
       "view_all": "View all transactions",
       "pending": {
-        "title": "Pending transactions",
+        "title": "Transactions ready to send",
         "button": "View transactions"
       },
       "returned": {

@@ -1,12 +1,15 @@
 export type Account = {
   id: string
   name: string
-  /** Formatted for UI (e.g. "$ 100,90") */
+  /** Formatted available balance for UI (e.g. "$ 100,90") */
   balance: string
-  /** Integer minor units from API */
+  /** Ledger balance in integer minor units */
   balanceMinor: number
   /** Available = balance - reserved (minor units) */
   availableMinor: number
+  reservedMinor: number
+  pendingMinor: number
+  assignedMinor: number
   currency: string
   countryCode: string
 };

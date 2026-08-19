@@ -23,6 +23,8 @@ import { RechargeBalanceDialog } from "./recharge-balance-dialog";
 import { FreezeCardDialog } from "./freeze-card-dialog";
 import { UnfreezeCardDialog } from "./unfreeze-card-dialog";
 import { ReportReplacementDialog } from "./report-replacement-dialog";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
 
 export interface CreditCardData {
   id: string;
@@ -215,6 +217,7 @@ export function CompactCreditCard({ card, onUpdateCardStatus }: CompactCreditCar
 
           {/* Recharge button - only show for active, blocked, and frozen - hidden on mobile */}
           {showRechargeButton && (
+            <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
             <Button 
               variant="secondary" 
               size="default" 
@@ -223,6 +226,7 @@ export function CompactCreditCard({ card, onUpdateCardStatus }: CompactCreditCar
             >
               {t("beneficiaries.credit_card_movements.recharge_button")}
             </Button>
+            </PermissionGate>
           )}
         </div>
 
@@ -252,6 +256,7 @@ export function CompactCreditCard({ card, onUpdateCardStatus }: CompactCreditCar
           </Badge>
 
           {/* Menu */}
+          <PermissionGate permission={PERMISSIONS.BENEFICIARIES_CREATE}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
@@ -291,6 +296,7 @@ export function CompactCreditCard({ card, onUpdateCardStatus }: CompactCreditCar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </PermissionGate>
         </div>
       </div>
 

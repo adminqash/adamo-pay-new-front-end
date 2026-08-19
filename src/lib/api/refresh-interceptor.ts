@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { AxiosError, AxiosInstance } from "axios";
 import { redirectToLogin } from "@/features/auth/api/services/auth-redirect";
+import { isEnvJwtAuth } from "@/lib/auth/env-access-token";
 import { apiUrls } from "@/lib/env";
 import { client as queryClient } from "@/lib/query/client.config";
 import { queryKeys } from "@/lib/query/query-keys";
@@ -55,6 +56,10 @@ export function attachRefreshInterceptor(client: AxiosInstance): void {
       const is401Error = error.response?.status === 401;
       const isAccessTokenExpired = isAccessTokenExpiredError(error);
 
+      if (isEnvJwtAuth()) {
+        return Promise.reject(error);
+      }
+
       if (is401Error && !isAccessTokenExpired && !originalRequest?._retry) {
         if (originalRequest) {
           originalRequest._retry = true;
@@ -62,7 +67,9 @@ export function attachRefreshInterceptor(client: AxiosInstance): void {
 
         processQueue(error);
         isRefreshing = false;
-        redirectToLogin();
+        if (!isEnvJwtAuth()) {
+          redirectToLogin();
+        }
 
         return Promise.reject(error);
       }
@@ -79,6 +86,12 @@ export function attachRefreshInterceptor(client: AxiosInstance): void {
         originalRequest._retry = true;
         isRefreshing = true;
 
+        if (!apiUrls.auth) {
+          processQueue(error);
+          isRefreshing = false;
+          return Promise.reject(error);
+        }
+
         try {
           await axios.post(`${apiUrls.auth}/auth/refresh`, {}, { withCredentials: true });
 
@@ -90,7 +103,9 @@ export function attachRefreshInterceptor(client: AxiosInstance): void {
         } catch(refreshError) {
           processQueue(refreshError);
           isRefreshing = false;
-          redirectToLogin({ sessionExpired: true });
+          if (!isEnvJwtAuth()) {
+            redirectToLogin({ sessionExpired: true });
+          }
 
           return Promise.reject(refreshError);
         }

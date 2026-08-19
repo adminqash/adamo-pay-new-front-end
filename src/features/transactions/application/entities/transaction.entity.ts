@@ -1,13 +1,25 @@
 /**
  * transaction entity
- * 
+ *
  * domain model for transactions
  */
 
 /**
- * transaction status type
+ * Product payment statuses:
+ * reviewed — ready to send
+ * for-review — compliance reviewed by the client
+ * waiting-for-resolution — compliance reviewed by Adamo
  */
-export type TransactionStatus = "pending" | "in_review" | "validated" | "paid" | "returned" | "rejected";
+export type TransactionStatus =
+  | "reviewed"
+  | "for-review"
+  | "waiting-for-resolution"
+  | "validated"
+  | "paid"
+  | "returned"
+  | "rejected"
+  | "pending"
+  | "in_review";
 
 /**
  * transaction entity
@@ -47,4 +59,14 @@ export interface Transaction {
    * transaction status
    */
   status: TransactionStatus;
+
+  /**
+   * compliance engine verdict for this batch row, when available
+   */
+  screeningVerdict?: "allow" | "client-review" | "review" | "blocked" | "failed";
+
+  /**
+   * first validation or screening error shown in the batch table
+   */
+  screeningDetail?: string;
 }

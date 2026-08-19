@@ -45,6 +45,9 @@ import { ReportsService } from "@/features/reports/api/services/reports.service"
 import type { BatchStatus } from "../entities/batch.entity";
 import { useState, useRef, useState as useStateReact, useEffect, useMemo } from "react";
 import { useNavigate, Link, useLocation } from "react-router";
+import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
+import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 
 /**
  * custom date range picker component
@@ -389,12 +392,15 @@ export const BatchesPage = () => {
 
             {/* action buttons */}
             <div className="flex items-center gap-4">
+              <PermissionGate permission={PERMISSIONS.PAYMENTS_BATCH_CREATE}>
               <Button
                 variant="default"
                 asChild
               >
                 <Link to="/batches/create">{t("batches.header.new_batch")}</Link>
               </Button>
+              </PermissionGate>
+              <PermissionGate permission={[...EXPORT_DATA]} mode="any">
               <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button
@@ -506,6 +512,7 @@ export const BatchesPage = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </PermissionGate>
             </div>
 
             {/* search input */}

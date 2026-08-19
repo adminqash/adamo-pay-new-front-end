@@ -18,6 +18,7 @@ import {
 import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { canonicalizeDocumentType } from "@/lib/document-type";
 
 interface EditBankAccountDialogProps {
   open: boolean;
@@ -99,7 +100,7 @@ export function EditBankAccountDialog({
               </Label>
               <Input
                 id="document-type"
-                value={beneficiaryData?.documentType ? t(`beneficiaries.detail.edit_dialog.id_types.${beneficiaryData.documentType}`) : ""}
+                value={beneficiaryData?.documentType ? t(`beneficiaries.detail.edit_dialog.id_types.${canonicalizeDocumentType(beneficiaryData.documentType) ?? beneficiaryData.documentType}`) : ""}
                 disabled
                 className="h-10 bg-neutral-50 border-neutral-200 text-neutral-400"
               />

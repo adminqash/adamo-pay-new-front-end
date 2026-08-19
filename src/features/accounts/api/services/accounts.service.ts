@@ -92,9 +92,12 @@ export class AccountsService {
     }
 
     const primary = result.data.byCurrency[0];
+    const amount = primary
+      ? (primary.availableBalance ?? primary.totalBalance)
+      : (result.data.totalAvailable ?? result.data.totalBalance);
     const formatted = primary
-      ? formatCurrencyDisplay(primary.totalBalance, primary.currency)
-      : formatCurrencyDisplay(result.data.totalBalance);
+      ? formatCurrencyDisplay(amount, primary.currency)
+      : formatCurrencyDisplay(amount);
 
     return ServiceResult.builder<string>()
       .setSuccess(result.success)

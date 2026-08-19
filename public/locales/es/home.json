@@ -22,7 +22,7 @@
       "title": "Transacciones",
       "view_all": "Ver todas las transacciones",
       "pending": {
-        "title": "Transacciones pendientes",
+        "title": "Transacciones listas para enviar",
         "button": "Ver transacciones"
       },
       "returned": {

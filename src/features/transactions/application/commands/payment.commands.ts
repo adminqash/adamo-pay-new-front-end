@@ -43,5 +43,5 @@ export type CorrectPaymentCommand = {
 
 export type UpdatePaymentStatusCommand = {
   paymentId: string
-  status: "pending" | "validated" | "paid" | "returned" | "rejected"
+  status: "reviewed" | "for-review" | "waiting-for-resolution" | "validated" | "paid" | "returned" | "rejected"
 };
