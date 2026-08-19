@@ -451,6 +451,7 @@ export const TransactionsPage = () => {
                   </Button>
                 </PermissionGate>
                 <PermissionGate permission={[...EXPORT_DATA]} mode="any">
+                  <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button
                       variant="secondary"
