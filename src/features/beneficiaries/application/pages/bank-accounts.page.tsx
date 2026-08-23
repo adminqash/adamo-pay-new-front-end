@@ -117,8 +117,8 @@ export function BankAccountsPage() {
   const beneficiaryData = {
     documentType: canonicalizeDocumentType(beneficiary?.identificationDocument.type) ?? "CC",
     documentNumber: beneficiary?.identificationDocument.number ?? "",
-    firstName: beneficiary?.fullName.split(" ")[0] ?? "",
-    lastName: beneficiary?.fullName.split(" ").slice(1).join(" ") ?? "",
+    firstName: beneficiary?.firstName || beneficiary?.fullName.split(" ")[0] || "",
+    lastName: beneficiary?.lastName || beneficiary?.fullName.split(" ").slice(1).join(" ") || "",
   };
 
   const handleEdit = (accountId: string) => {

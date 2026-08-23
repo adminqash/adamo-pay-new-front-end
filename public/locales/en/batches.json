@@ -61,6 +61,7 @@
       "alert_title": "There are pending payments in this batch",
       "alert_description": "Review and correct payment news so they can be sent.",
       "review_later": "Review news later",
+      "file_error": "File error",
       "view_timeline": "View batch timeline",
       "export_data": "Export data",
       "search_placeholder": "Search by date/ name/ amount/ batch ID or status",
@@ -210,8 +211,13 @@
         "parsing": "Reading file rows...",
         "ingesting": "Registering beneficiaries in batch...",
         "screening": "Screening each row with compliance...",
-        "completed": "File processed successfully. Review the summary.",
+        "completed": "File validated. Review the summary before confirming.",
+        "validation_errors": "The file has validation errors. Fix it and upload it again.",
         "failed": "File processing could not be completed."
+      },
+      "validation_errors": {
+        "title": "{{count}} row(s) have file errors. Upload a corrected file to continue.",
+        "item": "{{cell}} · {{field}}: {{message}}"
       },
       "upload_failed": "Could not process the file. Please try uploading again."
     },

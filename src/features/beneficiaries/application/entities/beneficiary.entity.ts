@@ -8,6 +8,8 @@ export type Beneficiary = {
 
 export type BeneficiaryDetail = {
   fullName: string
+  firstName: string
+  lastName: string
   hasUpdates: boolean
   hasPendingPayments: boolean
   identificationDocument: {

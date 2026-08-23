@@ -19,6 +19,17 @@ export type BatchUploadProgressState = {
     invalidItems: number
     totalAmount: number
     currency: string
+    invalidRows?: Array<{
+      rowNumber: number
+      validationErrors: Array<{
+        field: string
+        code: string
+        message: string
+        cell?: string
+        column?: string
+        excelRow?: number
+      }>
+    }>
   }
   errorMessage?: string
   storage?: string

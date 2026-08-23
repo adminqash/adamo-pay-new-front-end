@@ -40,8 +40,10 @@
       "edit_dialog": {
         "title": "Edit beneficiary information",
         "description": "Update the beneficiary data:",
-        "full_name_label": "Full name",
-        "full_name_placeholder": "Enter full name",
+        "first_name_label": "First name(s)",
+        "first_name_placeholder": "Enter first name(s)",
+        "last_name_label": "Last name(s)",
+        "last_name_placeholder": "Enter last name(s)",
         "id_type_label": "ID type",
         "id_types": {
           "CC": "Citizenship card",

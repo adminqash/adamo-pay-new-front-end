@@ -2,6 +2,9 @@ export type BatchTransactionValidationErrorDTO = {
   field: string
   code: string
   message: string
+  cell?: string
+  column?: string
+  excelRow?: number
 };
 
 export type BatchTransactionRawDataDTO = {

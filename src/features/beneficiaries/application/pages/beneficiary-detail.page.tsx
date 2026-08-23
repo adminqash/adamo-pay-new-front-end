@@ -136,7 +136,8 @@ export function BeneficiaryDetailPage() {
   // edit beneficiary dialog state
   const [isEditBeneficiaryDialogOpen, setIsEditBeneficiaryDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     idType: "CC",
     idNumber: "",
   });
@@ -301,7 +302,8 @@ export function BeneficiaryDetailPage() {
   const hasNoBeneficiaryChanges = () => {
     if (!beneficiary) return true;
     return (
-      editFormData.fullName === beneficiary.fullName
+      editFormData.firstName === beneficiary.firstName
+      && editFormData.lastName === beneficiary.lastName
       && canonicalizeDocumentType(editFormData.idType) === canonicalizeDocumentType(beneficiary.identificationDocument.type)
       && editFormData.idNumber === beneficiary.identificationDocument.number
     );
@@ -357,7 +359,8 @@ export function BeneficiaryDetailPage() {
     } else if (otpAction === "edit-beneficiary" && beneficiary && beneficiaryId) {
       updateBeneficiary.mutate({
         beneficiaryId,
-        fullName: editFormData.fullName,
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
         idType: editFormData.idType,
         idNumber: editFormData.idNumber,
         totp: otpCode,
@@ -541,14 +544,16 @@ export function BeneficiaryDetailPage() {
                   // Load current beneficiary data when dialog opens, reset when closes
                   if (open) {
                     setEditFormData({
-                      fullName: beneficiary.fullName,
+                      firstName: beneficiary.firstName,
+                      lastName: beneficiary.lastName,
                       idType: canonicalizeDocumentType(beneficiary.identificationDocument.type) ?? "CC",
                       idNumber: beneficiary.identificationDocument.number,
                     });
                   } else {
                     setTimeout(() => {
                       setEditFormData({
-                        fullName: beneficiary.fullName,
+                        firstName: beneficiary.firstName,
+                        lastName: beneficiary.lastName,
                         idType: canonicalizeDocumentType(beneficiary.identificationDocument.type) ?? "CC",
                         idNumber: beneficiary.identificationDocument.number,
                       });
@@ -570,16 +575,28 @@ export function BeneficiaryDetailPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <DialogBody className="flex flex-col gap-6">
-                    {/* Full Name */}
-                    <div className="flex flex-col gap-2">
-                      <Label>
-                        {t("beneficiaries.detail.edit_dialog.full_name_label")}
-                      </Label>
-                      <Input
-                        placeholder={t("beneficiaries.detail.edit_dialog.full_name_placeholder")}
-                        value={editFormData.fullName}
-                        onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
-                      />
+                    {/* First name and last name */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Label>
+                          {t("beneficiaries.detail.edit_dialog.first_name_label")}
+                        </Label>
+                        <Input
+                          placeholder={t("beneficiaries.detail.edit_dialog.first_name_placeholder")}
+                          value={editFormData.firstName}
+                          onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label>
+                          {t("beneficiaries.detail.edit_dialog.last_name_label")}
+                        </Label>
+                        <Input
+                          placeholder={t("beneficiaries.detail.edit_dialog.last_name_placeholder")}
+                          value={editFormData.lastName}
+                          onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                        />
+                      </div>
                     </div>
 
                     {/* ID Type and Number */}
@@ -626,7 +643,8 @@ export function BeneficiaryDetailPage() {
                     <Button
                       variant="default"
                       disabled={
-                        !editFormData.fullName
+                        !editFormData.firstName
+                        || !editFormData.lastName
                         || !editFormData.idNumber
                         || hasNoBeneficiaryChanges()
                       }

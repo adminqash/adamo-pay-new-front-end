@@ -166,7 +166,8 @@ export class BeneficiariesService {
     command: UpdateBeneficiaryCommand,
   ): Promise<ServiceResult<BeneficiaryDetail>> {
     const dto: UpdateBeneficiaryDTO = {
-      fullName: command.fullName,
+      firstName: command.firstName,
+      lastName: command.lastName,
       idType: command.idType,
       idNumber: command.idNumber,
       totp: command.totp,

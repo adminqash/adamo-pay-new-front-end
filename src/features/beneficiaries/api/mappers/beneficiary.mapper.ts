@@ -38,6 +38,20 @@ function mapPaymentStatus(status: string): BeneficiaryTransaction["status"] {
   return "pending";
 }
 
+function namesFromDetail(dto: BeneficiaryDetailDTO): { firstName: string; lastName: string } {
+  const firstName = String(dto.firstName ?? "").trim();
+  const lastName = String(dto.lastName ?? "").trim();
+  if (firstName || lastName) {
+    return { firstName, lastName };
+  }
+
+  const parts = String(dto.fullName ?? "").trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
 export class BeneficiaryMapper {
   public static toDomain(dto: BeneficiaryListItemDTO): Beneficiary {
     return {
@@ -58,8 +72,11 @@ export class BeneficiaryMapper {
   }
 
   public static toDetail(dto: BeneficiaryDetailDTO, bankAccount?: BankAccountListItemDTO): BeneficiaryDetail {
+    const names = namesFromDetail(dto);
     return {
       fullName: dto.fullName,
+      firstName: names.firstName,
+      lastName: names.lastName,
       hasUpdates: dto.flags.hasUpdates ?? false,
       hasPendingPayments: dto.flags.hasPendingPayments ?? false,
       identificationDocument: {

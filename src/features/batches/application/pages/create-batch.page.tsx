@@ -122,7 +122,6 @@ export const CreateBatchPage = () => {
   }, [countryCode]);
 
   useEffect(() => {
-    setBatchId(null);
     setUploadId(null);
     setUploadRequestId(null);
     uploadStartedForBatchRef.current = null;
@@ -205,13 +204,33 @@ export const CreateBatchPage = () => {
     = isUploadReady
       && (batch?.lastAction === "screening"
         || (screening?.pending ?? 0) > 0);
-  const sendableCount = screening?.allow ?? batch?.validItems ?? 0;
+  const fileInvalidCount
+    = uploadProgress.summary?.invalidItems
+      ?? batch?.invalidItems
+      ?? 0;
+  const fileValidCount
+    = uploadProgress.summary?.validItems
+      ?? batch?.validItems
+      ?? 0;
+  const hasFileValidationErrors = isUploadReady && fileInvalidCount > 0;
   const canConfirmProcess
     = isUploadReady
       && uploadProgress.status !== "failed"
       && Boolean(sourceAccountId)
       && !isScreening
-      && sendableCount > 0;
+      && !hasFileValidationErrors
+      && fileValidCount > 0;
+  const fileValidationErrors = (uploadProgress.summary?.invalidRows ?? [])
+    .flatMap((row) =>
+      (row.validationErrors ?? []).map((error) => ({
+        rowNumber: row.rowNumber,
+        cell: error.cell,
+        field: error.field,
+        code: error.code,
+        message: error.message,
+      })),
+    )
+    .slice(0, 50);
 
   const uploadSummary = uploadProgress.summary;
   const resolvedTotalAmountMinor
@@ -525,14 +544,14 @@ export const CreateBatchPage = () => {
                         className="animate-spin text-[#384250]"
                       />
                     )}
-                    {isUploadReady && !isScreening && (
+                    {isUploadReady && !isScreening && !hasFileValidationErrors && (
                       <Icon
                         symbol="check_circle"
                         weight={200}
                         className="text-green-600"
                       />
                     )}
-                    {uploadProgress.status === "failed" && (
+                    {(uploadProgress.status === "failed" || hasFileValidationErrors) && (
                       <Icon
                         symbol="error"
                         weight={200}
@@ -544,7 +563,11 @@ export const CreateBatchPage = () => {
                         ? t("batches.create_batch.upload_status.screening", {
                             defaultValue: "Validando cumplimiento de cada fila...",
                           })
-                        : uploadPhaseLabel}
+                        : hasFileValidationErrors
+                          ? t("batches.create_batch.upload_status.validation_errors", {
+                              defaultValue: "El archivo tiene errores de validación. Corrígelo y súbelo de nuevo.",
+                            })
+                          : uploadPhaseLabel}
                     </span>
                     {isUploadProcessing && (
                       <span className="text-xs font-medium text-[#6c737f]">
@@ -583,6 +606,32 @@ export const CreateBatchPage = () => {
                         defaultValue: "No se pudo procesar el archivo. Intenta subirlo de nuevo.",
                       })}
                   </p>
+                )}
+
+                {hasFileValidationErrors && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-semibold text-[#bf3636]">
+                      {t("batches.create_batch.validation_errors.title", {
+                        count: fileInvalidCount,
+                        defaultValue: "{{count}} registro(s) con error de archivo. Súbelo de nuevo para continuar.",
+                      })}
+                    </p>
+                    <div className="max-h-48 overflow-y-auto rounded-xl bg-white p-3">
+                      {fileValidationErrors.map((error, index) => (
+                        <p
+                          key={`${error.cell ?? error.rowNumber}-${error.field}-${index}`}
+                          className="py-0.5 text-sm text-[#bf3636]"
+                        >
+                          {t("batches.create_batch.validation_errors.item", {
+                            cell: error.cell ?? `fila ${error.rowNumber}`,
+                            field: error.field,
+                            message: error.message,
+                            defaultValue: "{{cell}} · {{field}}: {{message}}",
+                          })}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -659,7 +708,7 @@ export const CreateBatchPage = () => {
                 </Card>
               </div>
 
-              {isUploadReady && screening && (
+              {isUploadReady && isScreening && screening && (
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-wrap gap-4">
                     <Card className="min-w-[140px] flex-1 border-0 bg-white p-4">

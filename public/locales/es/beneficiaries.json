@@ -40,8 +40,10 @@
       "edit_dialog": {
         "title": "Editar información del beneficiario",
         "description": "Actualiza los datos del beneficiario:",
-        "full_name_label": "Nombre completo",
-        "full_name_placeholder": "Ingresa el nombre completo",
+        "first_name_label": "Nombre/s",
+        "first_name_placeholder": "Ingresar nombre/s",
+        "last_name_label": "Apellido/s",
+        "last_name_placeholder": "Ingresar apellido/s",
         "id_type_label": "Tipo de identificación",
         "id_types": {
           "CC": "Cédula de ciudadanía",

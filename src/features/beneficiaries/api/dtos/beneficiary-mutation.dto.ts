@@ -10,7 +10,8 @@ export type CreateBeneficiaryDTO = {
 };
 
 export type UpdateBeneficiaryDTO = {
-  fullName?: string
+  firstName?: string
+  lastName?: string
   idType?: string
   idNumber?: string
   totp?: string

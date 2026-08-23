@@ -11,9 +11,13 @@ export class BatchTransactionMapper {
     const amount = Number(
       minorToMajor(dto.rawData.amount ?? dto.parsedData?.amount ?? 0),
     );
-    const firstError = dto.validationErrors?.[0]?.message
-      ?? dto.screening?.reasons?.[0]?.detail
-      ?? dto.screening?.reasons?.[0]?.code;
+    const firstValidation = dto.validationErrors?.[0];
+    const firstError = firstValidation
+      ? [firstValidation.cell, firstValidation.code, firstValidation.message]
+          .filter(Boolean)
+          .join(" · ")
+      : dto.screening?.reasons?.[0]?.detail
+        ?? dto.screening?.reasons?.[0]?.code;
 
     return {
       id: dto.paymentId ?? dto.id,

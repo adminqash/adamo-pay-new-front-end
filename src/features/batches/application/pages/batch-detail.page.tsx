@@ -554,14 +554,24 @@ export const BatchDetailPage = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={getScreeningVariant(transaction.screeningVerdict)}
-                      className="h-8 px-2 text-sm leading-5"
-                    >
-                      {transaction.screeningVerdict
-                        ? t(`batches.screening.verdict.${transaction.screeningVerdict}`)
-                        : t("batches.screening.verdict.pending")}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge
+                        variant={getScreeningVariant(transaction.screeningVerdict)}
+                        className="h-8 px-2 text-sm leading-5"
+                        title={transaction.screeningDetail}
+                      >
+                        {transaction.status === "rejected" && transaction.screeningDetail
+                          ? t("batches.detail.file_error", { defaultValue: "Error de archivo" })
+                          : transaction.screeningVerdict
+                            ? t(`batches.screening.verdict.${transaction.screeningVerdict}`)
+                            : t("batches.screening.verdict.pending")}
+                      </Badge>
+                      {transaction.screeningDetail && (
+                        <span className="max-w-[240px] truncate text-xs text-[#6c737f]" title={transaction.screeningDetail}>
+                          {transaction.screeningDetail}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

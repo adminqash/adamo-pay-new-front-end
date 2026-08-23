@@ -5,6 +5,7 @@ import { formatDisplayDate } from "@/lib/utils/date.utils";
 const REPORT_TYPE_LABELS: Record<ReportListItemDTO["type"], string> = {
   transactions: "Transacciones",
   batches: "Lotes",
+  fundings: "Fondeos",
   beneficiaries: "Beneficiario",
   accounts: "Cuentas",
   compliance: "Cumplimiento",

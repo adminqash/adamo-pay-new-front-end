@@ -36,6 +36,17 @@ export type BatchUploadStatusDTO = {
     invalidItems: number
     totalAmount: number
     currency: string
+    invalidRows?: Array<{
+      rowNumber: number
+      validationErrors: Array<{
+        field: string
+        code: string
+        message: string
+        cell?: string
+        column?: string
+        excelRow?: number
+      }>
+    }>
   } | null
 };
 

@@ -11,7 +11,8 @@ export type CreateBeneficiaryCommand = {
 
 export type UpdateBeneficiaryCommand = {
   beneficiaryId: string
-  fullName?: string
+  firstName?: string
+  lastName?: string
   idType?: string
   idNumber?: string
   totp?: string

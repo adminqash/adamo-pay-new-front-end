@@ -61,6 +61,7 @@
       "alert_title": "Hay pagos pendientes en este lote",
       "alert_description": "Revisá y corregí las novedades de los pagos para que puedan enviarse.",
       "review_later": "Revisar novedades después",
+      "file_error": "Error de archivo",
       "view_timeline": "Ver timeline de lote",
       "export_data": "Exportar datos",
       "search_placeholder": "Buscar por fecha/ nombre/ monto/ ID del lote o estado",
@@ -210,8 +211,13 @@
         "parsing": "Leyendo filas del archivo...",
         "ingesting": "Registrando beneficiarios en el lote...",
         "screening": "Validando cumplimiento de cada fila...",
-        "completed": "Archivo procesado correctamente. Revisa el resumen.",
+        "completed": "Archivo validado. Revisa el resumen antes de confirmar.",
+        "validation_errors": "El archivo tiene errores de validación. Corrígelo y súbelo de nuevo.",
         "failed": "No se pudo completar el procesamiento del archivo."
+      },
+      "validation_errors": {
+        "title": "{{count}} registro(s) con error de archivo. Súbelo de nuevo para continuar.",
+        "item": "{{cell}} · {{field}}: {{message}}"
       },
       "upload_failed": "No se pudo procesar el archivo. Intenta subirlo de nuevo."
     },
