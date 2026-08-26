@@ -22,4 +22,5 @@ export type TransferResultDTO = {
   toAccountId: string
   amount: number
   currency: string
+  status?: "pending" | "completed"
 };

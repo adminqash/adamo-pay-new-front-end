@@ -19,7 +19,7 @@ export type TransactionStatus =
   | "returned"
   | "rejected"
   | "pending"
-  | "in_review";
+  | "in-review";
 
 /**
  * transaction entity

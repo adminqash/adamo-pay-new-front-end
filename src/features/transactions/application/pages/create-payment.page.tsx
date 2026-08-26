@@ -299,27 +299,10 @@ export const CreatePaymentPage = () => {
     }
 
     try {
-      let beneficiaryId = selectedBeneficiary.id;
-
-      if (!beneficiaryId && saveBeneficiary) {
-        const [first, ...rest] = selectedBeneficiary.name.split(" ").filter(Boolean);
-        const createdBeneficiary = await BeneficiariesService.create({
-          documentType: selectedBeneficiary.docType,
-          documentNumber: selectedBeneficiary.docNumber.replace(/\./g, ""),
-          firstName: first ?? selectedBeneficiary.name,
-          lastName: rest.join(" "),
-          accountType: selectedBeneficiary.accountType,
-          bank: selectedBeneficiary.bank,
-          accountNumber: selectedBeneficiary.accountNumber,
-          isMainAccount: true,
-        });
-        beneficiaryId = createdBeneficiary.data?.id;
-      }
-
       const parsedAmount = parseCurrencyToMinor(amount);
 
       await createPayment.mutateAsync({
-        beneficiaryId,
+        beneficiaryId: selectedBeneficiary.id,
         beneficiarySnapshot: {
           fullName: selectedBeneficiary.name,
           idType: selectedBeneficiary.docType,
@@ -338,9 +321,10 @@ export const CreatePaymentPage = () => {
         currency,
         countryCode,
         metadata: {
-          saveBeneficiary,
+          saveBeneficiary: Boolean(saveBeneficiary && !selectedBeneficiary.id),
           channel: "web",
         },
+        totp: otpCode,
       });
 
       setShow2faDialog(false);

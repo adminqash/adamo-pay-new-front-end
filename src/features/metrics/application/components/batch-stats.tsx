@@ -28,17 +28,17 @@ export function BatchStats({ stats, _filterPeriod = "today" }: BatchStatsProps) 
   const defaultStats: BatchStat[] = [
     {
       label: t("metrics.batch_stats.average"),
-      value: 1230,
+      value: 0,
       subtitle: t("metrics.batch_stats.transactions"),
     },
     {
       label: t("metrics.batch_stats.maximum"),
-      value: 42801,
+      value: 0,
       subtitle: t("metrics.batch_stats.transactions"),
     },
     {
       label: t("metrics.batch_stats.minimum"),
-      value: 4,
+      value: 0,
       subtitle: t("metrics.batch_stats.transactions"),
     },
   ];

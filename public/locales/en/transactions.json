@@ -33,7 +33,7 @@
       "pending": "Ready to send",
       "for-review": "Compliance",
       "waiting-for-resolution": "Compliance (Adamo)",
-      "in_review": "Compliance",
+      "in-review": "Compliance",
       "validated": "Validated",
       "paid": "Paid",
       "returned": "Returned",
@@ -149,6 +149,10 @@
     "messages": {
       "payment_corrected": "Payment corrected and sent successfully",
       "payment_created": "Payment created and sent successfully"
+    },
+    "receipt": {
+      "download": "Download receipt",
+      "error": "Could not download the receipt"
     }
   }
 }

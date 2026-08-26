@@ -54,6 +54,7 @@ export class CorrectPaymentMapper {
   public static toCorrectPayload(
     paymentId: string,
     transaction: BatchTransactionDetail,
+    totp?: string,
   ): CorrectPaymentCommand {
     return {
       paymentId,
@@ -69,6 +70,7 @@ export class CorrectPaymentMapper {
         accountNumber: transaction.payment.accountNumber,
       },
       amount: transaction.payment.amount,
+      totp: totp,
     };
   }
 }

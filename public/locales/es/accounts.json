@@ -33,6 +33,8 @@
       "description": "Ingresá el código de verificación enviado a tu correo para confirmar el cambio de nombre.",
       "delete_title": "Confirmar eliminación",
       "delete_description": "Ingresá el código de verificación enviado a tu correo para confirmar la eliminación de la cuenta.",
+      "transfer_title": "Confirmar transferencia",
+      "transfer_description": "Ingresá el código de verificación para confirmar la transferencia.",
       "cancel": "Cancelar",
       "confirm": "Confirmar"
     },
@@ -46,7 +48,7 @@
       "account_created": "Cuenta creada exitosamente",
       "name_updated": "Nombre de cuenta actualizado exitosamente",
       "account_deleted": "Cuenta eliminada exitosamente",
-      "transfer_success": "Transferencia realizada exitosamente"
+      "transfer_success": "Transferencia enviada. El saldo se actualiza al confirmarse en el banco."
     },
     "transfer_dialog": {
       "title": "Transferir saldo desde {{accountName}}",
@@ -78,7 +80,9 @@
       "csv_excel": "CSV / Excel",
       "pdf": "PDF",
       "cancel": "Cancelar",
-      "export": "Exportar datos"
+      "export": "Exportar datos",
+      "success": "Reporte generado — revísalo en Reportes",
+      "error": "No se pudo generar el reporte"
     },
     "filters": {
       "all": "Todos",

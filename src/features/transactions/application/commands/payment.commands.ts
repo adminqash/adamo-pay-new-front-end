@@ -17,6 +17,7 @@ export type CreatePaymentCommand = {
   amount: number
   currency: string
   countryCode: string
+  totp?: string
   metadata?: {
     saveBeneficiary?: boolean
     channel?: "web" | "batch" | "quick_payment" | "api"
@@ -39,6 +40,7 @@ export type CorrectPaymentCommand = {
     accountNumber: string
   }
   amount?: number
+  totp?: string
 };
 
 export type UpdatePaymentStatusCommand = {

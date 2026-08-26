@@ -13,52 +13,10 @@ interface PaymentFrequencyChartProps {
 export function PaymentFrequencyChart({
   currentTime = "Hoy 10:22 AM",
   totalPayments = 0,
-  filterType = "this_week",
-  data: propData,
+  data: propData = [],
 }: PaymentFrequencyChartProps) {
   const { t } = useTranslation("metrics");
-
-  const getChartData = () => {
-    if (propData && propData.length > 0) return propData;
-    switch (filterType) {
-      case "today":
-        return [
-          { label: "00:00", payments: 800 },
-          { label: "04:00", payments: 1200 },
-          { label: "08:00", payments: 2100 },
-          { label: "12:00", payments: 2800 },
-          { label: "16:00", payments: 3200 },
-          { label: "20:00", payments: 2400 },
-          { label: "24:00", payments: 1500 },
-        ];
-      case "this_month":
-        return [
-          { label: "01", payments: 1200 },
-          { label: "04", payments: 1800 },
-          { label: "07", payments: 2200 },
-          { label: "10", payments: 1600 },
-          { label: "13", payments: 2500 },
-          { label: "16", payments: 2100 },
-          { label: "19", payments: 2800 },
-          { label: "22", payments: 3200 },
-          { label: "25", payments: 2600 },
-          { label: "28", payments: 3000 },
-        ];
-      case "this_week":
-      default:
-        return [
-          { label: t("metrics.days.monday"), payments: 1500 },
-          { label: t("metrics.days.tuesday"), payments: 2800 },
-          { label: t("metrics.days.wednesday"), payments: 2500 },
-          { label: t("metrics.days.thursday"), payments: 1800 },
-          { label: t("metrics.days.friday"), payments: 3200 },
-          { label: t("metrics.days.saturday"), payments: 1200 },
-          { label: t("metrics.days.sunday"), payments: 3500 },
-        ];
-    }
-  };
-
-  const data = getChartData();
+  const data = propData;
   const maxPayments = Math.max(...data.map((point) => point.payments), 1);
   const yTicks = [0, Math.round(maxPayments / 3), Math.round((maxPayments * 2) / 3), maxPayments];
   const [activeDay, setActiveDay] = useState<string | null>(null);

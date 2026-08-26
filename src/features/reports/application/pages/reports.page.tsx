@@ -164,7 +164,7 @@ export function ReportsPage() {
                       {report.name}
                     </TableCell>
                     <TableCell className="text-sm text-neutral-700">
-                      {report.type}
+                      {t(`reports:types.${report.type}`, { defaultValue: report.type })}
                     </TableCell>
                     <TableCell>
                       <Badge

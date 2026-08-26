@@ -83,9 +83,13 @@ export async function apiDelete<TDTO, TDomain>(
   client: AxiosInstance,
   path: string,
   mapper: (dto: TDTO) => TDomain,
+  body?: unknown,
 ): Promise<ServiceResult<TDomain>> {
   try {
-    const response = await client.delete<APIResponse<TDTO>>(path);
+    const response = await client.delete<APIResponse<TDTO>>(
+      path,
+      body !== undefined ? { data: body } : undefined,
+    );
     return handleAPIResponse(response, mapper);
   } catch(error) {
     handleAPIError(error);

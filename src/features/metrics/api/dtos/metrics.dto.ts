@@ -73,6 +73,9 @@ export type TopBeneficiariesDTO = {
     transactions: number
     rank: number
   }>
+  newBeneficiaries?: number
+  newBeneficiariesVariation?: number
+  newBeneficiariesTrend?: "up" | "down" | "flat"
 };
 
 export type BatchStatsDTO = {
@@ -100,6 +103,13 @@ export type AccountBreakdownDTO = {
     transactions: number
     amount: number
   }>
+  topRecurringBeneficiaries?: Array<{
+    beneficiaryId: string
+    name: string
+    transactions: number
+    amount: number
+    rank: number
+  }>
 };
 
 export type RecurringFailuresDTO = {
@@ -123,6 +133,7 @@ export type MetricsDashboardDTO = {
     topBeneficiariesByCount: TopBeneficiariesDTO["topBeneficiariesByCount"]
     newBeneficiaries: number
     newBeneficiariesVariation: number
+    newBeneficiariesTrend?: "up" | "down" | "flat"
   }
   batchStats: BatchStatsDTO["batchStats"] & {
     statusDistribution: {
@@ -134,9 +145,34 @@ export type MetricsDashboardDTO = {
       rejectedPercent: number
       othersPercent: number
       totalPayments: number
+      rejectedPayments?: number
     }
   }
   amlCompliance: AmlComplianceDTO["amlCompliance"]
   accountBreakdown: AccountBreakdownDTO["accountBreakdown"]
+  topRecurringBeneficiaries?: AccountBreakdownDTO["topRecurringBeneficiaries"]
   recurringFailures: RecurringFailuresDTO["recurringFailures"]
+};
+
+export type TransactionsMetricsDTO = {
+  paymentFrequency: PaymentFrequencyDTO
+  transactionStatus: TransactionStatusDTO
+  rejectionReasons: RejectionReasonsDTO["rejectionReasons"]
+  topBanks: TopBanksDTO["topBanks"]
+  amlCompliance: AmlComplianceDTO["amlCompliance"]
+};
+
+export type BeneficiariesMetricsDTO = TopBeneficiariesDTO & {
+  newBeneficiaries: number
+  newBeneficiariesVariation: number
+  recurringFailures: RecurringFailuresDTO["recurringFailures"]
+};
+
+export type BatchesMetricsDTO = {
+  batchStats: MetricsDashboardDTO["batchStats"]
+};
+
+export type AccountsMetricsDTO = {
+  accountBreakdown: AccountBreakdownDTO["accountBreakdown"]
+  topRecurringBeneficiaries: NonNullable<AccountBreakdownDTO["topRecurringBeneficiaries"]>
 };

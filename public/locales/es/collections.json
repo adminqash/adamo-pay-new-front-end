@@ -1,4 +1,35 @@
 {
   "page_title": "Recaudos",
-  "placeholder": "El módulo de recaudos estará disponible para Colombia."
+  "placeholder": "El módulo de recaudos estará disponible para Colombia.",
+  "header": {
+    "export_data": "Exportar datos"
+  },
+  "export_dialog": {
+    "title": "Exportar datos",
+    "description": "Completa los campos para generar el archivo:",
+    "status_filter": "Estado",
+    "status_all": "Todos",
+    "type_filter": "Tipo",
+    "type_all": "Todos",
+    "file_type_label": "Tipo de archivo:",
+    "csv_excel": "CSV (Excel)",
+    "pdf": "PDF (próximamente)",
+    "cancel": "Cancelar",
+    "export": "Exportar datos",
+    "success": "Reporte generado — revísalo en Reportes",
+    "error": "No se pudo generar el reporte"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "validated": "Validado",
+    "paid": "Pagado",
+    "rejected": "Rechazado",
+    "requires-review": "En revisión",
+    "expired": "Expirado",
+    "cancelled": "Cancelado"
+  },
+  "type": {
+    "payment_link": "Link de pago",
+    "breb_qr": "QR BRE-B"
+  }
 }

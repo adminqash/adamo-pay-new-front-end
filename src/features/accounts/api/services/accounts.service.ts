@@ -141,6 +141,7 @@ export class AccountsService {
       coreApi,
       `/accounts/${command.accountId}`,
       AccountMapper.toDomain,
+      { totp: command.totp },
     );
   }
 

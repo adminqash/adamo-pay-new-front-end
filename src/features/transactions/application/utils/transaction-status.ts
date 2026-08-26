@@ -16,6 +16,7 @@ export function normalizePaymentStatus(status: string | undefined | null): Trans
       return "for-review";
     case "waiting-for-resolution":
       return "waiting-for-resolution";
+    case "in-review":
     case "in_review":
       return "for-review";
     case "validated":
@@ -45,8 +46,8 @@ export function normalizeBatchItemStatus(status: string | undefined | null): Tra
     case "valid":
     case "reviewed":
       return "reviewed";
-    case "client_review":
     case "client-review":
+    case "client_review":
     case "for-review":
       return "for-review";
     case "review":

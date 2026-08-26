@@ -67,6 +67,10 @@ export const queryKeys = {
     amlCompliance: (params?: unknown) => ["metrics", "aml-compliance", params] as const,
     accountBreakdown: (params?: unknown) => ["metrics", "account-breakdown", params] as const,
     recurringFailures: (params?: unknown) => ["metrics", "recurring-failures", params] as const,
+    transactions: (params?: unknown) => ["metrics", "transactions", params] as const,
+    beneficiaries: (params?: unknown) => ["metrics", "beneficiaries", params] as const,
+    batches: (params?: unknown) => ["metrics", "batches", params] as const,
+    accounts: (params?: unknown) => ["metrics", "accounts", params] as const,
   },
   reports: {
     all: (params?: unknown) => ["reports", params] as const,

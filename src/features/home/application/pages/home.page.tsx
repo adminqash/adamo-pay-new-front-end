@@ -152,7 +152,7 @@ export function HomePage() {
                   </p>
                 </div>
                 <Button variant="default" className="w-fit" asChild>
-                  <Link to="/transactions?status=reviewed">
+                  <Link to="/transactions?status=pending">
                     {t("home:home.transactions.pending.button")}
                   </Link>
                 </Button>

@@ -50,6 +50,7 @@ import {
 } from "@adamosuiteservices/ui/selectable-card";
 import { useBatchTransactionDetail } from "../hooks/use-transaction-detail";
 import { useBatchesRealtime } from "../hooks/use-batches-realtime";
+import { useDownloadPaymentReceipt } from "@/features/transactions/application/hooks/use-payment-mutations";
 import {
   useUpdateBatchTransaction,
   useUpdateBatchTransactionStatus,
@@ -76,6 +77,7 @@ export const TransactionDetailPage = () => {
 
   const updateBatchTransaction = useUpdateBatchTransaction();
   const updateBatchTransactionStatus = useUpdateBatchTransactionStatus();
+  const downloadReceipt = useDownloadPaymentReceipt();
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -630,6 +632,7 @@ export const TransactionDetailPage = () => {
         return "warning-medium";
       case "for-review":
       case "waiting-for-resolution":
+      case "in-review":
       case "in_review":
         return "warning-medium";
       case "returned":
@@ -1192,6 +1195,19 @@ export const TransactionDetailPage = () => {
           `}
           >
             <div className="flex items-center gap-6">
+              <PermissionGate permission={PERMISSIONS.TRANSACTIONS_RECEIPT_DOWNLOAD}>
+                <Button
+                  variant="secondary"
+                  disabled={!transactionId || downloadReceipt.isPending}
+                  onClick={() => {
+                    if (transactionId) {
+                      downloadReceipt.mutate(transactionId);
+                    }
+                  }}
+                >
+                  {t("transactions:transactions.receipt.download")}
+                </Button>
+              </PermissionGate>
               <PermissionGate permission={PERMISSIONS.PAYMENTS_BATCH_CREATE}>
               <Button variant="destructive-medium" onClick={() => setIsRejectDialogOpen(true)}>
                 {t("batches.transaction_detail.actions.reject")}

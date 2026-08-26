@@ -1,4 +1,35 @@
 {
   "page_title": "Collections",
-  "placeholder": "The collections module will be available for Colombia."
+  "placeholder": "The collections module will be available for Colombia.",
+  "header": {
+    "export_data": "Export data"
+  },
+  "export_dialog": {
+    "title": "Export data",
+    "description": "Fill in the fields to generate the file:",
+    "status_filter": "Status",
+    "status_all": "All",
+    "type_filter": "Type",
+    "type_all": "All",
+    "file_type_label": "File type:",
+    "csv_excel": "CSV (Excel)",
+    "pdf": "PDF (coming soon)",
+    "cancel": "Cancel",
+    "export": "Export data",
+    "success": "Report generated — check it in Reports",
+    "error": "Could not generate the report"
+  },
+  "status": {
+    "pending": "Pending",
+    "validated": "Validated",
+    "paid": "Paid",
+    "rejected": "Rejected",
+    "requires-review": "Requires review",
+    "expired": "Expired",
+    "cancelled": "Cancelled"
+  },
+  "type": {
+    "payment_link": "Payment link",
+    "breb_qr": "BRE-B QR"
+  }
 }

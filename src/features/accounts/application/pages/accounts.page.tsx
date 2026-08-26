@@ -58,7 +58,7 @@ export function AccountsPage() {
   const [editedAccountName, setEditedAccountName] = useState("");
   const [isOtpDialogOpen, setIsOtpDialogOpen] = useState(false);
   const [otpCode, setOtpCode] = useState("");
-  const [otpAction, setOtpAction] = useState<"edit" | "delete">("edit");
+  const [otpAction, setOtpAction] = useState<"edit" | "delete" | "transfer">("edit");
 
   // delete account dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -143,6 +143,20 @@ export function AccountsPage() {
           void refetch();
         },
       });
+    } else if (otpAction === "transfer" && transferFromAccountId && transferToAccountId) {
+      transferAccount.mutate({
+        fromAccountId: transferFromAccountId,
+        toAccountId: transferToAccountId,
+        amount: parseCurrencyToMinor(transferAmount),
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setTransferFromAccountId(null);
+          setTransferToAccountId(null);
+          setTransferAmount("");
+          void refetch();
+        },
+      });
     }
 
     setIsOtpDialogOpen(false);
@@ -173,19 +187,9 @@ export function AccountsPage() {
       return;
     }
 
-    transferAccount.mutate({
-      fromAccountId: transferFromAccountId,
-      toAccountId: transferToAccountId,
-      amount: parseCurrencyToMinor(transferAmount),
-    }, {
-      onSuccess: () => {
-        setIsTransferDialogOpen(false);
-        setTransferFromAccountId(null);
-        setTransferToAccountId(null);
-        setTransferAmount("");
-        void refetch();
-      },
-    });
+    setIsTransferDialogOpen(false);
+    setOtpAction("transfer");
+    setIsOtpDialogOpen(true);
   };
 
   /**
@@ -416,10 +420,18 @@ export function AccountsPage() {
         <DialogContent className="max-w-[610px] gap-12">
           <DialogHeader className="gap-2">
             <DialogTitle>
-              {otpAction === "edit" ? t("accounts.otp_dialog.title") : t("accounts.otp_dialog.delete_title")}
+              {otpAction === "edit"
+                ? t("accounts.otp_dialog.title")
+                : otpAction === "delete"
+                  ? t("accounts.otp_dialog.delete_title")
+                  : t("accounts.otp_dialog.transfer_title")}
             </DialogTitle>
             <p className="text-sm text-foreground">
-              {otpAction === "edit" ? t("accounts.otp_dialog.description") : t("accounts.otp_dialog.delete_description")}
+              {otpAction === "edit"
+                ? t("accounts.otp_dialog.description")
+                : otpAction === "delete"
+                  ? t("accounts.otp_dialog.delete_description")
+                  : t("accounts.otp_dialog.transfer_description")}
             </p>
           </DialogHeader>
           <InputOTP

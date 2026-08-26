@@ -50,6 +50,7 @@ import { PageContainer } from "@/features/common/components/layout/page-containe
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { DOCUMENT_TYPE_CODES } from "@/lib/document-type";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
+import { ReportsService } from "@/features/reports/api/services/reports.service";
 
 const BENEFICIARIES_QUERY_KEY = ["beneficiaries"];
 
@@ -73,6 +74,34 @@ export function BeneficiariesPage() {
   const [exportStatusFilter, setExportStatusFilter] = useState<string[]>(["all"]);
   const [exportFormatCSV, setExportFormatCSV] = useState(false);
   const [exportFormatPDF, setExportFormatPDF] = useState(false);
+
+  const handleExportBeneficiaries = async() => {
+    try {
+      const statuses = exportStatusFilter.filter((status) => status !== "all");
+
+      await ReportsService.create({
+        name: "Beneficiarios",
+        type: "beneficiaries",
+        format: "csv",
+        filters: {
+          status: statuses.length > 0 ? statuses.join(",") : undefined,
+        },
+      });
+
+      ToastManager.show({
+        message: t("beneficiaries.export_dialog.success"),
+        variant: "success",
+      });
+      setIsExportDialogOpen(false);
+      setExportFormatCSV(false);
+      setExportFormatPDF(false);
+    } catch {
+      ToastManager.show({
+        message: t("beneficiaries.export_dialog.error"),
+        variant: "destructive",
+      });
+    }
+  };
 
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -417,7 +446,8 @@ export function BeneficiariesPage() {
                       </DialogClose>
                       <Button
                         variant="default"
-                        disabled={!exportFormatCSV && !exportFormatPDF}
+                        disabled={!exportFormatCSV}
+                        onClick={() => void handleExportBeneficiaries()}
                       >
                         {t("beneficiaries.export_dialog.export")}
                       </Button>

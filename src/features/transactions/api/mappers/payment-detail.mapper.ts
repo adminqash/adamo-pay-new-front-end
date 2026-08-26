@@ -39,15 +39,18 @@ function mapTimelineTitle(event: string): string {
     returned: "Pago retornado",
     rejected: "Pago rechazado",
     dispatched: "En proceso",
-    compliance_passed: "Cumplimiento aprobado",
-    compliance_failed: "Cumplimiento fallido",
-    funds_reserved: "Fondos reservados",
+    "compliance-review": "En revisión de cumplimiento",
+    "compliance-passed": "Cumplimiento aprobado",
+    "compliance-failed": "Cumplimiento fallido",
+    "funds-reserved": "Fondos reservados",
+    "funds-released": "Fondos liberados",
+    "funds-committed": "Fondos debitados",
     corrected: "Pago corregido",
     approved: "Pago aprobado",
     refunded: "Pago reembolsado",
   };
 
-  return titles[event] ?? "Actualización de pago";
+  return titles[event.replace(/_/g, "-")] ?? "Actualización de pago";
 }
 
 export class PaymentDetailMapper {

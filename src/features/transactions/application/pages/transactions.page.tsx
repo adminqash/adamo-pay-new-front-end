@@ -28,6 +28,7 @@ import { ReportsService } from "@/features/reports/api/services/reports.service"
 import { useTransactions } from "../hooks/use-transactions";
 import { useTransactionDetail } from "../hooks/use-transaction-detail";
 import { usePaymentsRealtime } from "../hooks/use-payments-realtime";
+import { useDownloadPaymentReceipt } from "../hooks/use-payment-mutations";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
 import { buildTransactionListParams } from "../utils/transaction-filters.utils";
 import { formatCurrencyDisplay } from "@/lib/money/money";
@@ -245,8 +246,27 @@ export const TransactionsPage = () => {
   const [accountFilter, setAccountFilter] = useState<string[]>(["all"]);
   const [statusFilter, setStatusFilter] = useState<string[]>(() => {
     const statusParam = searchParams.get("status");
-    if (statusParam && ["reviewed", "pending", "for-review", "waiting-for-resolution", "in_review", "validated", "returned", "rejected", "paid"].includes(statusParam)) {
-      return [statusParam === "pending" ? "reviewed" : statusParam === "in_review" ? "for-review" : statusParam];
+    if (!statusParam) {
+      return ["all"];
+    }
+    if (statusParam === "pending" || statusParam === "pendiente") {
+      return ["reviewed", "for-review", "waiting-for-resolution"];
+    }
+    if (statusParam === "in_review" || statusParam === "in-review") {
+      return ["for-review"];
+    }
+    if (
+      [
+        "reviewed",
+        "for-review",
+        "waiting-for-resolution",
+        "validated",
+        "returned",
+        "rejected",
+        "paid",
+      ].includes(statusParam)
+    ) {
+      return [statusParam];
     }
     return ["all"];
   });
@@ -288,6 +308,7 @@ export const TransactionsPage = () => {
     selectedTransactionId,
     isSheetOpen,
   );
+  const downloadReceipt = useDownloadPaymentReceipt();
 
   const displayedTransaction = useMemo<TransactionDetail | null>(() => {
     if (transactionDetail) {
@@ -397,6 +418,7 @@ export const TransactionsPage = () => {
         return "warning-medium";
       case "for-review":
       case "waiting-for-resolution":
+      case "in-review":
       case "in_review":
         return "warning-medium";
       case "returned":
@@ -937,22 +959,35 @@ export const TransactionsPage = () => {
               </>
             )}
           </SheetBody>
-          {/* Action button - only show for returned/rejected */}
-          {displayedTransaction && (displayedTransaction.status === "returned" || displayedTransaction.status === "rejected") && (
-            <PermissionGate permission={PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE}>
-            <SheetFooter>
-              <Button
-                variant="default"
-                size="default"
-                className="self-start"
-                asChild
-              >
-                <Link to={`/transactions/correct/${displayedTransaction.id}`}>
-                  Corregir y volver a enviar pago
-                </Link>
-              </Button>
+          {/* receipt + correct actions */}
+          {displayedTransaction && (
+            <SheetFooter className="flex flex-wrap gap-2">
+              <PermissionGate permission={PERMISSIONS.TRANSACTIONS_RECEIPT_DOWNLOAD}>
+                <Button
+                  variant="secondary"
+                  size="default"
+                  className="self-start"
+                  disabled={downloadReceipt.isPending}
+                  onClick={() => downloadReceipt.mutate(displayedTransaction.id)}
+                >
+                  {t("transactions.receipt.download")}
+                </Button>
+              </PermissionGate>
+              {(displayedTransaction.status === "returned" || displayedTransaction.status === "rejected") && (
+                <PermissionGate permission={PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE}>
+                  <Button
+                    variant="default"
+                    size="default"
+                    className="self-start"
+                    asChild
+                  >
+                    <Link to={`/transactions/correct/${displayedTransaction.id}`}>
+                      Corregir y volver a enviar pago
+                    </Link>
+                  </Button>
+                </PermissionGate>
+              )}
             </SheetFooter>
-            </PermissionGate>
           )}
         </SheetContent>
       </Sheet>

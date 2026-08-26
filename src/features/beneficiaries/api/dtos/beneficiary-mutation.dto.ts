@@ -22,6 +22,7 @@ export type CreateBankAccountDTO = {
   bank: string
   accountNumber: string
   isPrimary?: boolean
+  totp?: string
 };
 
 export type UpdateBankAccountDTO = {

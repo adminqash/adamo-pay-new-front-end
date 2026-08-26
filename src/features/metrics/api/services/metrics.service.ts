@@ -1,8 +1,11 @@
 import type { ServiceResult } from "@/features/common/services/service-result";
 import type {
   AccountBreakdownDTO,
+  AccountsMetricsDTO,
   AmlComplianceDTO,
+  BatchesMetricsDTO,
   BatchStatsDTO,
+  BeneficiariesMetricsDTO,
   MetricsDashboardDTO,
   MetricsOverviewDTO,
   PaymentFrequencyDTO,
@@ -11,6 +14,7 @@ import type {
   TopBanksDTO,
   TopBeneficiariesDTO,
   TransactionStatusDTO,
+  TransactionsMetricsDTO,
 } from "@/features/metrics/api/dtos/metrics.dto";
 import type { MetricsOverview } from "@/features/metrics/api/mappers/metrics.mapper";
 import type { MetricsQueryParams } from "@/lib/api/api.types";
@@ -69,6 +73,22 @@ export class MetricsService {
 
   public static async getRecurringFailures(params?: MetricsQueryParams) {
     return apiGetRaw<RecurringFailuresDTO>(analyticsApi, "/metrics/recurring-failures", params);
+  }
+
+  public static async getTransactions(params?: MetricsQueryParams) {
+    return apiGetRaw<TransactionsMetricsDTO>(analyticsApi, "/metrics/transactions", params);
+  }
+
+  public static async getBeneficiaries(params?: MetricsQueryParams) {
+    return apiGetRaw<BeneficiariesMetricsDTO>(analyticsApi, "/metrics/beneficiaries", params);
+  }
+
+  public static async getBatches(params?: MetricsQueryParams) {
+    return apiGetRaw<BatchesMetricsDTO>(analyticsApi, "/metrics/batches", params);
+  }
+
+  public static async getAccounts(params?: MetricsQueryParams) {
+    return apiGetRaw<AccountsMetricsDTO>(analyticsApi, "/metrics/accounts", params);
   }
 
   public static async getDashboard(params?: MetricsQueryParams) {

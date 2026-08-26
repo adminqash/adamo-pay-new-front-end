@@ -24,6 +24,17 @@
     "cancel": "Cancelar",
     "confirm": "Eliminar reporte"
   },
+  "types": {
+    "transactions": "Transacciones",
+    "batches": "Lotes",
+    "fundings": "Fondeos",
+    "beneficiaries": "Beneficiarios",
+    "accounts": "Cuentas",
+    "collections": "Recaudos",
+    "movements": "Movimientos",
+    "compliance": "Cumplimiento",
+    "audit": "Auditoría"
+  },
   "messages": {
     "delete_success": "Reporte eliminado exitosamente",
     "delete_error": "No se pudo eliminar el reporte",

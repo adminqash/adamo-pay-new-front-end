@@ -45,7 +45,7 @@ import { TopBanksChart } from "../components/top-banks-chart";
 import { TopBeneficiariesByAmount } from "../components/top-beneficiaries-by-amount";
 import { TopBeneficiariesByTransactions } from "../components/top-beneficiaries-by-transactions";
 import { TransactionStatusChart } from "../components/transaction-status-chart";
-import { useMetricsDashboard } from "../hooks/use-metrics";
+import { useMetricsAccounts, useMetricsBatches, useMetricsBeneficiaries, useMetricsOverview, useMetricsTransactions } from "../hooks/use-metrics";
 import { buildMetricsParams } from "../utils/metrics-filters.utils";
 import type { DateRange } from "react-day-picker";
 import { PageContainer } from "@/features/common/components/layout/page-container";
@@ -290,9 +290,33 @@ export function MetricsPage() {
     [filterTab, customDateRange],
   );
 
-  const { dashboard, refetch } = useMetricsDashboard(metricsParams);
+  const { overview, refetch: refetchOverview } = useMetricsOverview(metricsParams);
+  const { transactions, refetch: refetchTransactions } = useMetricsTransactions(
+    metricsParams,
+    chartTab === "transactions",
+  );
+  const { beneficiaries, refetch: refetchBeneficiaries } = useMetricsBeneficiaries(
+    metricsParams,
+    chartTab === "beneficiaries",
+  );
+  const { batches, refetch: refetchBatches } = useMetricsBatches(
+    metricsParams,
+    chartTab === "batches",
+  );
+  const { accounts, refetch: refetchAccounts } = useMetricsAccounts(
+    metricsParams,
+    chartTab === "accounts" && capabilities.canViewFundings,
+  );
 
-  const metricsData = dashboard?.overview ?? {
+  const refetch = () => {
+    void refetchOverview();
+    if (chartTab === "transactions") void refetchTransactions();
+    if (chartTab === "beneficiaries") void refetchBeneficiaries();
+    if (chartTab === "batches") void refetchBatches();
+    if (chartTab === "accounts") void refetchAccounts();
+  };
+
+  const metricsData = overview ?? {
     totalVolume: { value: "$0,00", countryCode: countryCodeAlpha2, variation: { value: 0, trend: "up" as const } },
     totalTransactions: { value: "0", variation: { value: 0, trend: "up" as const } },
     averageTicket: { value: "$0,00", variation: { value: 0, trend: "up" as const } },
@@ -525,8 +549,8 @@ export function MetricsPage() {
                   </p>
                   <PaymentFrequencyChart
                     filterType={filterTab as "today" | "this_week" | "this_month" | "custom"}
-                    data={dashboard?.paymentFrequency}
-                    totalPayments={dashboard?.paymentFrequencyTotal}
+                    data={transactions?.paymentFrequency ?? []}
+                    totalPayments={transactions?.paymentFrequencyTotal ?? 0}
                   />
                 </Card>
                 {/* Transaction Status and Rejection Reasons */}
@@ -545,8 +569,8 @@ export function MetricsPage() {
                     </p>
                     <TransactionStatusChart
                       _filterPeriod={filterTab}
-                      data={dashboard?.transactionStatusData}
-                      totalTransactions={dashboard?.transactionStatusTotal}
+                      data={transactions?.transactionStatusData}
+                      totalTransactions={transactions?.transactionStatusTotal}
                     />
                   </div>
                   <div className={`
@@ -557,7 +581,7 @@ export function MetricsPage() {
                     <p className="text-sm text-foreground">
                       {t("metrics.rejection_reasons.title")}
                     </p>
-                    <RejectionReasons _filterPeriod={filterTab} reasons={dashboard?.rejectionReasons} />
+                    <RejectionReasons _filterPeriod={filterTab} reasons={transactions?.rejectionReasons ?? []} />
                   </div>
                 </Card>
                 {/* Top Banks and AML Compliance */}
@@ -574,7 +598,7 @@ export function MetricsPage() {
                     <p className="text-sm text-foreground">
                       {t("metrics.top_banks.title")}
                     </p>
-                    <TopBanksChart _filterPeriod={filterTab} banks={dashboard?.topBanks} />
+                    <TopBanksChart _filterPeriod={filterTab} banks={transactions?.topBanks ?? []} />
                   </div>
                   <div className={`
                     flex flex-1 basis-full flex-col items-start gap-6
@@ -586,8 +610,8 @@ export function MetricsPage() {
                     </p>
                     <AmlComplianceChart
                       _filterPeriod={filterTab}
-                      data={dashboard?.amlComplianceData}
-                      totalValidations={dashboard?.amlComplianceTotal}
+                      data={transactions?.amlComplianceData}
+                      totalValidations={transactions?.amlComplianceTotal}
                     />
                   </div>
                 </Card>
@@ -611,8 +635,8 @@ export function MetricsPage() {
                     </p>
                     <BatchStatusChart
                       _filterPeriod={filterTab}
-                      data={dashboard?.batchStatusData}
-                      totalBatches={dashboard?.batchStats ? dashboard.batchRejectionTotal : 0}
+                      data={batches?.batchStatusData}
+                      totalBatches={batches?.batchRejectionTotal ?? 0}
                     />
                   </div>
                   <div className={`
@@ -625,14 +649,14 @@ export function MetricsPage() {
                     </p>
                     <BatchRejectionChart
                       _filterPeriod={filterTab}
-                      data={dashboard?.batchRejectionData}
-                      totalBatches={dashboard?.batchRejectionTotal}
-                      totalPayments={dashboard?.batchRejectionPayments}
+                      data={batches?.batchRejectionData}
+                      totalBatches={batches?.batchRejectionTotal}
+                      totalPayments={batches?.batchRejectionPayments}
                     />
                   </div>
                 </Card>
                 {/* Batch Stats */}
-                <BatchStats _filterPeriod={filterTab} stats={dashboard?.batchStats} />
+                <BatchStats _filterPeriod={filterTab} stats={batches?.batchStats} />
               </>
             )}
             {chartTab === "beneficiaries" && (
@@ -640,8 +664,9 @@ export function MetricsPage() {
                 {/* Beneficiary Stats */}
                 <BeneficiaryStatCard
                   _filterPeriod={filterTab}
-                  newBeneficiaries={dashboard?.newBeneficiaries}
-                  percentageChange={dashboard?.newBeneficiariesVariation}
+                  newBeneficiaries={beneficiaries?.newBeneficiaries ?? 0}
+                  percentageChange={beneficiaries?.newBeneficiariesVariation ?? 0}
+                  trend={beneficiaries?.newBeneficiariesTrend}
                 />
                 {/* Top Beneficiaries by Amount and Transactions */}
                 <Card className={`
@@ -649,11 +674,11 @@ export function MetricsPage() {
                   p-6
                 `}
                 >
-                  <TopBeneficiariesByAmount _filterPeriod={filterTab} beneficiaries={dashboard?.topBeneficiariesByAmount} />
-                  <TopBeneficiariesByTransactions _filterPeriod={filterTab} beneficiaries={dashboard?.topBeneficiariesByCount} />
+                  <TopBeneficiariesByAmount _filterPeriod={filterTab} beneficiaries={beneficiaries?.topBeneficiariesByAmount ?? []} />
+                  <TopBeneficiariesByTransactions _filterPeriod={filterTab} beneficiaries={beneficiaries?.topBeneficiariesByCount ?? []} />
                 </Card>
                 {/* Recurring Failures Table */}
-                <RecurringFailuresTable _filterPeriod={filterTab} failures={dashboard?.recurringFailures} />
+                <RecurringFailuresTable _filterPeriod={filterTab} failures={beneficiaries?.recurringFailures ?? []} />
               </>
             )}
             {chartTab === "accounts" && capabilities.canViewFundings && (
@@ -674,7 +699,7 @@ export function MetricsPage() {
                     </p>
                     <AccountTransactionCountChart
                       _filterPeriod={filterTab}
-                      data={dashboard?.accountCountData}
+                      data={accounts?.accountCountData}
                     />
                   </div>
                   <div className={`
@@ -687,14 +712,14 @@ export function MetricsPage() {
                     </p>
                     <AccountTransactionAmountChart
                       _filterPeriod={filterTab}
-                      data={dashboard?.accountAmountData}
+                      data={accounts?.accountAmountData}
                     />
                   </div>
                 </Card>
                 {/* Account Transactions Table */}
                 <AccountTransactionsTable
                   _filterPeriod={filterTab}
-                  accounts={dashboard?.accountTableData}
+                  accounts={accounts?.accountTableData ?? []}
                 />
               </>
             )}

@@ -24,6 +24,17 @@
     "cancel": "Cancel",
     "confirm": "Delete report"
   },
+  "types": {
+    "transactions": "Transactions",
+    "batches": "Batches",
+    "fundings": "Fundings",
+    "beneficiaries": "Beneficiaries",
+    "accounts": "Accounts",
+    "collections": "Collections",
+    "movements": "Movements",
+    "compliance": "Compliance",
+    "audit": "Audit"
+  },
   "messages": {
     "delete_success": "Report successfully deleted",
     "delete_error": "Could not delete the report",

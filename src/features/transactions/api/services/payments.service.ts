@@ -23,6 +23,7 @@ export class PaymentsService {
   public static CREATE_PAYMENT_KEY = "create_payment_key";
   public static CORRECT_PAYMENT_KEY = "correct_payment_key";
   public static UPDATE_PAYMENT_STATUS_KEY = "update_payment_status_key";
+  public static DOWNLOAD_RECEIPT_KEY = "download_receipt_key";
 
   private static idempotencyHeaders() {
     return {
@@ -108,5 +109,17 @@ export class PaymentsService {
       { status: command.status },
       (dto) => PaymentDetailMapper.toDomain(dto),
     );
+  }
+
+  public static async downloadReceipt(paymentId: string): Promise<void> {
+    const result = await apiGetRaw<{ url: string }>(
+      coreApi,
+      `/payments/${paymentId}/receipt`,
+    );
+    const url = result.data?.url;
+    if (!url) {
+      throw new Error("Receipt URL not found");
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 }

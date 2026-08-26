@@ -33,7 +33,7 @@
       "pending": "Listo para enviar",
       "for-review": "Cumplimiento",
       "waiting-for-resolution": "Cumplimiento Adamo",
-      "in_review": "Cumplimiento",
+      "in-review": "Cumplimiento",
       "validated": "Validado",
       "paid": "Pagado",
       "returned": "Retornado",
@@ -149,6 +149,10 @@
     "messages": {
       "payment_corrected": "Pago corregido y enviado exitosamente",
       "payment_created": "Pago creado y enviado exitosamente"
+    },
+    "receipt": {
+      "download": "Descargar comprobante",
+      "error": "No se pudo descargar el comprobante"
     }
   }
 }

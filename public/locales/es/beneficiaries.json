@@ -18,7 +18,9 @@
       "csv_excel": "CSV / Excel",
       "pdf": "PDF",
       "cancel": "Cancelar",
-      "export": "Exportar"
+      "export": "Exportar",
+      "success": "Reporte generado — revísalo en Reportes",
+      "error": "No se pudo generar el reporte"
     },
     "status": {
       "with_news": "Con novedades",

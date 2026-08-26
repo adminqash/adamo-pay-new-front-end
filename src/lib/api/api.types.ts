@@ -61,5 +61,6 @@ export type MetricsQueryParams = {
   from?: string
   to?: string
   period?: string
+  countryCode?: string
   accountId?: string
 };

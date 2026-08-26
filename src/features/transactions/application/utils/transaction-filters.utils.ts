@@ -29,7 +29,18 @@ export function buildTransactionListParams({
   }
 
   const statuses = statusFilter.filter((status) => status !== "all");
-  if (statuses.length === 1) {
+  const pendingGroup = ["reviewed", "for-review", "waiting-for-resolution"] as const;
+  const unique = [...new Set(statuses)];
+  const isExactPendingGroup =
+    unique.length === pendingGroup.length &&
+    pendingGroup.every((status) => unique.includes(status));
+
+  if (statuses.length === 1 && (statuses[0] === "pending" || statuses[0] === "pendiente")) {
+    params.status = "pending";
+  } else if (isExactPendingGroup) {
+    // Same product meaning as ?status=pending
+    params.status = "pending";
+  } else if (statuses.length === 1) {
     params.status = statuses[0];
   } else if (statuses.length > 1) {
     params.status = statuses.join(",");

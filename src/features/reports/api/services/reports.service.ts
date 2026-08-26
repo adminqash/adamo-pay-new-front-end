@@ -8,7 +8,14 @@ import { apiDelete, apiDownload, apiGetList, apiPost } from "@/lib/api/http.serv
 
 export type CreateReportCommand = {
   name: string
-  type: "transactions" | "batches" | "fundings"
+  type:
+    | "transactions"
+    | "batches"
+    | "fundings"
+    | "beneficiaries"
+    | "accounts"
+    | "collections"
+    | "movements"
   format: "csv"
   filters?: Record<string, unknown>
 };

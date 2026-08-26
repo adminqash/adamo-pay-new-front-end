@@ -51,6 +51,21 @@ export function useCorrectPayment() {
   });
 }
 
+export function useDownloadPaymentReceipt() {
+  const { t } = useTranslation(["transactions"]);
+
+  return useMutation({
+    mutationKey: [PaymentsService.DOWNLOAD_RECEIPT_KEY],
+    mutationFn: (paymentId: string) => PaymentsService.downloadReceipt(paymentId),
+    meta: {
+      showMessageOnSuccess: false,
+      errorMessage: t("transactions:transactions.receipt.error", {
+        defaultValue: "Error al descargar el comprobante",
+      }),
+    },
+  });
+}
+
 export function useUpdatePaymentStatus() {
   const queryClient = useQueryClient();
   const { t } = useTranslation(["transactions"]);

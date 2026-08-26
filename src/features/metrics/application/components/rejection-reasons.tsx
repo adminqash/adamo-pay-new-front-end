@@ -18,22 +18,12 @@ interface RejectionReasonsProps {
  * 
  * displays a list of rejection reasons with percentages and case counts
  */
-export function RejectionReasons({ reasons, _filterPeriod = "today" }: RejectionReasonsProps) {
+export function RejectionReasons({ reasons = [], _filterPeriod = "today" }: RejectionReasonsProps) {
   const { t } = useTranslation("metrics");
 
-  // Use provided reasons or default mock data
-  const defaultReasons: RejectionReason[] = [
-    { title: t("metrics.rejection_reasons.reasons.invalid_account"), percentage: 44.5, cases: 45 },
-    { title: t("metrics.rejection_reasons.reasons.daily_limit_exceeded"), percentage: 27.7, cases: 28 },
-    { title: t("metrics.rejection_reasons.reasons.account_mismatch"), percentage: 17.8, cases: 18 },
-    { title: t("metrics.rejection_reasons.reasons.incorrect_id"), percentage: 5.9, cases: 6 },
-    { title: t("metrics.rejection_reasons.reasons.other"), percentage: 4.1, cases: 4 },
-  ];
-
-  const displayReasons = reasons || defaultReasons;
   return (
     <Card className="flex flex-col gap-2 border-0 bg-background p-4 rounded-3xl w-full">
-      {displayReasons.map((reason, index) => (
+      {reasons.map((reason, index) => (
         <Card
           key={index}
           className="flex flex-col items-start border-0 bg-muted p-4 rounded-2xl"

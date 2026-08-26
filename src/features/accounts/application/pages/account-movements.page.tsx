@@ -62,6 +62,9 @@ import { PermissionGate } from "@/features/auth/application/components/permissio
 import { PERMISSIONS } from "@/features/auth/domain/permissions";
 import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
+import { ToastManager } from "@adamosuiteservices/ui/toaster";
+import { formatApiDate } from "@/lib/utils/date.utils";
+import { ReportsService } from "@/features/reports/api/services/reports.service";
 
 /**
  * custom date range picker component
@@ -258,7 +261,7 @@ export function AccountMovementsPage() {
   const [newAccountName, setNewAccountName] = useState("");
   const [isOtpDialogOpen, setIsOtpDialogOpen] = useState(false);
   const [otpCode, setOtpCode] = useState("");
-  const [otpAction, setOtpAction] = useState<"edit" | "delete">("edit");
+  const [otpAction, setOtpAction] = useState<"edit" | "delete" | "transfer">("edit");
 
   // delete account dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -277,6 +280,39 @@ export function AccountMovementsPage() {
   const [exportTypeFilter, setExportTypeFilter] = useState("all");
   const [exportFormatCSV, setExportFormatCSV] = useState(false);
   const [exportFormatPDF, setExportFormatPDF] = useState(false);
+
+  const handleExportMovements = async() => {
+    try {
+      const from = exportDateRange.from ? formatApiDate(exportDateRange.from) : undefined;
+      const to = exportDateRange.to ? formatApiDate(exportDateRange.to) : undefined;
+      const nameParts = ["Movimientos", from, to].filter(Boolean);
+
+      await ReportsService.create({
+        name: nameParts.join(" "),
+        type: "movements",
+        format: "csv",
+        filters: {
+          accountId,
+          dateFrom: from,
+          dateTo: to,
+          type: exportTypeFilter !== "all" ? exportTypeFilter : undefined,
+        },
+      });
+
+      ToastManager.show({
+        message: t("movements.export_dialog.success"),
+        variant: "success",
+      });
+      setIsExportDialogOpen(false);
+      setExportFormatCSV(false);
+      setExportFormatPDF(false);
+    } catch {
+      ToastManager.show({
+        message: t("movements.export_dialog.error"),
+        variant: "destructive",
+      });
+    }
+  };
 
   /**
    * handle open edit name dialog
@@ -317,18 +353,9 @@ export function AccountMovementsPage() {
       return;
     }
 
-    transferAccountMutation.mutate({
-      fromAccountId: accountId,
-      toAccountId: transferToAccountId,
-      amount: parseCurrencyToMinor(transferAmount),
-    }, {
-      onSuccess: () => {
-        setIsTransferDialogOpen(false);
-        setTransferToAccountId(null);
-        setTransferAmount("");
-        void refetchAccount();
-      },
-    });
+    setIsTransferDialogOpen(false);
+    setOtpAction("transfer");
+    setIsOtpDialogOpen(true);
   };
 
   /**
@@ -363,6 +390,19 @@ export function AccountMovementsPage() {
           setTimeout(() => {
             navigate("/accounts");
           }, 500);
+        },
+      });
+    } else if (otpAction === "transfer" && accountId && transferToAccountId) {
+      transferAccountMutation.mutate({
+        fromAccountId: accountId,
+        toAccountId: transferToAccountId,
+        amount: parseCurrencyToMinor(transferAmount),
+        totp: otpCode,
+      }, {
+        onSuccess: () => {
+          setTransferToAccountId(null);
+          setTransferAmount("");
+          void refetchAccount();
         },
       });
     }
@@ -607,7 +647,8 @@ export function AccountMovementsPage() {
                       </DialogClose>
                       <Button
                         variant="default"
-                        disabled={!exportFormatCSV && !exportFormatPDF}
+                        disabled={!exportFormatCSV}
+                        onClick={() => void handleExportMovements()}
                       >
                         {t("movements.export_dialog.export")}
                       </Button>
@@ -750,10 +791,18 @@ export function AccountMovementsPage() {
         <DialogContent className="max-w-[610px] gap-12">
           <DialogHeader className="gap-2">
             <DialogTitle>
-              {otpAction === "edit" ? t("accounts.otp_dialog.title") : t("accounts.otp_dialog.delete_title")}
+              {otpAction === "edit"
+                ? t("accounts.otp_dialog.title")
+                : otpAction === "delete"
+                  ? t("accounts.otp_dialog.delete_title")
+                  : t("accounts.otp_dialog.transfer_title")}
             </DialogTitle>
             <p className="text-sm text-foreground">
-              {otpAction === "edit" ? t("accounts.otp_dialog.description") : t("accounts.otp_dialog.delete_description")}
+              {otpAction === "edit"
+                ? t("accounts.otp_dialog.description")
+                : otpAction === "delete"
+                  ? t("accounts.otp_dialog.delete_description")
+                  : t("accounts.otp_dialog.transfer_description")}
             </p>
           </DialogHeader>
           <InputOTP

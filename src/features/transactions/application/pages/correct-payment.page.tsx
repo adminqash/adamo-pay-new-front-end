@@ -546,7 +546,7 @@ export const CorrectPaymentPage = () => {
 
     try {
       await correctPayment.mutateAsync(
-        CorrectPaymentMapper.toCorrectPayload(id, transaction),
+        CorrectPaymentMapper.toCorrectPayload(id, transaction, otpCode),
       );
 
       setIsOtpDialogOpen(false);

@@ -189,6 +189,7 @@ export class BeneficiariesService {
       bank: command.bank,
       accountNumber: command.accountNumber,
       isPrimary: command.isPrimary,
+      totp: command.totp,
     };
 
     return apiPost<BankAccountListItemDTO, BankAccount>(
@@ -227,6 +228,7 @@ export class BeneficiariesService {
       beneficiariesApi,
       `/beneficiaries/${command.beneficiaryId}/bank-accounts/${command.bankAccountId}`,
       BankAccountMapper.toDomain,
+      { totp: command.totp },
     );
   }
 
