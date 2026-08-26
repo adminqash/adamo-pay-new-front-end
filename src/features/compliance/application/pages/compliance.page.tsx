@@ -65,8 +65,12 @@ export function CompliancePage() {
                     key={check.id}
                     className={check.batchId ? "cursor-pointer" : undefined}
                     onClick={() => {
+                      if (check.subjectType === "payment") {
+                        navigate(`/transactions/${check.id}/review`);
+                        return;
+                      }
                       if (check.batchId) {
-                        navigate(`/batches/${check.batchId}/transactions/${check.id}`);
+                        navigate(`/batches/${check.batchId}/transactions/${check.id}/review`);
                       }
                     }}
                   >

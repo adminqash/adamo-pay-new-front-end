@@ -224,7 +224,7 @@ const DateRangePicker = ({
  * displays transactions list
  */
 export const TransactionsPage = () => {
-  const { t, i18n } = useTranslation("transactions");
+  const { t, i18n } = useTranslation(["transactions", "compliance"]);
   const { currencyUpper } = useCountry();
   const { accounts } = useAccounts({ page: 1, limit: 20 });
   const [searchParams] = useSearchParams();
@@ -419,7 +419,6 @@ export const TransactionsPage = () => {
       case "for-review":
       case "waiting-for-resolution":
       case "in-review":
-      case "in_review":
         return "warning-medium";
       case "returned":
       case "rejected":
@@ -888,6 +887,36 @@ export const TransactionsPage = () => {
                       </AlertDescription>
                     </Alert>
                   )}
+                  {(displayedTransaction.status === "for-review"
+                    || displayedTransaction.status === "waiting-for-resolution"
+                    || displayedTransaction.status === "in-review") && (
+                    <Alert variant="warning" className="border-0 bg-warning-50">
+                      <Icon symbol="info" />
+                      <AlertTitle>{t("compliance:review.findings_title")}</AlertTitle>
+                      <AlertDescription>
+                        {displayedTransaction.status === "waiting-for-resolution"
+                          ? t("compliance:review.waiting_description")
+                          : t("compliance:review.findings_description")}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {displayedTransaction.screeningFindingsResolved
+                    && displayedTransaction.status !== "for-review"
+                    && displayedTransaction.status !== "waiting-for-resolution" && (
+                    <Alert className="border-0 bg-neutrals-50">
+                      <Icon symbol="info" />
+                      <AlertTitle>{t("compliance:detail.resolved_title")}</AlertTitle>
+                      <AlertDescription className="flex items-center justify-between gap-2">
+                        <span>{t("compliance:detail.resolved_description")}</span>
+                        <Link
+                          to={`/transactions/${displayedTransaction.id}/review`}
+                          className="text-sm font-semibold text-primary"
+                        >
+                          {t("compliance:detail.view_detail")}
+                        </Link>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
                 {/* Timeline section */}
                 <div className="flex flex-col gap-6">
@@ -973,6 +1002,20 @@ export const TransactionsPage = () => {
                   {t("transactions.receipt.download")}
                 </Button>
               </PermissionGate>
+              {(displayedTransaction.status === "for-review"
+                || displayedTransaction.status === "waiting-for-resolution"
+                || displayedTransaction.status === "in-review") && (
+                <Button
+                  variant="default"
+                  size="default"
+                  className="self-start"
+                  asChild
+                >
+                  <Link to={`/transactions/${displayedTransaction.id}/review`}>
+                    {t("compliance:detail.review_payment")}
+                  </Link>
+                </Button>
+              )}
               {(displayedTransaction.status === "returned" || displayedTransaction.status === "rejected") && (
                 <PermissionGate permission={PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE}>
                   <Button

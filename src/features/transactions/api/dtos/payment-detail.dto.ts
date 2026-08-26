@@ -21,6 +21,15 @@ export type PaymentDetailDTO = {
   sourceAccountName?: string
   amount: number
   currency: string
+  batchId?: string
+  batchItemId?: string
+  screeningId?: string
+  screening?: {
+    verdict?: string
+    findings?: Array<{ resolved?: boolean, nombreLista?: string }>
+    findingsResolved?: boolean
+    resolution?: string
+  }
   rejectionReason?: string
   returnReason?: string
   createdAt: string

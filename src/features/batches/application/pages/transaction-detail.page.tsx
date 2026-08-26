@@ -19,10 +19,10 @@ import { Button } from "@adamosuiteservices/ui/button";
 import { PermissionGate } from "@/features/auth/application/components/permission-gate";
 import { PERMISSIONS } from "@/features/auth/domain/permissions";
 import {
-  DOCUMENT_TYPE_CODES,
   DOCUMENT_TYPE_LABELS,
   documentTypeFromLabel,
 } from "@/lib/document-type";
+import { useSourceCatalog } from "@/features/source/application/hooks/use-source-catalog";
 import { Icon } from "@adamosuiteservices/ui/icon";
 import {
   Dialog,
@@ -58,6 +58,7 @@ import {
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
 import { AddBankAccountDialog } from "@/features/beneficiaries/application/components/add-bank-account-dialog";
 import { useState, useEffect } from "react";
+import { complianceNovedadPath, complianceReviewPath, isComplianceStatus } from "@/features/compliance/application/utils/compliance-paths";
 
 /**
  * transaction detail page
@@ -65,10 +66,11 @@ import { useState, useEffect } from "react";
  * displays detailed information about a specific transaction within a batch
  */
 export const TransactionDetailPage = () => {
-  const { t } = useTranslation(["batches", "transactions"]);
+  const { t } = useTranslation(["batches", "transactions", "compliance"]);
   const { batchId, transactionId } = useParams<{ batchId: string, transactionId: string }>();
   const navigate = useNavigate();
   const { currencyUpper, locale } = useCountry();
+  const { documentTypes } = useSourceCatalog("batch");
   const {
     transaction: originalTransaction,
     isLoading,
@@ -839,9 +841,9 @@ export const TransactionDetailPage = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                            {DOCUMENT_TYPE_CODES.map((code) => (
-                              <SelectItem key={code} value={code}>
-                                {DOCUMENT_TYPE_LABELS[code]}
+                            {documentTypes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
                               </SelectItem>
                             ))}
                             </SelectContent>
@@ -1179,8 +1181,16 @@ export const TransactionDetailPage = () => {
                   {/* risk level and link */}
                   <div className="flex items-center justify-between">
                     <RiskLevel level={transaction.restrictiveList.riskLevel} />
-                    <Button variant="link" className="text-[#0e9384]">
-                      {t("batches.transaction_detail.restrictive_list.view_in_risk")}
+                    <Button
+                      variant="link"
+                      className="text-[#0e9384]"
+                      onClick={() => {
+                        if (batchId && transactionId) {
+                          navigate(complianceNovedadPath({ subjectId: transactionId, batchId }));
+                        }
+                      }}
+                    >
+                      {t("compliance:review.review_finding")}
                       <Icon symbol="open_in_new" weight={200} />
                     </Button>
                   </div>
@@ -1209,6 +1219,19 @@ export const TransactionDetailPage = () => {
                 </Button>
               </PermissionGate>
               <PermissionGate permission={PERMISSIONS.PAYMENTS_BATCH_CREATE}>
+              {isComplianceStatus(transaction.status) ? (
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    if (batchId && transactionId) {
+                      navigate(complianceReviewPath({ subjectId: transactionId, batchId }));
+                    }
+                  }}
+                >
+                  {t("compliance:detail.review_payment")}
+                </Button>
+              ) : (
+                <>
               <Button variant="destructive-medium" onClick={() => setIsRejectDialogOpen(true)}>
                 {t("batches.transaction_detail.actions.reject")}
               </Button>
@@ -1216,6 +1239,8 @@ export const TransactionDetailPage = () => {
                 <Icon symbol="check" weight={200} />
                 {t("batches.transaction_detail.actions.approve")}
               </Button>
+                </>
+              )}
               </PermissionGate>
             </div>
             <Button variant="default" onClick={handleReviewLater}>

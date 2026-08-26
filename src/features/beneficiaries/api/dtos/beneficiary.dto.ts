@@ -44,7 +44,7 @@ export type BankAccountListItemDTO = {
   beneficiaryId: string
   bankCode: string
   bankName: string
-  accountType: "savings" | "checking"
+  accountType: string
   accountNumber: string
   accountNumberFormatted?: string
   isPrimary: boolean

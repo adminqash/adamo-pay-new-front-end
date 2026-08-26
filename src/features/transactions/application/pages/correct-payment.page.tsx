@@ -52,11 +52,8 @@ import { CorrectPaymentMapper } from "@/features/transactions/api/mappers/correc
 import { PaymentsService } from "@/features/transactions/api/services/payments.service";
 import { useCorrectPayment } from "@/features/transactions/application/hooks/use-payment-mutations";
 import { withCountryScope } from "@/lib/country/country-code";
-import {
-  DOCUMENT_TYPE_CODES,
-  DOCUMENT_TYPE_LABELS,
-  documentTypeFromLabel,
-} from "@/lib/document-type";
+import { documentTypeFromLabel, DOCUMENT_TYPE_LABELS } from "@/lib/document-type";
+import { useSourceCatalog } from "@/features/source/application/hooks/use-source-catalog";
 import { queryKeys } from "@/lib/query/query-keys";
 import {
   formatCurrencyDisplay,
@@ -98,6 +95,7 @@ export const CorrectPaymentPage = () => {
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
   const correctPayment = useCorrectPayment();
   const { countryCode, currencyUpper } = useCountry();
+  const { documentTypes } = useSourceCatalog("payments");
 
   const paymentQuery = useQuery({
     queryKey: withCountryScope(queryKeys.payments.detail(id ?? ""), countryCode),
@@ -723,9 +721,9 @@ export const CorrectPaymentPage = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                            {DOCUMENT_TYPE_CODES.map((code) => (
-                              <SelectItem key={code} value={code}>
-                                {DOCUMENT_TYPE_LABELS[code]}
+                            {documentTypes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
                               </SelectItem>
                             ))}
                             </SelectContent>

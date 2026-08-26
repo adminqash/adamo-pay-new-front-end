@@ -62,10 +62,10 @@ import { PermissionGate } from "@/features/auth/application/components/permissio
 import { PERMISSIONS } from "@/features/auth/domain/permissions";
 import {
   canonicalizeDocumentType,
-  DOCUMENT_TYPE_CODES,
   DOCUMENT_TYPE_LABELS,
   documentTypeFromLabel,
 } from "@/lib/document-type";
+import { useSourceCatalog } from "@/features/source/application/hooks/use-source-catalog";
 import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { CreditCard, type CreditCardData } from "../components/credit-card";
 import { useState, useRef, useEffect, useMemo } from "react";
@@ -80,6 +80,7 @@ export function BeneficiaryDetailPage() {
   const { beneficiaryId } = useParams();
   const navigate = useNavigate();
   const { currencyUpper, locale: moneyLocale } = useCountry();
+  const { documentTypes } = useSourceCatalog("beneficiaries");
   const [activeTab, setActiveTab] = useState("physical");
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftButton, setShowLeftButton] = useState(false);
@@ -613,9 +614,9 @@ export function BeneficiaryDetailPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {DOCUMENT_TYPE_CODES.map((code) => (
-                              <SelectItem key={code} value={code}>
-                                {t(`beneficiaries.detail.edit_dialog.id_types.${code}`)}
+                            {documentTypes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
                               </SelectItem>
                             ))}
                           </SelectContent>

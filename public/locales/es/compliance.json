@@ -11,7 +11,94 @@
     "status": "Estado",
     "created_at": "Creado"
   },
+  "breadcrumbs": {
+    "transactions": "Transacciones",
+    "batch": "Lote"
+  },
+  "review": {
+    "title": "Revisar pago",
+    "payment_status": "Estado del pago:",
+    "reference": "Número de referencia",
+    "findings_title": "Beneficiario con novedades",
+    "findings_description": "El beneficiario fue encontrado en una lista restrictiva. Revisa los detalles y decide si aprobar o rechazar el pago.",
+    "waiting_title": "Esperando resolución",
+    "waiting_description": "El pago se encuentra siendo revisado por el área de cumplimiento. Te notificaremos cuando tengamos una resolución del mismo.",
+    "beneficiary": "Beneficiario",
+    "full_name": "Nombre completo",
+    "id_type": "Tipo y número de identificación",
+    "payment_info": "Información del pago",
+    "amount": "Monto",
+    "account": "Tipo y número de cuenta",
+    "batch": "Del lote",
+    "restrictive_list": "Lista restrictiva",
+    "list_name": "Nombre de la lista",
+    "review_finding": "Revisar novedad",
+    "resolved": "Resuelta",
+    "resolve_to_confirm": "* Revisa y resuelve la novedad para poder confirmar el pago.",
+    "reject_title": "Rechazar pago",
+    "reject_instruction": "Ingresa el motivo de rechazo a continuación:",
+    "reject_placeholder": "Escribe el motivo...",
+    "reject_action": "Rechazar pago",
+    "approve_action": "Realizar pago",
+    "risk": {
+      "low": "Riesgo bajo",
+      "medium": "Riesgo medio",
+      "high": "Riesgo alto"
+    }
+  },
+  "novedad": {
+    "title": "Novedad",
+    "by_document": "Resultados por documento",
+    "by_name": "Resultados por nombre",
+    "empty": "No hay coincidencias en esta búsqueda.",
+    "finding_details": "Detalles del hallazgo",
+    "list_code": "Código de lista",
+    "list_names": "Nombres de lista",
+    "info_list_id": "Info list id",
+    "comments": "Comentarios",
+    "type": "Tipo",
+    "country": "País",
+    "resolve_title": "Resolver novedad",
+    "resolve_instruction": "Ingresa el motivo de resolución de novedad",
+    "resolve_placeholder": "Escribe el motivo...",
+    "resolve_action": "Resolver novedad",
+    "columns": {
+      "id": "ID",
+      "match": "Coincidencia",
+      "score": "Puntaje",
+      "risk": "Nivel de riesgo"
+    }
+  },
+  "comments": {
+    "placeholder": "Escribe tu comentario aquí...",
+    "submit": "Comentar",
+    "attach": "Adjuntar archivo",
+    "finding_resolution": "Resolución de novedad",
+    "compliance_team": "Equipo de Cumplimiento",
+    "client": "Cliente"
+  },
+  "actions": {
+    "cancel": "Cancelar"
+  },
+  "detail": {
+    "review_payment": "Revisar pago",
+    "resolved_title": "Pago con novedades resueltas",
+    "resolved_description": "Se encontraron hallazgos de novedades que fueron resueltas antes de procesar el pago",
+    "view_detail": "Ver detalle"
+  },
+  "messages": {
+    "finding_resolved": "Novedad resuelta",
+    "comment_created": "Comentario enviado",
+    "approved": "Pago aprobado",
+    "rejected": "Pago rechazado"
+  },
   "errors": {
-    "load_failed": "Error al cargar los pagos de cumplimiento"
+    "load_failed": "Error al cargar los pagos de cumplimiento",
+    "case_failed": "Error al cargar el caso de cumplimiento",
+    "screening_failed": "Error al cargar los resultados de la novedad",
+    "resolve_failed": "No se pudo resolver la novedad",
+    "comment_failed": "No se pudo enviar el comentario",
+    "approve_failed": "No se pudo aprobar el pago",
+    "reject_failed": "No se pudo rechazar el pago"
   }
 }

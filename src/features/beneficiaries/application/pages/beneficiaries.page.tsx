@@ -48,7 +48,8 @@ import {
 } from "@adamosuiteservices/ui/pagination";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
-import { DOCUMENT_TYPE_CODES } from "@/lib/document-type";
+import { useSourceCatalog } from "@/features/source/application/hooks/use-source-catalog";
+import { useCountry } from "@/features/common/contexts/use-country";
 import { StickyFilterHeader } from "@/features/common/components/layout/sticky-filter-header";
 import { ReportsService } from "@/features/reports/api/services/reports.service";
 
@@ -57,6 +58,8 @@ const BENEFICIARIES_QUERY_KEY = ["beneficiaries"];
 export function BeneficiariesPage() {
   const { t } = useTranslation("beneficiaries");
   const navigate = useNavigate();
+  const { countryCode, currency } = useCountry();
+  const { documentTypes, accountTypes, banks } = useSourceCatalog("beneficiaries");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     documentType: "",
@@ -155,6 +158,8 @@ export function BeneficiariesPage() {
       bank: formData.bank,
       accountNumber: formData.accountNumber,
       isMainAccount: formData.isMainAccount,
+      countryCode,
+      currency,
     }, {
       onSuccess: (result) => {
         setIsDialogOpen(false);
@@ -224,9 +229,9 @@ export function BeneficiariesPage() {
                               <SelectValue placeholder={t("beneficiaries.dialog.document_type_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                            {DOCUMENT_TYPE_CODES.map((code) => (
-                              <SelectItem key={code} value={code}>
-                                {t(`beneficiaries.dialog.document_types.${code}`)}
+                            {documentTypes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
                               </SelectItem>
                             ))}
                             </SelectContent>
@@ -278,8 +283,11 @@ export function BeneficiariesPage() {
                               <SelectValue placeholder={t("beneficiaries.dialog.account_type_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="savings">{t("beneficiaries.dialog.account_types.savings")}</SelectItem>
-                              <SelectItem value="checking">{t("beneficiaries.dialog.account_types.checking")}</SelectItem>
+                            {accountTypes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -296,11 +304,11 @@ export function BeneficiariesPage() {
                               <SelectValue placeholder={t("beneficiaries.dialog.bank_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="galicia">Banco Galicia</SelectItem>
-                              <SelectItem value="nacion">Banco Nación</SelectItem>
-                              <SelectItem value="santander">Banco Santander</SelectItem>
-                              <SelectItem value="bbva">BBVA</SelectItem>
-                              <SelectItem value="macro">Banco Macro</SelectItem>
+                            {banks.map((bank) => (
+                              <SelectItem key={bank.achCode} value={bank.achCode}>
+                                {bank.name}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>

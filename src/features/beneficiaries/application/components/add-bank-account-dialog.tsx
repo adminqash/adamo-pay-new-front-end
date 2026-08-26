@@ -19,6 +19,7 @@ import { Checkbox } from "@adamosuiteservices/ui/checkbox";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { canonicalizeDocumentType } from "@/lib/document-type";
+import { useSourceCatalog } from "@/features/source/application/hooks/use-source-catalog";
 
 interface AddBankAccountDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function AddBankAccountDialog({
   onConfirm,
 }: AddBankAccountDialogProps) {
   const { t } = useTranslation("beneficiaries");
+  const { accountTypes, banks } = useSourceCatalog("beneficiaries");
   const [accountType, setAccountType] = useState("");
   const [bank, setBank] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -151,12 +153,11 @@ export function AddBankAccountDialog({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ahorros">
-                    {t("beneficiaries.bank_accounts.dialog.account_types.savings")}
-                  </SelectItem>
-                  <SelectItem value="corriente">
-                    {t("beneficiaries.bank_accounts.dialog.account_types.checking")}
-                  </SelectItem>
+                  {accountTypes.map((item) => (
+                    <SelectItem key={item.code} value={item.code}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -173,10 +174,11 @@ export function AddBankAccountDialog({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bancolombia">Bancolombia</SelectItem>
-                  <SelectItem value="davivienda">Davivienda</SelectItem>
-                  <SelectItem value="bbva">BBVA</SelectItem>
-                  <SelectItem value="cobre">Cobre</SelectItem>
+                  {banks.map((item) => (
+                    <SelectItem key={item.achCode} value={item.achCode}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

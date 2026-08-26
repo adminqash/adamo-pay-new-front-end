@@ -13,6 +13,12 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   checking: "Corriente",
   ahorros: "Ahorros",
   corriente: "Corriente",
+  "37": "Ahorros",
+  "27": "Corriente",
+  breb: "BreB",
+  pix: "PIX",
+  clabe: "Clabe Account",
+  spei_card: "Spei Card Number",
 };
 
 function mapStatus(status: string): TransactionStatus {
@@ -54,8 +60,25 @@ function hasReferenceIssue(errors: BatchTransactionValidationErrorDTO[]): boolea
 
 function mapRestrictiveList(
   errors: BatchTransactionValidationErrorDTO[],
-  screening?: BatchTransactionDTO["screening"],
+  screening?: BatchTransactionDTO["screening"] & {
+    findings?: Array<{
+      codigoLista?: string
+      nombreLista?: string
+      riskLevel?: number
+    }>
+    maxRiskLevel?: number
+  },
 ) {
+  const findings = screening?.findings ?? [];
+  if (findings.length > 0) {
+    const primary = findings[0];
+    const level = screening?.maxRiskLevel ?? primary.riskLevel ?? 0;
+    return {
+      listName: primary.nombreLista || primary.codigoLista || "Lista restrictiva",
+      riskLevel: (level >= 4 ? "high" : level >= 3 ? "medium" : "low") as "low" | "medium" | "high",
+    };
+  }
+
   if (screening?.verdict && screening.verdict !== "allow") {
     const firstReason = screening.reasons?.[0];
     const riskLevel
@@ -139,6 +162,8 @@ export class BatchTransactionDetailMapper {
               dto.screening.reasons?.[0]?.detail
               ?? dto.screening.reasons?.[0]?.code
               ?? validationErrors.find((error) => error.field === "screening")?.message,
+            findingsResolved: dto.screening.findingsResolved === true,
+            resolution: dto.screening.resolution,
           }
         : null,
     };

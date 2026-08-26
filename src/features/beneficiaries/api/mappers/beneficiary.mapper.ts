@@ -30,6 +30,14 @@ function mapListStatus(flags: BeneficiaryListItemDTO["flags"]): "warning" | "suc
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   savings: "Ahorros",
   checking: "Corriente",
+  "37": "Ahorros",
+  "27": "Corriente",
+  ahorros: "Ahorros",
+  corriente: "Corriente",
+  breb: "BreB",
+  pix: "PIX",
+  clabe: "Clabe Account",
+  spei_card: "Spei Card Number",
 };
 
 function mapPaymentStatus(status: string): BeneficiaryTransaction["status"] {

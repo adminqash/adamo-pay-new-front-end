@@ -3,45 +3,50 @@ export const DOCUMENT_TYPE_CODES = [
   "CE",
   "NIT",
   "PA",
+  "PEP",
   "TI",
   "PPT",
+  "DNI",
+  "CUIT",
+  "RUT",
+  "CPF",
+  "CNPJ",
+  "RFC",
+  "CURP",
+  "RUC",
+  "CED_EXT",
 ] as const;
 
-export type DocumentTypeCode = (typeof DOCUMENT_TYPE_CODES)[number];
+export type DocumentTypeCode = (typeof DOCUMENT_TYPE_CODES)[number] | string;
 
 export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   CC: "Cédula de ciudadanía",
   CE: "Cédula de extranjería",
-  NIT: "NIT",
+  NIT: "Número de identificación tributaria",
   PA: "Pasaporte",
+  PEP: "Permiso Especial de Permanencia",
   TI: "Tarjeta de identidad",
-  PPT: "Permiso por protección temporal",
+  PPT: "Permiso por Protección Temporal",
+  DNI: "Documento Nacional de Identidad",
+  CUIT: "CUIT",
+  RUT: "RUT",
+  CPF: "Cadastro de Pessoas Físicas",
+  CNPJ: "Cadastro Nacional da Pessoa Jurídica",
+  RFC: "Registro Federal de Contribuyentes",
+  CURP: "Clave Única de Registro de Población",
+  RUC: "Registro Único de Contribuyentes",
+  CED_EXT: "Carné de Extranjería",
   cc: "Cédula de ciudadanía",
   ce: "Cédula de extranjería",
   nit: "NIT",
   passport: "Pasaporte",
   ti: "Tarjeta de identidad",
-  ppt: "Permiso por protección temporal",
-};
-
-const DOCUMENT_TYPE_ALIASES: Record<string, DocumentTypeCode> = {
-  c: "CC",
-  cc: "CC",
-  dni: "CC",
-  ce: "CE",
-  nit: "NIT",
-  cuit: "NIT",
-  cuil: "NIT",
-  pa: "PA",
-  passport: "PA",
-  pasaporte: "PA",
-  ti: "TI",
-  ppt: "PPT",
+  ppt: "Permiso por Protección Temporal",
 };
 
 export function canonicalizeDocumentType(
   value: string | undefined | null,
-): DocumentTypeCode | undefined {
+): string | undefined {
   const raw = String(value ?? "").trim();
   if (!raw) {
     return undefined;
@@ -53,17 +58,42 @@ export function canonicalizeDocumentType(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
 
-  if (DOCUMENT_TYPE_ALIASES[compact]) {
-    return DOCUMENT_TYPE_ALIASES[compact];
+  const exact = DOCUMENT_TYPE_CODES.find(
+    (code) => code.toUpperCase() === raw.toUpperCase() || code.toLowerCase().replace(/[^a-z0-9]+/g, "") === compact,
+  );
+  if (exact) {
+    return exact;
   }
 
-  const upper = raw.toUpperCase();
-  return (DOCUMENT_TYPE_CODES as readonly string[]).includes(upper)
-    ? (upper as DocumentTypeCode)
-    : undefined;
+  const aliases: Record<string, string> = {
+    c: "CC",
+    cedula: "CC",
+    cedulaciudadania: "CC",
+    e: "CE",
+    cedulaextranjeria: "CE",
+    n: "NIT",
+    p: "PA",
+    pas: "PA",
+    passport: "PA",
+    pasaporte: "PA",
+    pep: "PEP",
+    tarjetadeidentidad: "TI",
+    cuit: "CUIT",
+    cuil: "CUIT",
+    rut: "RUT",
+    cpf: "CPF",
+    cnpj: "CNPJ",
+    rfc: "RFC",
+    curp: "CURP",
+    ruc: "RUC",
+    cedext: "CED_EXT",
+    carneextranjeria: "CED_EXT",
+  };
+
+  return aliases[compact];
 }
 
-export function documentTypeFromLabel(displayType: string): DocumentTypeCode {
+export function documentTypeFromLabel(displayType: string): string {
   const canonical = canonicalizeDocumentType(displayType);
   if (canonical) {
     return canonical;
@@ -78,8 +108,15 @@ export function documentTypeFromLabel(displayType: string): DocumentTypeCode {
   if (normalized.includes("ppt") || normalized.includes("proteccion") || normalized.includes("protección")) {
     return "PPT";
   }
+  if (normalized.includes("cuit")) return "CUIT";
+  if (normalized.includes("curp")) return "CURP";
+  if (normalized.includes("rfc")) return "RFC";
+  if (normalized.includes("cpf")) return "CPF";
+  if (normalized.includes("cnpj")) return "CNPJ";
+  if (normalized.includes("rut")) return "RUT";
+  if (normalized.includes("ruc")) return "RUC";
 
-  return "CC";
+  return displayType.trim().toUpperCase() || "CC";
 }
 
 export function documentTypeLabel(value: string | undefined | null): string {
@@ -88,9 +125,9 @@ export function documentTypeLabel(value: string | undefined | null): string {
   }
 
   const canonical = canonicalizeDocumentType(value);
-  if (canonical) {
+  if (canonical && DOCUMENT_TYPE_LABELS[canonical]) {
     return DOCUMENT_TYPE_LABELS[canonical];
   }
 
-  return DOCUMENT_TYPE_LABELS[value.trim().toLowerCase()] ?? value;
+  return DOCUMENT_TYPE_LABELS[value.trim()] ?? DOCUMENT_TYPE_LABELS[value.trim().toLowerCase()] ?? value;
 }

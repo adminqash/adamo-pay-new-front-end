@@ -28,6 +28,8 @@ const ProfilePage = lazy(() => import("@/features/profile/application/pages/prof
 const ReportsPage = lazy(() => import("@/features/reports/application/pages/reports.page").then((module) => ({ default: module.ReportsPage })));
 const NotificationsPage = lazy(() => import("@/features/notifications/application/pages/notifications.page").then((module) => ({ default: module.NotificationsPage })));
 const CompliancePage = lazy(() => import("@/features/compliance/application/pages/compliance.page").then((module) => ({ default: module.CompliancePage })));
+const ReviewPaymentPage = lazy(() => import("@/features/compliance/application/pages/review-payment.page").then((module) => ({ default: module.ReviewPaymentPage })));
+const FindingReviewPage = lazy(() => import("@/features/compliance/application/pages/finding-review.page").then((module) => ({ default: module.FindingReviewPage })));
 const CollectionsPage = lazy(() => import("@/features/collections/application/pages/collections.page").then((module) => ({ default: module.CollectionsPage })));
 
 function guarded(
@@ -86,6 +88,22 @@ export const router = createBrowserRouter([
         element: guarded(PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE, <CorrectPaymentPage />),
       },
       {
+        path: "transactions/:paymentId/review",
+        element: guarded(
+          [PERMISSIONS.COMPLIANCE_PENDING_LIST, PERMISSIONS.TRANSACTIONS_LIST, PERMISSIONS.PAYMENTS_INDIVIDUAL_LIST],
+          <ReviewPaymentPage />,
+          "any",
+        ),
+      },
+      {
+        path: "transactions/:paymentId/novedad",
+        element: guarded(
+          [PERMISSIONS.COMPLIANCE_PENDING_LIST, PERMISSIONS.TRANSACTIONS_LIST, PERMISSIONS.PAYMENTS_INDIVIDUAL_LIST],
+          <FindingReviewPage />,
+          "any",
+        ),
+      },
+      {
         path: "batches",
         element: guarded(PERMISSIONS.PAYMENTS_BATCH_LIST, <BatchesPage />),
       },
@@ -100,6 +118,22 @@ export const router = createBrowserRouter([
       {
         path: "batches/:batchId/transactions/:transactionId",
         element: guarded(PERMISSIONS.PAYMENTS_BATCH_LIST, <TransactionDetailPage />),
+      },
+      {
+        path: "batches/:batchId/transactions/:transactionId/review",
+        element: guarded(
+          [PERMISSIONS.COMPLIANCE_PENDING_LIST, PERMISSIONS.PAYMENTS_BATCH_LIST],
+          <ReviewPaymentPage />,
+          "any",
+        ),
+      },
+      {
+        path: "batches/:batchId/transactions/:transactionId/novedad",
+        element: guarded(
+          [PERMISSIONS.COMPLIANCE_PENDING_LIST, PERMISSIONS.PAYMENTS_BATCH_LIST],
+          <FindingReviewPage />,
+          "any",
+        ),
       },
       {
         path: "accounts",

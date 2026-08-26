@@ -146,7 +146,6 @@ export const BatchDetailPage = () => {
       case "for-review":
       case "waiting-for-resolution":
       case "in-review":
-      case "in_review":
         return "warning-medium";
       case "returned":
       case "rejected":

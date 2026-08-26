@@ -13,5 +13,7 @@ export type TransactionDetail = Transaction & {
   destinationAccountLabel: string
   sourceAccountName: string
   statusReason?: string
+  batchId?: string
+  screeningFindingsResolved?: boolean
   timeline: TransactionTimelineItem[]
 };

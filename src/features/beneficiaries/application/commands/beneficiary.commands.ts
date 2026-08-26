@@ -7,6 +7,8 @@ export type CreateBeneficiaryCommand = {
   bank: string
   accountNumber: string
   isMainAccount?: boolean
+  countryCode?: string
+  currency?: string
 };
 
 export type UpdateBeneficiaryCommand = {

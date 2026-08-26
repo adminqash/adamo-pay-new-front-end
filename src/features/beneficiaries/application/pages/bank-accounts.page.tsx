@@ -40,7 +40,7 @@ import { AddBankAccountDialog } from "../components/add-bank-account-dialog";
 import { DeleteBankAccountDialog } from "../components/delete-bank-account-dialog";
 import { EditBankAccountDialog } from "../components/edit-bank-account-dialog";
 import { useBankAccounts, useBeneficiaryDetail, useCreateBankAccount, useDeleteBankAccount, useSetPrimaryBankAccount, useUpdateBankAccount } from "../hooks/use-beneficiaries";
-import { mapAccountTypeToFormValue, mapBankNameToSlug } from "../utils/beneficiary-form.utils";
+import { mapBankNameToSlug } from "../utils/beneficiary-form.utils";
 import type { BankAccount } from "../entities/beneficiary.entity";
 import {
   Pagination,
@@ -127,7 +127,7 @@ export function BankAccountsPage() {
       setAccountToEdit({
         id: account.id,
         bank: mapBankNameToSlug(account.bank),
-        accountType: mapAccountTypeToFormValue(account.accountType),
+        accountType: account.accountType,
         accountNumber: account.accountNumber,
         isPrimary: account.isPrimary,
       });

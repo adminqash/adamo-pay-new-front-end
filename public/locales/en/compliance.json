@@ -11,7 +11,94 @@
     "status": "Status",
     "created_at": "Created"
   },
+  "breadcrumbs": {
+    "transactions": "Transactions",
+    "batch": "Batch"
+  },
+  "review": {
+    "title": "Review payment",
+    "payment_status": "Payment status:",
+    "reference": "Reference number",
+    "findings_title": "Beneficiary with findings",
+    "findings_description": "The beneficiary was found on a restrictive list. Review the details and decide whether to approve or reject the payment.",
+    "waiting_title": "Waiting for resolution",
+    "waiting_description": "This payment is being reviewed by the compliance team. We will notify you when a resolution is available.",
+    "beneficiary": "Beneficiary",
+    "full_name": "Full name",
+    "id_type": "ID type and number",
+    "payment_info": "Payment information",
+    "amount": "Amount",
+    "account": "Account type and number",
+    "batch": "From batch",
+    "restrictive_list": "Restrictive list",
+    "list_name": "List name",
+    "review_finding": "Review finding",
+    "resolved": "Resolved",
+    "resolve_to_confirm": "* Review and resolve the finding to confirm the payment.",
+    "reject_title": "Reject payment",
+    "reject_instruction": "Enter the rejection reason below:",
+    "reject_placeholder": "Write the reason...",
+    "reject_action": "Reject payment",
+    "approve_action": "Make payment",
+    "risk": {
+      "low": "Low risk",
+      "medium": "Medium risk",
+      "high": "High risk"
+    }
+  },
+  "novedad": {
+    "title": "Finding",
+    "by_document": "Results by document",
+    "by_name": "Results by name",
+    "empty": "There are no matches in this search.",
+    "finding_details": "Finding details",
+    "list_code": "List code",
+    "list_names": "List names",
+    "info_list_id": "Info list id",
+    "comments": "Comments",
+    "type": "Type",
+    "country": "Country",
+    "resolve_title": "Resolve finding",
+    "resolve_instruction": "Enter the reason for resolving the finding",
+    "resolve_placeholder": "Write the reason...",
+    "resolve_action": "Resolve finding",
+    "columns": {
+      "id": "ID",
+      "match": "Match",
+      "score": "Score",
+      "risk": "Risk level"
+    }
+  },
+  "comments": {
+    "placeholder": "Write your comment here...",
+    "submit": "Comment",
+    "attach": "Attach file",
+    "finding_resolution": "Finding resolution",
+    "compliance_team": "Compliance team",
+    "client": "Client"
+  },
+  "actions": {
+    "cancel": "Cancel"
+  },
+  "detail": {
+    "review_payment": "Review payment",
+    "resolved_title": "Payment with resolved findings",
+    "resolved_description": "Findings were identified and resolved before processing the payment",
+    "view_detail": "View detail"
+  },
+  "messages": {
+    "finding_resolved": "Finding resolved",
+    "comment_created": "Comment sent",
+    "approved": "Payment approved",
+    "rejected": "Payment rejected"
+  },
   "errors": {
-    "load_failed": "Failed to load compliance payments"
+    "load_failed": "Failed to load compliance payments",
+    "case_failed": "Failed to load the compliance case",
+    "screening_failed": "Failed to load finding results",
+    "resolve_failed": "Could not resolve the finding",
+    "comment_failed": "Could not send the comment",
+    "approve_failed": "Could not approve the payment",
+    "reject_failed": "Could not reject the payment"
   }
 }

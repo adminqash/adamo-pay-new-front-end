@@ -78,8 +78,10 @@ export const PERMISSION_BY_UUID: Record<string, PermissionName> = {
 export const ORGANIZATION_OPERATING_COUNTRIES = [
   "ARG",
   "BRA",
+  "CHL",
   "COL",
   "MEX",
+  "PER",
 ] as const;
 
 export type PermissionMode = "all" | "any";

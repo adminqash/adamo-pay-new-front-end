@@ -30,5 +30,7 @@ export type BatchTransactionDetail = {
     verdict?: string
     sendable: boolean
     detail?: string
+    findingsResolved?: boolean
+    resolution?: "none" | "client" | "adamo" | "final"
   } | null
 };

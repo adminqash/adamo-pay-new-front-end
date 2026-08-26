@@ -38,10 +38,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BeneficiariesService } from "@/features/beneficiaries/api/services/beneficiaries.service";
 import { useBankAccounts } from "@/features/beneficiaries/application/hooks/use-beneficiaries";
-import {
-  mapAccountTypeToFormValue,
-  mapFormAccountTypeToApi,
-} from "@/features/beneficiaries/application/utils/beneficiary-form.utils";
+import { mapFormAccountTypeToApi } from "@/features/beneficiaries/application/utils/beneficiary-form.utils";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
 import { useCountry } from "@/features/common/contexts/use-country";
@@ -52,9 +49,12 @@ import {
 } from "@/lib/money/money";
 import {
   canonicalizeDocumentType,
-  DOCUMENT_TYPE_CODES,
-  DOCUMENT_TYPE_LABELS,
 } from "@/lib/document-type";
+import {
+  useSourceCatalog,
+  matchSourceCode,
+  sourceCatalogLabel,
+} from "@/features/source/application/hooks/use-source-catalog";
 import { useCreatePayment } from "@/features/transactions/application/hooks/use-payment-mutations";
 import { useAutoSelectDebitAccount } from "@/features/auth/application/hooks/use-auto-select-debit-account";
 import { DebitAccountPicker } from "@/features/accounts/application/components/debit-account-picker";
@@ -106,8 +106,14 @@ type SelectedBeneficiary = {
   bankAccountId?: string
 };
 
-function formatAccountLabel(accountType: string, bank: string, accountNumber: string) {
-  const typeLabel = accountType.charAt(0).toUpperCase() + accountType.slice(1);
+function formatAccountLabel(
+  accountType: string,
+  bank: string,
+  accountNumber: string,
+  accountTypes: { code: string, name: string }[] = [],
+) {
+  const typeLabel = sourceCatalogLabel(accountType, accountTypes)
+    || accountType.charAt(0).toUpperCase() + accountType.slice(1);
   const bankLabel = bank.charAt(0).toUpperCase() + bank.slice(1);
   return `${typeLabel}. ${bankLabel} Nº ${accountNumber}`;
 }
@@ -120,6 +126,7 @@ function formatAccountLabel(accountType: string, bank: string, accountNumber: st
 export const CreatePaymentPage = () => {
   const { t } = useTranslation(["transactions", "beneficiaries"]);
   const { countryCode, currency, currencyUpper, locale } = useCountry();
+  const { documentTypes, accountTypes, banks, defaults } = useSourceCatalog("payments");
   const navigate = useNavigate();
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
@@ -209,6 +216,7 @@ export const CreatePaymentPage = () => {
       selectedBankAccount?.accountType ?? selectedBeneficiary.accountType,
       selectedBankAccount?.bank ?? selectedBeneficiary.bank,
       selectedBankAccount?.accountNumber ?? selectedBeneficiary.accountNumber,
+      accountTypes,
     )
     : "";
 
@@ -222,7 +230,11 @@ export const CreatePaymentPage = () => {
       name: detail?.fullName ?? beneficiary.name,
       docType: canonicalizeDocumentType(detail?.identificationDocument.type) ?? "CC",
       docNumber: detail?.identificationDocument.number ?? beneficiary.idNumber,
-      accountType: detail?.bankAccount.type ?? "corriente",
+      accountType:
+        matchSourceCode(detail?.bankAccount.type, accountTypes)
+        || defaults?.accountType
+        || detail?.bankAccount.type
+        || "",
       bank: detail?.bankAccount.bank ?? "",
       accountNumber: detail?.bankAccount.number ?? "",
     });
@@ -312,7 +324,8 @@ export const CreatePaymentPage = () => {
         destinationBankAccountId: selectedBankAccountId ?? selectedBeneficiary.bankAccountId,
         destinationSnapshot: {
           accountType: mapFormAccountTypeToApi(
-            mapAccountTypeToFormValue(selectedBeneficiary.accountType),
+            matchSourceCode(selectedBeneficiary.accountType, accountTypes)
+            || selectedBeneficiary.accountType,
           ),
           bank: selectedBeneficiary.bank,
           accountNumber: selectedBeneficiary.accountNumber,
@@ -475,9 +488,9 @@ export const CreatePaymentPage = () => {
                               <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                            {DOCUMENT_TYPE_CODES.map((code) => (
-                              <SelectItem key={code} value={code}>
-                                {DOCUMENT_TYPE_LABELS[code]}
+                            {documentTypes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
                               </SelectItem>
                             ))}
                             </SelectContent>
@@ -544,8 +557,11 @@ export const CreatePaymentPage = () => {
                               <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="corriente">Corriente</SelectItem>
-                              <SelectItem value="ahorros">Ahorros</SelectItem>
+                            {accountTypes.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -562,9 +578,11 @@ export const CreatePaymentPage = () => {
                               <SelectValue placeholder={t("transactions.create_payment.select_placeholder")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="davivienda">Davivienda</SelectItem>
-                              <SelectItem value="bancolombia">Bancolombia</SelectItem>
-                              <SelectItem value="bbva">BBVA</SelectItem>
+                            {banks.map((bank) => (
+                              <SelectItem key={bank.achCode} value={bank.achCode}>
+                                {bank.name}
+                              </SelectItem>
+                            ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -909,7 +927,7 @@ export const CreatePaymentPage = () => {
                       <div className="flex h-16 items-center">
                         <div className="flex flex-1 flex-col gap-2">
                           <SelectableCardTitle>
-                            {account.accountType}
+                            {sourceCatalogLabel(account.accountType, accountTypes) || account.accountType}
                           </SelectableCardTitle>
                           <div className={`
                             flex h-10 items-center justify-between gap-2 pl-2

@@ -8,6 +8,12 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   checking: "Corriente",
   ahorros: "Ahorros",
   corriente: "Corriente",
+  "37": "Ahorros",
+  "27": "Corriente",
+  breb: "BreB",
+  pix: "PIX",
+  clabe: "Clabe Account",
+  spei_card: "Spei Card Number",
 };
 
 function formatIdType(value: string): string {

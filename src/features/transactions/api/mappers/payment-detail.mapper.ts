@@ -14,6 +14,12 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   checking: "Corriente",
   ahorros: "Ahorros",
   corriente: "Corriente",
+  "37": "Ahorros",
+  "27": "Corriente",
+  breb: "BreB",
+  pix: "PIX",
+  clabe: "Clabe Account",
+  spei_card: "Spei Card Number",
 };
 
 function formatTimelineTime(value: string): string {
@@ -73,6 +79,11 @@ export class PaymentDetailMapper {
       destinationAccountLabel: `${accountType}. ${detail.destination.bank} Nº ${detail.destination.accountNumber}`,
       sourceAccountName: detail.sourceAccountName ?? "Cuenta",
       statusReason: detail.returnReason ?? detail.rejectionReason,
+      batchId: detail.batchId,
+      screeningFindingsResolved: detail.screening?.findingsResolved === true
+        || (detail.screening?.findings?.length
+          ? detail.screening.findings.every((finding) => finding.resolved)
+          : false),
       timeline: PaymentDetailMapper.toTimeline(timeline),
     };
   }

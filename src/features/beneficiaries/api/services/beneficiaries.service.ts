@@ -152,6 +152,8 @@ export class BeneficiariesService {
       bank: command.bank,
       accountNumber: command.accountNumber,
       isMainAccount: command.isMainAccount,
+      countryCode: command.countryCode,
+      currency: command.currency,
     };
 
     return apiPost<BeneficiaryDetailDTO, Beneficiary>(

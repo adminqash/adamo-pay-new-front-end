@@ -25,6 +25,16 @@ export type BatchTransactionScreeningDTO = {
   caseId?: string
   reasons?: Array<{ code: string, rule?: string, detail?: string }>
   alerts?: Array<{ code: string, rule?: string, detail?: string }>
+  findings?: Array<{
+    codigoLista?: string
+    findingId?: string
+    key?: string
+    nombreLista?: string
+    riskLevel?: number
+    resolved?: boolean
+  }>
+  maxRiskLevel?: number
+  findingsResolved?: boolean
   deferredScreening?: boolean
   screenedAt?: string
   sendable?: boolean
