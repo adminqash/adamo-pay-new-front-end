@@ -30,10 +30,11 @@ import { useTransactionDetail } from "../hooks/use-transaction-detail";
 import { usePaymentsRealtime } from "../hooks/use-payments-realtime";
 import { useDownloadPaymentReceipt } from "../hooks/use-payment-mutations";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
-import { buildTransactionListParams } from "../utils/transaction-filters.utils";
+import { buildTransactionListParams, clampStatusFilterForCompliance } from "../utils/transaction-filters.utils";
 import { formatCurrencyDisplay } from "@/lib/money/money";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import { PERMISSIONS } from "@/features/auth/domain/permissions";
 import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { Input } from "@adamosuiteservices/ui/input";
@@ -226,6 +227,8 @@ const DateRangePicker = ({
 export const TransactionsPage = () => {
   const { t, i18n } = useTranslation(["transactions", "compliance"]);
   const { currencyUpper } = useCountry();
+  const { capabilities } = usePermissions();
+  const isComplianceScope = capabilities.isComplianceTransactionsScope;
   const { accounts } = useAccounts({ page: 1, limit: 20 });
   const [searchParams] = useSearchParams();
 
@@ -246,6 +249,12 @@ export const TransactionsPage = () => {
   const [accountFilter, setAccountFilter] = useState<string[]>(["all"]);
   const [statusFilter, setStatusFilter] = useState<string[]>(() => {
     const statusParam = searchParams.get("status");
+    if (isComplianceScope) {
+      if (statusParam === "for-review" || statusParam === "waiting-for-resolution") {
+        return [statusParam];
+      }
+      return ["all"];
+    }
     if (!statusParam) {
       return ["all"];
     }
@@ -292,14 +301,40 @@ export const TransactionsPage = () => {
     [accounts, t],
   );
 
+  const statusFilterOptions = useMemo(
+    () => {
+      const complianceOptions = [
+        { value: "all", label: t("transactions.filters.all_status") },
+        { value: "for-review", label: t("transactions.status.for-review") },
+        { value: "waiting-for-resolution", label: t("transactions.status.waiting-for-resolution") },
+      ];
+      if (isComplianceScope) {
+        return complianceOptions;
+      }
+      return [
+        ...complianceOptions.slice(0, 1),
+        { value: "reviewed", label: t("transactions.status.reviewed") },
+        { value: "for-review", label: t("transactions.status.for-review") },
+        { value: "waiting-for-resolution", label: t("transactions.status.waiting-for-resolution") },
+        { value: "validated", label: t("transactions.status.validated") },
+        { value: "paid", label: t("transactions.status.paid") },
+        { value: "returned", label: t("transactions.status.returned") },
+        { value: "rejected", label: t("transactions.status.rejected") },
+      ];
+    },
+    [isComplianceScope, t],
+  );
+
   const listParams = useMemo(
     () => buildTransactionListParams({
       dateRange,
-      statusFilter,
+      statusFilter: isComplianceScope
+        ? clampStatusFilterForCompliance(statusFilter)
+        : statusFilter,
       accountFilter,
       search: searchQuery,
     }),
-    [dateRange, statusFilter, accountFilter, searchQuery],
+    [dateRange, statusFilter, accountFilter, searchQuery, isComplianceScope],
   );
 
   const { transactions, totalCount, refetch } = useTransactions(listParams);
@@ -365,7 +400,10 @@ export const TransactionsPage = () => {
    */
   const handleExportTransactions = async() => {
     try {
-      const statuses = exportStatusFilter.filter((status) => status !== "all");
+      const statuses = (isComplianceScope
+        ? clampStatusFilterForCompliance(exportStatusFilter)
+        : exportStatusFilter
+      ).filter((status) => status !== "all");
       const from = exportDateRange.from ? formatApiDate(exportDateRange.from) : undefined;
       const to = exportDateRange.to ? formatApiDate(exportDateRange.to) : undefined;
       const nameParts = ["Transacciones", from, to].filter(Boolean);
@@ -514,16 +552,7 @@ export const TransactionsPage = () => {
                             alwaysShowPlaceholder
                             valuePosition="right"
                             icon="search_activity"
-                            options={[
-                              { value: "all", label: t("transactions.export_dialog.status_all") },
-                              { value: "reviewed", label: t("transactions.status.reviewed") },
-                              { value: "for-review", label: t("transactions.status.for-review") },
-                              { value: "waiting-for-resolution", label: t("transactions.status.waiting-for-resolution") },
-                              { value: "validated", label: t("transactions.status.validated") },
-                              { value: "paid", label: t("transactions.status.paid") },
-                              { value: "returned", label: t("transactions.status.returned") },
-                              { value: "rejected", label: t("transactions.status.rejected") },
-                            ]}
+                            options={statusFilterOptions}
                             value={exportStatusFilter}
                             onValueChange={(value) => setExportStatusFilter(value as string[])}
                             labels={{
@@ -656,16 +685,7 @@ export const TransactionsPage = () => {
                   alwaysShowPlaceholder
                   valuePosition="right"
                   icon="search_activity"
-                  options={[
-                    { value: "all", label: t("transactions.filters.all_status") },
-                    { value: "reviewed", label: t("transactions.status.reviewed") },
-                    { value: "for-review", label: t("transactions.status.for-review") },
-                    { value: "waiting-for-resolution", label: t("transactions.status.waiting-for-resolution") },
-                    { value: "validated", label: t("transactions.status.validated") },
-                    { value: "paid", label: t("transactions.status.paid") },
-                    { value: "returned", label: t("transactions.status.returned") },
-                    { value: "rejected", label: t("transactions.status.rejected") },
-                  ]}
+                  options={statusFilterOptions}
                   value={statusFilter}
                   onValueChange={(value) => setStatusFilter(value as string[])}
                   labels={{

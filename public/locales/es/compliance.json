@@ -47,6 +47,9 @@
     "reject_instruction": "Ingresa el motivo de rechazo a continuación:",
     "reject_placeholder": "Escribe el motivo...",
     "reject_action": "Rechazar pago",
+    "approve_title": "Aprobar pago",
+    "approve_instruction": "Ingresa el motivo de aprobación a continuación:",
+    "approve_placeholder": "Escribe el motivo...",
     "approve_action": "Realizar pago",
     "risk": {
       "low": "Riesgo bajo",

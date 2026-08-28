@@ -147,7 +147,7 @@ export function useApproveComplianceCase(subjectId: string) {
 
   return useMutation({
     mutationKey: [ComplianceService.APPROVE_KEY, subjectId],
-    mutationFn: (note?: string) => ComplianceService.approve(subjectId, note),
+    mutationFn: (note: string) => ComplianceService.approve(subjectId, note),
     meta: {
       successMessage: t("compliance:messages.approved", {
         defaultValue: "Pago aprobado",

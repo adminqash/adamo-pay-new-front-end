@@ -28,6 +28,8 @@ export type BatchUploadProgressState = {
         cell?: string
         column?: string
         excelRow?: number
+        value?: string
+        header?: string
       }>
     }>
   }
@@ -93,6 +95,18 @@ export function subscribeToBatchUploadEvents(
       const data = message.data ?? {};
       const progress = Number(data.progress ?? 0);
       const summary = data.summary as BatchUploadProgressState["summary"] | undefined;
+      const payloadAmount = Number(data.totalAmount ?? 0);
+      const summaryWithAmount = summary
+        ? {
+            ...summary,
+            totalAmount:
+              payloadAmount > 0
+                ? payloadAmount
+                : summary.totalAmount > 0
+                  ? summary.totalAmount
+                  : 0,
+          }
+        : undefined;
 
       onUpdate({
         status: resolvePhase(eventType, data),
@@ -100,7 +114,7 @@ export function subscribeToBatchUploadEvents(
         uploadId: typeof data.uploadId === "string" ? data.uploadId : undefined,
         requestId: message.traceId,
         fileName: typeof data.fileName === "string" ? data.fileName : undefined,
-        ...(summary ? { summary } : {}),
+        ...(summaryWithAmount ? { summary: summaryWithAmount } : {}),
         storage: typeof data.storage === "string" ? data.storage : undefined,
         s3Key: typeof data.s3Key === "string" ? data.s3Key : undefined,
         errorMessage:

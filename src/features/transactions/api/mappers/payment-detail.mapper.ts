@@ -37,17 +37,62 @@ function mapTimelineStatus(
   return "pending";
 }
 
-function mapTimelineTitle(event: string): string {
+const GENERIC_TIMELINE_MESSAGES = new Set([
+  "funds reserved on source account",
+  "payment requires compliance review",
+  "backoffice status update",
+  "reserved funds committed (debited)",
+  "reserved funds released",
+  "pago iniciado",
+]);
+
+function actorNameFromEvent(event: PaymentTimelineDTO["events"][number]): string | undefined {
+  if (typeof event.actorName === "string" && event.actorName.trim()) {
+    return event.actorName.trim();
+  }
+  const fromMeta = event.metadata?.actorName;
+  if (typeof fromMeta === "string" && fromMeta.trim()) {
+    return fromMeta.trim();
+  }
+  return undefined;
+}
+
+function timelineDescription(
+  event: PaymentTimelineDTO["events"][number],
+  title: string,
+): string | undefined {
+  const actorName = actorNameFromEvent(event);
+  const rawMessage = event.message?.trim();
+  const backofficeNote = rawMessage?.match(/^backoffice status update(?::\s*(.*))?$/i)?.[1]?.trim();
+  const message = backofficeNote || rawMessage;
+  const isGeneric = !message
+    || GENERIC_TIMELINE_MESSAGES.has(message.toLowerCase())
+    || message.toLowerCase() === title.toLowerCase()
+    || message.toLowerCase().startsWith("backoffice status update");
+  const parts = [actorName, isGeneric ? undefined : message].filter(Boolean);
+  if (parts.length === 0) {
+    return undefined;
+  }
+  return parts.join(" · ");
+}
+
+function mapTimelineTitle(event: string, status?: string, message?: string): string {
+  const canonical = event.replace(/_/g, "-");
+  const genericBackoffice = (message || "").toLowerCase().startsWith("backoffice status update");
+  if (genericBackoffice && (canonical === "created" || canonical === "approved")) {
+    return status === "rejected" ? "Cumplimiento rechazado" : "Cumplimiento aprobado";
+  }
+
   const titles: Record<string, string> = {
     created: "Pago iniciado",
     validated: "Pago validado",
     paid: "Pago completado con éxito.",
     returned: "Pago retornado",
     rejected: "Pago rechazado",
-    dispatched: "En proceso",
+    dispatched: "Enviado a procesamiento",
     "compliance-review": "En revisión de cumplimiento",
     "compliance-passed": "Cumplimiento aprobado",
-    "compliance-failed": "Cumplimiento fallido",
+    "compliance-failed": "Cumplimiento rechazado",
     "funds-reserved": "Fondos reservados",
     "funds-released": "Fondos liberados",
     "funds-committed": "Fondos debitados",
@@ -56,7 +101,7 @@ function mapTimelineTitle(event: string): string {
     refunded: "Pago reembolsado",
   };
 
-  return titles[event.replace(/_/g, "-")] ?? "Actualización de pago";
+  return titles[canonical] ?? "Actualización de pago";
 }
 
 export class PaymentDetailMapper {
@@ -93,12 +138,15 @@ export class PaymentDetailMapper {
       return [];
     }
 
-    return timeline.events.map((event, index, events) => ({
-      id: event.id,
-      title: event.message ?? mapTimelineTitle(event.event),
-      description: event.message,
-      time: formatTimelineTime(event.createdAt),
-      status: mapTimelineStatus(event.event, index, events.length),
-    }));
+    return timeline.events.map((event, index, events) => {
+      const title = mapTimelineTitle(event.event, event.status, event.message);
+      return {
+        id: event.id,
+        title,
+        description: timelineDescription(event, title),
+        time: formatTimelineTime(event.createdAt),
+        status: mapTimelineStatus(event.event, index, events.length),
+      };
+    });
   }
 }

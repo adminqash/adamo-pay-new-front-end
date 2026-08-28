@@ -2,6 +2,25 @@ import type { DateRange } from "react-day-picker";
 import type { ListQueryParams } from "@/lib/api/api.types";
 import { formatApiDate } from "@/lib/utils/date.utils";
 
+export const COMPLIANCE_TRANSACTION_STATUSES = [
+  "for-review",
+  "waiting-for-resolution",
+] as const;
+
+export function clampStatusFilterForCompliance(statusFilter: string[]): string[] {
+  if (statusFilter.includes("all") || statusFilter.length === 0) {
+    return [...COMPLIANCE_TRANSACTION_STATUSES];
+  }
+
+  const next = statusFilter.filter((status) =>
+    COMPLIANCE_TRANSACTION_STATUSES.includes(
+      status as (typeof COMPLIANCE_TRANSACTION_STATUSES)[number],
+    ),
+  );
+
+  return next.length > 0 ? next : [...COMPLIANCE_TRANSACTION_STATUSES];
+}
+
 type BuildTransactionFiltersInput = {
   dateRange: DateRange
   statusFilter: string[]

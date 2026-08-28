@@ -47,6 +47,9 @@
     "reject_instruction": "Enter the rejection reason below:",
     "reject_placeholder": "Write the reason...",
     "reject_action": "Reject payment",
+    "approve_title": "Approve payment",
+    "approve_instruction": "Enter the approval reason below:",
+    "approve_placeholder": "Write the reason...",
     "approve_action": "Make payment",
     "risk": {
       "low": "Low risk",

@@ -217,7 +217,8 @@
       },
       "validation_errors": {
         "title": "{{count}} row(s) have file errors. Upload a corrected file to continue.",
-        "item": "{{cell}} · {{field}}: {{message}}"
+        "item": "{{cell}} ({{header}}): \"{{value}}\" — {{message}}",
+        "row": "row"
       },
       "upload_failed": "Could not process the file. Please try uploading again."
     },
