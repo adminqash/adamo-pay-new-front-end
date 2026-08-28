@@ -14,6 +14,8 @@ function generateRequestId(): string {
 export function attachRequestInterceptors(instance: AxiosInstance): void {
   instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.headers.set("Accept-Language", i18next.language);
+    const locale = i18next.language?.toLowerCase().startsWith("en") ? "en" : "es";
+    config.headers.set("X-Locale", locale);
     config.headers.set("X-Request-ID", generateRequestId());
 
     if (!config.params?.countryCode) {

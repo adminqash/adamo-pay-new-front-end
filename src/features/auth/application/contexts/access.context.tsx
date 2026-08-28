@@ -53,8 +53,8 @@ export function AccessProvider({ children }: { children: ReactNode }) {
     [authPermissions, remote],
   );
   const capabilities = useMemo(
-    () => remote?.capabilities ?? resolveAccessCapabilities(permissions),
-    [permissions, remote?.capabilities],
+    () => resolveAccessCapabilities(permissions),
+    [permissions],
   );
   const allowedCountries = useMemo(() => {
     if (Array.isArray(remote?.allowedCountries) && remote.allowedCountries.length > 0) {

@@ -121,6 +121,7 @@ export type AccessCapabilities = {
   canManageUsers: boolean;
   canListCompliancePending: boolean;
   canApproveRejectCompliance: boolean;
+  isComplianceTransactionsScope: boolean;
 };
 
 export function normalizePermission(value: string): string {
@@ -185,6 +186,12 @@ export function resolveAccessCapabilities(
   const canManageUsersGlobal = can(PERMISSIONS.USERS_GLOBAL_MANAGE);
   const canManageUsersAssigned = can(PERMISSIONS.USERS_ASSIGNED_MANAGE);
 
+  const canListCompliancePending = can(PERMISSIONS.COMPLIANCE_PENDING_LIST);
+  const canApproveRejectCompliance = can(PERMISSIONS.COMPLIANCE_APPROVE_REJECT);
+  const canOriginatePayments =
+    can(PERMISSIONS.PAYMENTS_INDIVIDUAL_CREATE)
+    || can(PERMISSIONS.PAYMENTS_BATCH_CREATE);
+
   return {
     countryScope,
     accountScope,
@@ -216,7 +223,10 @@ export function resolveAccessCapabilities(
     canManageUsersGlobal,
     canManageUsersAssigned,
     canManageUsers: canManageUsersGlobal || canManageUsersAssigned,
-    canListCompliancePending: can(PERMISSIONS.COMPLIANCE_PENDING_LIST),
-    canApproveRejectCompliance: can(PERMISSIONS.COMPLIANCE_APPROVE_REJECT),
+    canListCompliancePending,
+    canApproveRejectCompliance,
+    isComplianceTransactionsScope:
+      (canListCompliancePending || canApproveRejectCompliance)
+      && !canOriginatePayments,
   };
 }

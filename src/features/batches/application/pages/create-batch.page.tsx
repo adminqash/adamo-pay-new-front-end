@@ -225,6 +225,9 @@ export const CreateBatchPage = () => {
       (row.validationErrors ?? []).map((error) => ({
         rowNumber: row.rowNumber,
         cell: error.cell,
+        column: error.column,
+        header: error.header,
+        value: error.value,
         field: error.field,
         code: error.code,
         message: error.message,
@@ -634,10 +637,12 @@ export const CreateBatchPage = () => {
                           className="py-0.5 text-sm text-[#bf3636]"
                         >
                           {t("batches.create_batch.validation_errors.item", {
-                            cell: error.cell ?? `fila ${error.rowNumber}`,
+                            cell: error.cell ?? `${t("create_batch.validation_errors.row", { defaultValue: "fila" })} ${error.rowNumber}`,
+                            header: error.header || error.field,
+                            value: error.value || "—",
                             field: error.field,
                             message: error.message,
-                            defaultValue: "{{cell}} · {{field}}: {{message}}",
+                            defaultValue: "{{cell}} ({{header}}): \"{{value}}\" — {{message}}",
                           })}
                         </p>
                       ))}

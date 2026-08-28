@@ -22,10 +22,18 @@ function mergeUploadProgressState(
   previous: BatchUploadProgressState,
   next: Partial<BatchUploadProgressState>,
 ): BatchUploadProgressState {
+  const nextAmount = next.summary?.totalAmount ?? 0;
+  const previousAmount = previous.summary?.totalAmount ?? 0;
   return {
     ...previous,
     ...next,
-    summary: next.summary ?? previous.summary,
+    summary: next.summary
+      ? {
+          ...next.summary,
+          totalAmount: nextAmount > 0 ? nextAmount : previousAmount,
+          invalidRows: next.summary.invalidRows ?? previous.summary?.invalidRows,
+        }
+      : previous.summary,
     errorMessage: next.errorMessage ?? previous.errorMessage,
   };
 }
