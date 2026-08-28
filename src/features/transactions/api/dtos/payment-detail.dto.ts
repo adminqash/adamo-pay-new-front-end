@@ -41,6 +41,9 @@ export type PaymentTimelineEventDTO = {
   event: string
   status: string
   message?: string
+  actorUserId?: string
+  actorName?: string
+  metadata?: Record<string, unknown>
   createdAt: string
 };
 

@@ -22,6 +22,7 @@ import { useCountry } from "@/features/common/contexts/use-country";
 import { documentTypeLabel } from "@/lib/document-type";
 import { formatCurrencyDisplay } from "@/lib/money/money";
 import { CommentsThread } from "../components/comments-thread";
+import { ApprovePaymentDialog } from "../components/approve-payment-dialog";
 import { RejectPaymentDialog } from "../components/reject-payment-dialog";
 import { RestrictiveListCard } from "../components/restrictive-list-card";
 import {
@@ -51,6 +52,7 @@ export function ReviewPaymentPage() {
   const reject = useRejectComplianceCase(subjectId ?? "");
   const comment = useAddComplianceComment(subjectId ?? "");
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [approveOpen, setApproveOpen] = useState(false);
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
 
   if (isLoading || !complianceCase || !subjectId) {
@@ -74,8 +76,9 @@ export function ReviewPaymentPage() {
     batchId: params.batchId ?? complianceCase.batchId,
   });
 
-  const handleApprove = async() => {
-    await approve.mutateAsync(undefined);
+  const handleApprove = async(note: string) => {
+    await approve.mutateAsync(note);
+    setApproveOpen(false);
     navigate(params.batchId ? `/batches/${params.batchId}` : "/transactions");
   };
 
@@ -312,7 +315,7 @@ export function ReviewPaymentPage() {
                     (complianceCase.canResolveFindings && !complianceCase.findingsResolved)
                     || approve.isPending
                   }
-                  onClick={() => void handleApprove()}
+                  onClick={() => setApproveOpen(true)}
                 >
                   {t("compliance:review.approve_action")}
                 </Button>
@@ -326,6 +329,12 @@ export function ReviewPaymentPage() {
         onOpenChange={setRejectOpen}
         isPending={reject.isPending}
         onConfirm={(note) => void handleReject(note)}
+      />
+      <ApprovePaymentDialog
+        open={approveOpen}
+        onOpenChange={setApproveOpen}
+        isPending={approve.isPending}
+        onConfirm={(note) => void handleApprove(note)}
       />
     </>
   );

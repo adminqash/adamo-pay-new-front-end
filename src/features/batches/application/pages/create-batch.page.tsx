@@ -233,12 +233,20 @@ export const CreateBatchPage = () => {
     .slice(0, 50);
 
   const uploadSummary = uploadProgress.summary;
-  const resolvedTotalAmountMinor
+  const fromUploadMinor
     = uploadSummary?.totalAmount && uploadSummary.totalAmount > 0
       ? toMinorInt(uploadSummary.totalAmount)
-      : batch?.amount && batch.amount > 0
-        ? majorToMinor(String(batch.amount))
-        : 0;
+      : 0;
+  const fromBatchMinor
+    = batch?.amount && batch.amount > 0
+      ? majorToMinor(String(batch.amount))
+      : 0;
+  const resolvedTotalAmountMinor
+    = isUploadReady && fromBatchMinor > 0
+      ? fromBatchMinor
+      : fromUploadMinor || fromBatchMinor;
+  const selectedAccount = accounts.find((account) => account.id === sourceAccountId);
+  const availableMinor = selectedAccount?.availableMinor ?? 0;
   const hasUploadSummary = Boolean(
     uploadSummary
     && uploadSummary.totalItems > 0
@@ -251,7 +259,7 @@ export const CreateBatchPage = () => {
           ?? batch?.transactions
           ?? 0,
         totalToPay: resolvedTotalAmountMinor,
-        balanceAfter: 0,
+        balanceAfter: availableMinor - resolvedTotalAmountMinor,
         isReady: isUploadReady || (batch?.transactions ?? 0) > 0,
         isCalculating: isUploadProcessing && !hasUploadSummary,
       }
@@ -600,7 +608,7 @@ export const CreateBatchPage = () => {
                 )}
 
                 {uploadProgress.status === "failed" && (
-                  <p className="whitespace-pre-wrap text-sm text-[#bf3636]">
+                  <p className="text-sm whitespace-pre-wrap text-[#bf3636]">
                     {uploadProgress.errorMessage
                       ?? t("batches.create_batch.upload_failed", {
                         defaultValue: "No se pudo procesar el archivo. Intenta subirlo de nuevo.",
@@ -616,7 +624,10 @@ export const CreateBatchPage = () => {
                         defaultValue: "{{count}} registro(s) con error de archivo. Súbelo de nuevo para continuar.",
                       })}
                     </p>
-                    <div className="max-h-48 overflow-y-auto rounded-xl bg-white p-3">
+                    <div className={`
+                      max-h-48 overflow-y-auto rounded-xl bg-white p-3
+                    `}
+                    >
                       {fileValidationErrors.map((error, index) => (
                         <p
                           key={`${error.cell ?? error.rowNumber}-${error.field}-${index}`}
@@ -742,11 +753,17 @@ export const CreateBatchPage = () => {
                   )}
 
                   {screeningLive.rows.length > 0 && (
-                    <div className="max-h-48 overflow-y-auto rounded-xl bg-white p-4">
+                    <div className={`
+                      max-h-48 overflow-y-auto rounded-xl bg-white p-4
+                    `}
+                    >
                       {screeningLive.rows.map((row) => (
                         <div
                           key={row.rowNumber}
-                          className="flex items-center justify-between gap-3 py-1 text-sm text-[#384250]"
+                          className={`
+                            flex items-center justify-between gap-3 py-1 text-sm
+                            text-[#384250]
+                          `}
                         >
                           <span>
                             {t("batches.screening.row_label", {

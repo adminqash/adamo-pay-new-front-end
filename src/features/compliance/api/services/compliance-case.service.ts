@@ -124,7 +124,7 @@ export class ComplianceService {
 
   public static approve(
     subjectId: string,
-    note?: string,
+    note: string,
   ): Promise<ServiceResult<ComplianceCase>> {
     return apiPost<ComplianceCaseDTO, ComplianceCase>(
       coreApi,
