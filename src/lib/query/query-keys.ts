@@ -81,6 +81,9 @@ export const queryKeys = {
     checks: (params?: unknown) => ["compliance", "checks", params] as const,
     case: (subjectId: string) => ["compliance", "case", subjectId] as const,
     screening: (subjectId: string) => ["compliance", "screening", subjectId] as const,
+    breakdown: (subjectId: string) => ["compliance", "breakdown", subjectId] as const,
+    comments: (subjectId: string) => ["compliance", "comments", subjectId] as const,
+    summary: ["compliance", "summary"] as const,
   },
   source: {
     catalog: (key?: string) => ["source", key ?? "base"] as const,

@@ -11,22 +11,33 @@ export type ComplianceFindingDTO = {
   resolvedAt?: string
 };
 
+export type ComplianceReasonDTO = {
+  code: string
+  rule?: string
+  detail?: string
+};
+
 export type ComplianceScreeningDTO = {
   screeningId?: string
   verdict?: string
   caseId?: string
-  reasons?: Array<{ code: string, rule?: string, detail?: string }>
-  alerts?: Array<{ code: string, rule?: string, detail?: string }>
+  reasons?: ComplianceReasonDTO[]
+  alerts?: ComplianceReasonDTO[]
   findings?: ComplianceFindingDTO[]
   maxRiskLevel?: number
   truncated?: boolean
   findingsResolved?: boolean
   deferredScreening?: boolean
+  monitoring?: boolean
+  suppressedVerdict?: string
+  instance?: "adamo" | "client"
+  caseStatus?: string
   sendable?: boolean
   resolution?: "none" | "client" | "adamo" | "final"
 };
 
 export type ComplianceCommentAttachmentDTO = {
+  id?: string
   name: string
   size?: number
   contentType?: string
@@ -113,4 +124,24 @@ export type ComplianceScreeningDetailDTO = {
   screening?: ComplianceScreeningDTO
   byDocumentNumber: InfolaftSearchPageDTO
   byName: InfolaftSearchPageDTO
+};
+
+export type ComplianceBreakdownMonthDTO = {
+  month: string
+  total: number
+  count: number
+  payments?: Array<{
+    id?: string
+    amount?: number
+    createdAt?: string
+    referenceNumber?: string
+  }>
+};
+
+export type ComplianceBreakdownDTO = {
+  screeningId: string
+  verdict?: string
+  caseId?: string
+  currentMonth?: string
+  months: ComplianceBreakdownMonthDTO[]
 };

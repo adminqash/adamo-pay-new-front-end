@@ -7,6 +7,7 @@ import {
 } from "@adamosuiteservices/ui/sheet";
 import { useTranslation } from "react-i18next";
 import type { InfolaftMatch } from "@/features/compliance/application/entities/compliance-case.entity";
+import { riskBandFromLevel } from "@/features/compliance/application/entities/compliance-case.entity";
 
 type FindingDetailSheetProps = {
   open: boolean
@@ -22,7 +23,7 @@ function Field({ label, value }: { label: string, value?: string }) {
   return (
     <div className="flex flex-col gap-1">
       <p className="text-xs text-neutrals-500">{label}</p>
-      <p className="text-sm font-semibold text-neutrals-900 whitespace-pre-wrap">{value}</p>
+      <p className="text-sm font-semibold whitespace-pre-wrap text-neutrals-900">{value}</p>
     </div>
   );
 }
@@ -40,9 +41,22 @@ export function FindingDetailSheet({ open, onOpenChange, match }: FindingDetailS
           {match && (
             <>
               <Field label={t("compliance:novedad.columns.id")} value={match.documentId ?? match.id} />
+              <Field label={t("compliance:novedad.columns.match")} value={match.fullName} />
               <Field label={t("compliance:novedad.list_code")} value={match.codigoLista} />
-              <Field label={t("compliance:novedad.list_names")} value={match.listNames} />
+              <Field label={t("compliance:novedad.list_names")} value={match.listNames ?? match.nombreLista} />
               <Field label={t("compliance:novedad.info_list_id")} value={match.infoListId} />
+              <Field
+                label={t("compliance:novedad.columns.score")}
+                value={match.score !== undefined ? String(match.score) : undefined}
+              />
+              <Field
+                label={t("compliance:novedad.columns.risk")}
+                value={
+                  match.riskLevel !== undefined
+                    ? t(`compliance:review.risk.${riskBandFromLevel(match.riskLevel)}`)
+                    : undefined
+                }
+              />
               <Field label={t("compliance:novedad.comments")} value={match.comments} />
               <Field label={t("compliance:novedad.type")} value={match.type} />
               <Field label={t("compliance:novedad.country")} value={match.country} />

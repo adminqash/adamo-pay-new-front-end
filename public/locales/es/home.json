@@ -18,6 +18,22 @@
       "select_file": "Selecciona desde tu dispositivo",
       "requirements": "Archivos permitidos: .xlsx o .numbers. Tamaño máximo 50 MB."
     },
+    "compliance": {
+      "title": "Cumplimiento",
+      "view_all": "Ver casos de cumplimiento",
+      "pending_findings": {
+        "title": "Transacciones con novedades pendientes por resolver",
+        "button": "Ver transacciones"
+      },
+      "waiting_resolution": {
+        "title": "Transacciones en área de cumplimiento o en espera de resolución",
+        "button": "Ver transacciones"
+      },
+      "new_activity": {
+        "title": "Transacciones en cumplimiento con nueva actividad por revisar",
+        "button": "Ver actividad"
+      }
+    },
     "transactions": {
       "title": "Transacciones",
       "view_all": "Ver todas las transacciones",
@@ -40,6 +56,22 @@
       "paid": {
         "title": "Transacciones pagadas",
         "button": "Ver transacciones"
+      }
+    },
+    "compliance": {
+      "title": "Cumplimiento",
+      "view_all": "Ver todos los casos",
+      "pending_findings": {
+        "title": "Transacciones con novedades pendientes por resolver",
+        "button": "Revisar novedades"
+      },
+      "waiting_resolution": {
+        "title": "Transacciones en área de cumplimiento",
+        "button": "Ver en espera"
+      },
+      "new_activity": {
+        "title": "Transacciones en cumplimiento con nueva actividad",
+        "button": "Ver actividad"
       }
     }
   }

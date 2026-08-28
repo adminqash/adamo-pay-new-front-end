@@ -68,14 +68,40 @@ export function useComplianceScreening(subjectId: string | undefined, enabled = 
   };
 }
 
+export function useComplianceBreakdown(subjectId: string | undefined, enabled = true) {
+  const { t } = useTranslation(["compliance"]);
+  const { countryCode } = useCountry();
+
+  const query = useQuery({
+    queryKey: withCountryScope(
+      queryKeys.compliance.breakdown(subjectId ?? ""),
+      countryCode,
+    ),
+    queryFn: () => ComplianceService.getBreakdown(subjectId!),
+    enabled: Boolean(subjectId) && enabled,
+    ...queryDefaults,
+    meta: {
+      showMessageOnSuccess: false,
+      errorMessage: t("compliance:errors.breakdown_failed", {
+        defaultValue: "Error al cargar los acumulados de cumplimiento",
+      }),
+    },
+  });
+
+  return {
+    breakdown: query.data?.data ?? null,
+    isLoading: query.isLoading,
+  };
+}
+
 export function useResolveFinding(subjectId: string) {
   const queryClient = useQueryClient();
   const { t } = useTranslation(["compliance"]);
 
   return useMutation({
     mutationKey: [ComplianceService.RESOLVE_FINDING_KEY, subjectId],
-    mutationFn: (input: { findingKey: string, note: string }) =>
-      ComplianceService.resolveFinding(subjectId, input.findingKey, input.note),
+    mutationFn: (input: { findingKey: string, note: string, totp: string }) =>
+      ComplianceService.resolveFinding(subjectId, input.findingKey, input.note, input.totp),
     meta: {
       successMessage: t("compliance:messages.finding_resolved", {
         defaultValue: "Novedad resuelta",
@@ -96,7 +122,12 @@ export function useAddComplianceComment(subjectId: string) {
     mutationKey: [ComplianceService.ADD_COMMENT_KEY, subjectId],
     mutationFn: (input: {
       text: string
-      attachments?: Array<{ name: string, size?: number, contentType?: string }>
+      attachments?: Array<{
+        name: string
+        size?: number
+        contentType?: string
+        contentBase64?: string
+      }>
     }) => ComplianceService.addComment(subjectId, input),
     meta: {
       successMessage: t("compliance:messages.comment_created", {
@@ -146,4 +177,27 @@ export function useRejectComplianceCase(subjectId: string) {
     },
     onSuccess: () => invalidateCompliance(queryClient, subjectId),
   });
+}
+
+export function useComplianceSummary(enabled = true) {
+  const { t } = useTranslation(["compliance"]);
+  const { countryCode } = useCountry();
+
+  const query = useQuery({
+    queryKey: withCountryScope(queryKeys.compliance.summary, countryCode),
+    queryFn: () => ComplianceService.getSummary(),
+    enabled,
+    ...queryDefaults,
+    meta: {
+      showMessageOnSuccess: false,
+      errorMessage: t("compliance:errors.summary_failed", {
+        defaultValue: "Error al cargar el resumen de cumplimiento",
+      }),
+    },
+  });
+
+  return {
+    summary: query.data?.data ?? null,
+    isLoading: query.isLoading,
+  };
 }

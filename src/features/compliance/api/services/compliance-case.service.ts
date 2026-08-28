@@ -1,10 +1,12 @@
 import type {
+  ComplianceBreakdownDTO,
   ComplianceCaseDTO,
   ComplianceCommentDTO,
   ComplianceScreeningDetailDTO,
 } from "@/features/compliance/api/dtos/compliance-case.dto";
 import { ComplianceCaseMapper } from "@/features/compliance/api/mappers/compliance-case.mapper";
 import type {
+  ComplianceBreakdown,
   ComplianceCase,
   ComplianceComment,
   ComplianceScreeningDetail,
@@ -16,6 +18,9 @@ import { apiGet, apiPost } from "@/lib/api/http.service";
 export class ComplianceService {
   public static GET_CASE_KEY = "compliance.get-case";
   public static GET_SCREENING_KEY = "compliance.get-screening";
+  public static GET_BREAKDOWN_KEY = "compliance.get-breakdown";
+  public static GET_SUMMARY_KEY = "compliance.get-summary";
+  public static GET_COMMENTS_KEY = "compliance.get-comments";
   public static ADD_COMMENT_KEY = "compliance.add-comment";
   public static RESOLVE_FINDING_KEY = "compliance.resolve-finding";
   public static APPROVE_KEY = "compliance.approve";
@@ -39,11 +44,60 @@ export class ComplianceService {
     );
   }
 
+  public static getBreakdown(
+    subjectId: string,
+  ): Promise<ServiceResult<ComplianceBreakdown>> {
+    return apiGet<ComplianceBreakdownDTO, ComplianceBreakdown>(
+      coreApi,
+      `/compliance/cases/${subjectId}/breakdown`,
+      ComplianceCaseMapper.toBreakdown,
+    );
+  }
+
+  public static getComments(
+    subjectId: string,
+  ): Promise<ServiceResult<ComplianceComment[]>> {
+    return apiGet<ComplianceCommentDTO[], ComplianceComment[]>(
+      coreApi,
+      `/compliance/cases/${subjectId}/comments`,
+      (dtos) => dtos.map(ComplianceCaseMapper.toComment),
+    );
+  }
+
+  public static getSummary(): Promise<ServiceResult<{
+    pendingFindings: number
+    waitingResolution: number
+    newActivity: number
+  }>> {
+    return apiGet(
+      coreApi,
+      "/compliance/summary",
+      (dto: { pendingFindings: number, waitingResolution: number, newActivity: number }) => dto,
+    );
+  }
+
+  public static async downloadAttachment(attachmentId: string, name: string): Promise<void> {
+    const response = await coreApi.get(`/compliance/attachments/${attachmentId}`, {
+      responseType: "blob",
+    });
+    const url = URL.createObjectURL(response.data as Blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   public static addComment(
     subjectId: string,
     body: {
       text: string
-      attachments?: Array<{ name: string, size?: number, contentType?: string }>
+      attachments?: Array<{
+        name: string
+        size?: number
+        contentType?: string
+        contentBase64?: string
+      }>
     },
   ): Promise<ServiceResult<ComplianceComment>> {
     return apiPost<ComplianceCommentDTO, ComplianceComment>(
@@ -58,11 +112,12 @@ export class ComplianceService {
     subjectId: string,
     findingKey: string,
     note: string,
+    totp: string,
   ): Promise<ServiceResult<ComplianceCase>> {
     return apiPost<ComplianceCaseDTO, ComplianceCase>(
       coreApi,
       `/compliance/cases/${subjectId}/findings/${encodeURIComponent(findingKey)}/resolve`,
-      { note },
+      { note, totp },
       ComplianceCaseMapper.toDomain,
     );
   }

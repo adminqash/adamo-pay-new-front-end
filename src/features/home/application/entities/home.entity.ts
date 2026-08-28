@@ -11,17 +11,17 @@ export interface WalletBalance {
   /**
    * total balance amount
    */
-  amount: string;
+  amount: string
 
   /**
    * currency code (e.g., "COP")
    */
-  currency: string;
+  currency: string
 
   /**
    * country flag icon or code (e.g., "CO")
    */
-  countryCode: string;
+  countryCode: string
 }
 
 /**
@@ -31,27 +31,33 @@ export interface TransactionStats {
   /**
    * number of pending transactions
    */
-  pending: number;
+  pending: number
 
   /**
    * number of returned transactions
    */
-  returned: number;
+  returned: number
 
   /**
    * number of rejected transactions
    */
-  rejected: number;
+  rejected: number
 
   /**
    * number of validated transactions
    */
-  validated: number;
+  validated: number
 
   /**
    * number of paid transactions
    */
-  paid: number;
+  paid: number
+}
+
+export interface ComplianceStats {
+  pendingFindings: number
+  waitingResolution: number
+  newActivity: number
 }
 
 /**
@@ -61,10 +67,15 @@ export interface Home {
   /**
    * wallet balance information
    */
-  walletBalance: WalletBalance;
+  walletBalance: WalletBalance
 
   /**
    * transaction statistics
    */
-  transactionStats: TransactionStats;
+  transactionStats: TransactionStats
+
+  /**
+   * compliance queue counts for the home cards
+   */
+  complianceStats: ComplianceStats
 }

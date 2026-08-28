@@ -17,4 +17,12 @@ export type DashboardTransactionsDTO = {
   }
 };
 
-export type DashboardSummaryDTO = DashboardBalanceDTO & DashboardTransactionsDTO;
+export type DashboardComplianceDTO = {
+  pendingFindings: number
+  waitingResolution: number
+  newActivity: number
+};
+
+export type DashboardSummaryDTO = DashboardBalanceDTO & DashboardTransactionsDTO & {
+  compliance?: DashboardComplianceDTO
+};

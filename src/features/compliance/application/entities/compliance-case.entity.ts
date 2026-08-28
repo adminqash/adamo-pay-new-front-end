@@ -1,4 +1,4 @@
-export type RiskBand = "low" | "medium" | "high"
+export type RiskBand = "low" | "medium" | "high";
 
 export type ComplianceFinding = {
   codigoLista: string
@@ -11,7 +11,7 @@ export type ComplianceFinding = {
   resolutionNote?: string
   resolvedByName?: string
   resolvedAt?: string
-}
+};
 
 export type InfolaftMatch = {
   id: string
@@ -29,7 +29,7 @@ export type InfolaftMatch = {
   comments?: string
   listNames?: string
   type?: string
-}
+};
 
 export type ComplianceComment = {
   id: string
@@ -37,9 +37,15 @@ export type ComplianceComment = {
   text: string
   authorName: string
   authorRole: "client" | "compliance"
-  attachments: Array<{ name: string, size?: number, contentType?: string }>
+  attachments: Array<{ id?: string, name: string, size?: number, contentType?: string }>
   createdAt: string
-}
+};
+
+export type ComplianceReason = {
+  code: string
+  rule?: string
+  detail?: string
+};
 
 export type ComplianceCase = {
   id: string
@@ -64,8 +70,14 @@ export type ComplianceCase = {
     accountNumber?: string
   }
   findings: ComplianceFinding[]
+  reasons: ComplianceReason[]
+  alerts: ComplianceReason[]
   maxRiskLevel: number
   verdict?: string
+  instance?: "adamo" | "client"
+  monitoring: boolean
+  suppressedVerdict?: string
+  deferredScreening: boolean
   comments: ComplianceComment[]
   canResolveFindings: boolean
   canApprove: boolean
@@ -73,20 +85,38 @@ export type ComplianceCase = {
   canComment: boolean
   findingsResolved: boolean
   awaitingAdamo: boolean
-}
+};
 
 export type ComplianceScreeningDetail = {
   subjectId: string
   byDocumentNumber: InfolaftMatch[]
   byName: InfolaftMatch[]
-}
+};
+
+export type ComplianceBreakdownMonth = {
+  month: string
+  total: number
+  count: number
+  payments: Array<{
+    id?: string
+    amount?: number
+    createdAt?: string
+    referenceNumber?: string
+  }>
+};
+
+export type ComplianceBreakdown = {
+  screeningId: string
+  currentMonth?: string
+  months: ComplianceBreakdownMonth[]
+};
 
 export function riskBandFromLevel(level: number): RiskBand {
-  if (level >= 4) {
-    return "high"
+  if (level >= 1 && level <= 4) {
+    return "high";
   }
-  if (level >= 3) {
-    return "medium"
+  if (level >= 5 && level <= 6) {
+    return "medium";
   }
-  return "low"
+  return "low";
 }
