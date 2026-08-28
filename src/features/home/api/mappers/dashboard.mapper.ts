@@ -26,6 +26,11 @@ export class DashboardMapper {
         validated: dto.transactions.validated,
         paid: dto.transactions.paid,
       },
+      complianceStats: {
+        pendingFindings: dto.compliance?.pendingFindings ?? 0,
+        waitingResolution: dto.compliance?.waitingResolution ?? 0,
+        newActivity: dto.compliance?.newActivity ?? 0,
+      },
     };
   }
 }

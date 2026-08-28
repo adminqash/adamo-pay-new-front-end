@@ -1,4 +1,5 @@
 import type {
+  ComplianceBreakdownDTO,
   ComplianceCaseDTO,
   ComplianceCommentDTO,
   ComplianceFindingDTO,
@@ -6,6 +7,7 @@ import type {
   InfolaftMatchDTO,
 } from "@/features/compliance/api/dtos/compliance-case.dto";
 import type {
+  ComplianceBreakdown,
   ComplianceCase,
   ComplianceComment,
   ComplianceFinding,
@@ -96,9 +98,15 @@ export class ComplianceCaseMapper {
       beneficiary: dto.beneficiary,
       payment: dto.payment,
       findings,
+      reasons: dto.screening?.reasons ?? [],
+      alerts: dto.screening?.alerts ?? [],
       maxRiskLevel: dto.screening?.maxRiskLevel
         ?? findings.reduce((max, finding) => Math.max(max, finding.riskLevel), 0),
       verdict: dto.screening?.verdict,
+      instance: dto.screening?.instance,
+      monitoring: dto.screening?.monitoring === true,
+      suppressedVerdict: dto.screening?.suppressedVerdict,
+      deferredScreening: dto.screening?.deferredScreening === true,
       comments: (dto.comments ?? []).map(toComment),
       canResolveFindings: dto.canResolveFindings === true,
       canApprove: dto.canApprove === true,
@@ -115,6 +123,19 @@ export class ComplianceCaseMapper {
       subjectId: dto.subjectId,
       byDocumentNumber: (dto.byDocumentNumber?.content ?? []).map(toMatch),
       byName: (dto.byName?.content ?? []).map(toMatch),
+    };
+  }
+
+  public static toBreakdown(dto: ComplianceBreakdownDTO): ComplianceBreakdown {
+    return {
+      screeningId: dto.screeningId,
+      currentMonth: dto.currentMonth,
+      months: (dto.months ?? []).map((month) => ({
+        month: month.month,
+        total: month.total,
+        count: month.count,
+        payments: month.payments ?? [],
+      })),
     };
   }
 

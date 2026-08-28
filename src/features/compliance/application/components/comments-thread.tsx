@@ -4,6 +4,7 @@ import { Icon } from "@adamosuiteservices/ui/icon";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ComplianceComment } from "@/features/compliance/application/entities/compliance-case.entity";
+import { ComplianceService } from "@/features/compliance/api/services/compliance-case.service";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -13,7 +14,12 @@ type CommentsThreadProps = {
   isPending?: boolean
   onSubmit: (input: {
     text: string
-    attachments: Array<{ name: string, size?: number, contentType?: string }>
+    attachments: Array<{
+      name: string
+      size?: number
+      contentType?: string
+      contentBase64: string
+    }>
   }) => void
 };
 
@@ -26,6 +32,22 @@ function initials(name: string): string {
     .join("");
 }
 
+const MAX_COMMENT_FILES = 5;
+const MAX_COMMENT_FILE_BYTES = 4 * 1024 * 1024;
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function CommentsThread({
   comments,
   canComment,
@@ -35,6 +57,8 @@ export function CommentsThread({
   const { t } = useTranslation(["compliance"]);
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [isEncoding, setIsEncoding] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const visibleComments = comments.filter((comment) => comment.type !== "case-resolution");
@@ -47,14 +71,20 @@ export function CommentsThread({
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder={t("compliance:comments.placeholder")}
-            className="min-h-28 w-full rounded-2xl border border-neutrals-200 bg-white p-4 text-sm text-neutrals-900 outline-none"
+            className={`
+              min-h-28 w-full rounded-2xl border border-neutrals-200 bg-white
+              p-4 text-sm text-neutrals-900 outline-none
+            `}
           />
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {files.map((file) => (
                 <span
                   key={`${file.name}-${file.size}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-neutrals-50 px-3 py-1 text-xs text-neutrals-700"
+                  className={`
+                    inline-flex items-center gap-2 rounded-full bg-neutrals-50
+                    px-3 py-1 text-xs text-neutrals-700
+                  `}
                 >
                   {file.name}
                   <button
@@ -68,21 +98,35 @@ export function CommentsThread({
               ))}
             </div>
           )}
+          {fileError && (
+            <p className="text-sm text-destructive">{fileError}</p>
+          )}
           <div className="flex flex-wrap items-center gap-4">
             <Button
               variant="default"
-              disabled={!text.trim() || isPending}
+              disabled={!text.trim() || isPending || isEncoding}
               onClick={() => {
-                onSubmit({
-                  text: text.trim(),
-                  attachments: files.map((file) => ({
-                    name: file.name,
-                    size: file.size,
-                    contentType: file.type,
-                  })),
-                });
-                setText("");
-                setFiles([]);
+                void (async() => {
+                  setFileError(null);
+                  setIsEncoding(true);
+                  try {
+                    const attachments = await Promise.all(
+                      files.map(async(file) => ({
+                        name: file.name,
+                        size: file.size,
+                        contentType: file.type || "application/octet-stream",
+                        contentBase64: await readFileAsBase64(file),
+                      })),
+                    );
+                    onSubmit({ text: text.trim(), attachments });
+                    setText("");
+                    setFiles([]);
+                  } catch {
+                    setFileError(t("compliance:comments.file_read_failed"));
+                  } finally {
+                    setIsEncoding(false);
+                  }
+                })();
               }}
             >
               <Icon symbol="send" weight={200} />
@@ -99,8 +143,21 @@ export function CommentsThread({
               className="hidden"
               onChange={(event) => {
                 const selected = Array.from(event.target.files ?? []);
-                setFiles((current) => [...current, ...selected]);
                 event.target.value = "";
+                setFileError(null);
+                const oversized = selected.find((file) => file.size > MAX_COMMENT_FILE_BYTES);
+                if (oversized) {
+                  setFileError(t("compliance:comments.file_too_large"));
+                  return;
+                }
+                setFiles((current) => {
+                  const next = [...current, ...selected];
+                  if (next.length > MAX_COMMENT_FILES) {
+                    setFileError(t("compliance:comments.too_many_files"));
+                    return current;
+                  }
+                  return next;
+                });
               }}
             />
           </div>
@@ -108,7 +165,10 @@ export function CommentsThread({
       )}
 
       {visibleComments.map((comment) => (
-        <div key={comment.id} className="flex flex-col gap-2 rounded-3xl bg-white p-4">
+        <div
+          key={comment.id}
+          className="flex flex-col gap-2 rounded-3xl bg-white p-4"
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <Avatar className="size-10">
@@ -129,16 +189,25 @@ export function CommentsThread({
                   : t("compliance:comments.client")}
             </p>
           </div>
-          <p className="whitespace-pre-wrap text-sm text-neutrals-700">{comment.text}</p>
+          <p className="text-sm whitespace-pre-wrap text-neutrals-700">{comment.text}</p>
           {comment.attachments.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {comment.attachments.map((attachment) => (
-                <span
-                  key={attachment.name}
-                  className="rounded-full bg-neutrals-50 px-3 py-1 text-xs text-neutrals-700"
+                <button
+                  key={attachment.id ?? attachment.name}
+                  type="button"
+                  className={`
+                    rounded-full bg-neutrals-50 px-3 py-1 text-xs
+                    text-neutrals-700 underline
+                  `}
+                  onClick={() => {
+                    if (attachment.id) {
+                      void ComplianceService.downloadAttachment(attachment.id, attachment.name);
+                    }
+                  }}
                 >
                   {attachment.name}
-                </span>
+                </button>
               ))}
             </div>
           )}

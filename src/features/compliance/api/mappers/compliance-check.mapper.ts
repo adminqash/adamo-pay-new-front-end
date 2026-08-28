@@ -12,6 +12,7 @@ export type ComplianceCheck = {
   documentNumber?: string
   status: string
   verdict?: string
+  hasNewActivity?: boolean
   createdAt?: string
 };
 
@@ -29,6 +30,7 @@ export class ComplianceCheckMapper {
       documentNumber: dto.documentNumber,
       status: dto.status ?? "pending",
       verdict: dto.screening?.verdict,
+      hasNewActivity: dto.hasNewActivity === true,
       createdAt: dto.createdAt,
     };
   }

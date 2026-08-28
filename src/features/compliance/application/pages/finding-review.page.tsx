@@ -25,6 +25,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageLoader } from "@/features/common/components/layout/page-loader";
 import type { InfolaftMatch } from "@/features/compliance/application/entities/compliance-case.entity";
+import { riskBandFromLevel } from "@/features/compliance/application/entities/compliance-case.entity";
 import { FindingDetailSheet } from "../components/finding-detail-sheet";
 import { ResolveFindingDialog } from "../components/resolve-finding-dialog";
 import {
@@ -74,11 +75,11 @@ export function FindingReviewPage() {
     batchId: params.batchId ?? complianceCase.batchId,
   });
 
-  const handleResolve = async(note: string) => {
+  const handleResolve = async(note: string, totp: string) => {
     if (!unresolvedFinding) {
       return;
     }
-    await resolveFinding.mutateAsync({ findingKey: unresolvedFinding.key, note });
+    await resolveFinding.mutateAsync({ findingKey: unresolvedFinding.key, note, totp });
     setResolveOpen(false);
     navigate(reviewPath);
   };
@@ -123,7 +124,11 @@ export function FindingReviewPage() {
               <TabsTrigger value="document">
                 {t("compliance:novedad.by_document")}
                 {byDocument.length > 0 && (
-                  <span className="ml-2 inline-flex size-6 items-center justify-center rounded-full bg-warning text-xs text-white">
+                  <span className={`
+                    ml-2 inline-flex size-6 items-center justify-center
+                    rounded-full bg-warning text-xs text-white
+                  `}
+                  >
                     {byDocument.length}
                   </span>
                 )}
@@ -131,7 +136,11 @@ export function FindingReviewPage() {
               <TabsTrigger value="name">
                 {t("compliance:novedad.by_name")}
                 {byName.length > 0 && (
-                  <span className="ml-2 inline-flex size-6 items-center justify-center rounded-full bg-warning text-xs text-white">
+                  <span className={`
+                    ml-2 inline-flex size-6 items-center justify-center
+                    rounded-full bg-warning text-xs text-white
+                  `}
+                  >
                     {byName.length}
                   </span>
                 )}
@@ -167,7 +176,11 @@ export function FindingReviewPage() {
                       {row.fullName} | {row.codigoLista || row.nombreLista}
                     </TableCell>
                     <TableCell>{formatScore(row.score)}</TableCell>
-                    <TableCell>{row.riskLevel ?? "—"}</TableCell>
+                    <TableCell>
+                      {row.riskLevel !== undefined
+                        ? t(`compliance:review.risk.${riskBandFromLevel(row.riskLevel)}`)
+                        : "—"}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -199,7 +212,7 @@ export function FindingReviewPage() {
         open={resolveOpen}
         onOpenChange={setResolveOpen}
         isPending={resolveFinding.isPending}
-        onConfirm={(note) => void handleResolve(note)}
+        onConfirm={(note, totp) => void handleResolve(note, totp)}
       />
     </>
   );

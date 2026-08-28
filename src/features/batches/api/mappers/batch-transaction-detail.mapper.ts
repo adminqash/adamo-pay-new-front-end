@@ -7,14 +7,15 @@ import type { TransactionStatus } from "@/features/transactions/application/enti
 import { normalizeBatchItemStatus } from "@/features/transactions/application/utils/transaction-status";
 import { minorToMajor } from "@/lib/money/money";
 import { documentTypeLabel } from "@/lib/document-type";
+import { riskBandFromLevel } from "@/features/compliance/application/entities/compliance-case.entity";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   savings: "Ahorros",
   checking: "Corriente",
   ahorros: "Ahorros",
   corriente: "Corriente",
-  "37": "Ahorros",
-  "27": "Corriente",
+  37: "Ahorros",
+  27: "Corriente",
   breb: "BreB",
   pix: "PIX",
   clabe: "Clabe Account",
@@ -75,7 +76,7 @@ function mapRestrictiveList(
     const level = screening?.maxRiskLevel ?? primary.riskLevel ?? 0;
     return {
       listName: primary.nombreLista || primary.codigoLista || "Lista restrictiva",
-      riskLevel: (level >= 4 ? "high" : level >= 3 ? "medium" : "low") as "low" | "medium" | "high",
+      riskLevel: riskBandFromLevel(level),
     };
   }
 

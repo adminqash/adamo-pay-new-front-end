@@ -18,6 +18,22 @@
       "select_file": "Select from your device",
       "requirements": "Allowed files: .xlsx or .numbers. Maximum size 50 MB."
     },
+    "compliance": {
+      "title": "Compliance",
+      "view_all": "View compliance cases",
+      "pending_findings": {
+        "title": "Transactions with pending findings to resolve",
+        "button": "View transactions"
+      },
+      "waiting_resolution": {
+        "title": "Transactions in compliance or waiting for resolution",
+        "button": "View transactions"
+      },
+      "new_activity": {
+        "title": "Transactions in compliance with new activity to review",
+        "button": "View activity"
+      }
+    },
     "transactions": {
       "title": "Transactions",
       "view_all": "View all transactions",

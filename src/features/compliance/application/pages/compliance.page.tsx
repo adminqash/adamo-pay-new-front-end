@@ -4,7 +4,7 @@ import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container"
 import { useQuery } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PageTitle } from "@/features/common/components/layout/page-title";
 import { useCountry } from "@/features/common/contexts/use-country";
@@ -18,13 +18,17 @@ export function CompliancePage() {
   const { t } = useTranslation(["compliance", "batches"]);
   const { countryCode } = useCountry();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const status = searchParams.get("status") || "pending";
+  const activity = searchParams.get("activity") || undefined;
   const sidebarTopBarPortal = usePortalContainer("[data-slot='sidebar-top-bar-portal']");
   useBatchesRealtime();
 
   const query = useQuery({
-    queryKey: withCountryScope(queryKeys.compliance.checks({ status: "pending" }), countryCode),
+    queryKey: withCountryScope(queryKeys.compliance.checks({ status, activity }), countryCode),
     queryFn: () => ComplianceService.listChecks({
-      status: "pending",
+      status,
+      activity,
       limit: 50,
       countryCode,
     }),

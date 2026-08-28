@@ -15,6 +15,13 @@ export type ComplianceCheckDTO = {
   beneficiaryName?: string
   documentNumber?: string
   status?: string
+  hasNewActivity?: boolean
   screening?: ComplianceCheckScreeningDTO
   createdAt?: string
+};
+
+export type ComplianceSummaryDTO = {
+  pendingFindings: number
+  waitingResolution: number
+  newActivity: number
 };
