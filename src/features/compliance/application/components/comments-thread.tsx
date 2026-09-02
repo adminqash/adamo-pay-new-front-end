@@ -6,6 +6,14 @@ import { useTranslation } from "react-i18next";
 import type { ComplianceComment } from "@/features/compliance/application/entities/compliance-case.entity";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { fileToBase64 } from "@/lib/utils/file.utils";
+
+type CommentAttachmentInput = {
+  name: string
+  size?: number
+  contentType?: string
+  contentBase64: string
+};
 
 type CommentsThreadProps = {
   comments: ComplianceComment[]
@@ -13,8 +21,9 @@ type CommentsThreadProps = {
   isPending?: boolean
   onSubmit: (input: {
     text: string
-    attachments: Array<{ name: string, size?: number, contentType?: string }>
+    attachments: CommentAttachmentInput[]
   }) => void
+  onDownloadAttachment?: (attachmentId: string, fileName: string) => void
 };
 
 function initials(name: string): string {
@@ -31,13 +40,16 @@ export function CommentsThread({
   canComment,
   isPending,
   onSubmit,
+  onDownloadAttachment,
 }: CommentsThreadProps) {
   const { t } = useTranslation(["compliance"]);
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [isEncoding, setIsEncoding] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const visibleComments = comments.filter((comment) => comment.type !== "case-resolution");
+  const submitting = Boolean(isPending) || isEncoding;
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,14 +59,20 @@ export function CommentsThread({
             value={text}
             onChange={(event) => setText(event.target.value)}
             placeholder={t("compliance:comments.placeholder")}
-            className="min-h-28 w-full rounded-2xl border border-neutrals-200 bg-white p-4 text-sm text-neutrals-900 outline-none"
+            className={`
+              min-h-28 w-full rounded-2xl border border-neutrals-200 bg-white
+              p-4 text-sm text-neutrals-900 outline-none
+            `}
           />
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {files.map((file) => (
                 <span
                   key={`${file.name}-${file.size}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-neutrals-50 px-3 py-1 text-xs text-neutrals-700"
+                  className={`
+                    inline-flex items-center gap-2 rounded-full bg-neutrals-50
+                    px-3 py-1 text-xs text-neutrals-700
+                  `}
                 >
                   {file.name}
                   <button
@@ -71,18 +89,29 @@ export function CommentsThread({
           <div className="flex flex-wrap items-center gap-4">
             <Button
               variant="default"
-              disabled={!text.trim() || isPending}
+              disabled={!text.trim() || submitting}
               onClick={() => {
-                onSubmit({
-                  text: text.trim(),
-                  attachments: files.map((file) => ({
-                    name: file.name,
-                    size: file.size,
-                    contentType: file.type,
-                  })),
-                });
-                setText("");
-                setFiles([]);
+                void (async() => {
+                  setIsEncoding(true);
+                  try {
+                    const attachments = await Promise.all(
+                      files.map(async(file) => ({
+                        name: file.name,
+                        size: file.size,
+                        contentType: file.type || "application/octet-stream",
+                        contentBase64: await fileToBase64(file),
+                      })),
+                    );
+                    onSubmit({
+                      text: text.trim(),
+                      attachments,
+                    });
+                    setText("");
+                    setFiles([]);
+                  } finally {
+                    setIsEncoding(false);
+                  }
+                })();
               }}
             >
               <Icon symbol="send" weight={200} />
@@ -108,7 +137,10 @@ export function CommentsThread({
       )}
 
       {visibleComments.map((comment) => (
-        <div key={comment.id} className="flex flex-col gap-2 rounded-3xl bg-white p-4">
+        <div
+          key={comment.id}
+          className="flex flex-col gap-2 rounded-3xl bg-white p-4"
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <Avatar className="size-10">
@@ -129,17 +161,40 @@ export function CommentsThread({
                   : t("compliance:comments.client")}
             </p>
           </div>
-          <p className="whitespace-pre-wrap text-sm text-neutrals-700">{comment.text}</p>
+          <p className="text-sm whitespace-pre-wrap text-neutrals-700">{comment.text}</p>
           {comment.attachments.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {comment.attachments.map((attachment) => (
-                <span
-                  key={attachment.name}
-                  className="rounded-full bg-neutrals-50 px-3 py-1 text-xs text-neutrals-700"
-                >
-                  {attachment.name}
-                </span>
-              ))}
+              {comment.attachments.map((attachment, index) => {
+                const canDownload = Boolean(attachment.id && onDownloadAttachment);
+                const key = attachment.id ?? `${attachment.name}-${index}`;
+                if (!canDownload) {
+                  return (
+                    <span
+                      key={key}
+                      className={`
+                        rounded-full bg-neutrals-50 px-3 py-1 text-xs
+                        text-neutrals-700
+                      `}
+                    >
+                      {attachment.name}
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`
+                      rounded-full bg-neutrals-50 px-3 py-1 text-xs
+                      text-neutrals-700 underline-offset-2
+                      hover:underline
+                    `}
+                    onClick={() => onDownloadAttachment?.(attachment.id!, attachment.name)}
+                  >
+                    {attachment.name}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

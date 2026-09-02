@@ -11,7 +11,8 @@ import type {
 } from "@/features/compliance/application/entities/compliance-case.entity";
 import type { ServiceResult } from "@/features/common/services/service-result";
 import { coreApi } from "@/lib/api/api";
-import { apiGet, apiPost } from "@/lib/api/http.service";
+import { apiDownloadFile, apiGet, apiPost } from "@/lib/api/http.service";
+import { triggerBrowserDownload } from "@/lib/utils/file.utils";
 
 export class ComplianceService {
   public static GET_CASE_KEY = "compliance.get-case";
@@ -43,7 +44,12 @@ export class ComplianceService {
     subjectId: string,
     body: {
       text: string
-      attachments?: Array<{ name: string, size?: number, contentType?: string }>
+      attachments?: Array<{
+        name: string
+        size?: number
+        contentType?: string
+        contentBase64: string
+      }>
     },
   ): Promise<ServiceResult<ComplianceComment>> {
     return apiPost<ComplianceCommentDTO, ComplianceComment>(
@@ -52,6 +58,18 @@ export class ComplianceService {
       body,
       ComplianceCaseMapper.toComment,
     );
+  }
+
+  public static async downloadAttachment(
+    attachmentId: string,
+    fallbackFileName = "archivo",
+  ): Promise<void> {
+    const { blob, fileName } = await apiDownloadFile(
+      coreApi,
+      `/compliance/attachments/${attachmentId}`,
+      fallbackFileName,
+    );
+    triggerBrowserDownload(blob, fileName);
   }
 
   public static resolveFinding(

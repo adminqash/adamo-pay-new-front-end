@@ -97,8 +97,13 @@ export async function apiDelete<TDTO, TDomain>(
 }
 
 function extractFileName(contentDisposition: string | undefined, fallback: string): string {
-  const match = contentDisposition?.match(/filename="?([^"; ]+)"?/i);
-  return match?.[1] ?? fallback;
+  const match = contentDisposition?.match(/filename="?([^";]+)"?/i);
+  const raw = (match?.[1] ?? fallback).trim();
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
 }
 
 /**
@@ -122,7 +127,7 @@ async function assertDownloadBlob(blob: Blob): Promise<void> {
       .setCode(parsed.code ?? null)
       .setTimestamp(parsed.timestamp ?? new Date().toISOString())
       .build();
-  } catch (error) {
+  } catch(error) {
     if (error instanceof ServiceResult) {
       throw error;
     }
@@ -168,6 +173,67 @@ export async function apiDownload(
           .setTimestamp(parsed.timestamp ?? new Date().toISOString())
           .build();
       } catch {
+        throw ServiceResult.builder()
+          .setSuccess(false)
+          .setMessage("Download failed")
+          .setCode("download_error")
+          .setTimestamp(new Date().toISOString())
+          .build();
+      }
+    }
+    handleAPIError(error);
+  }
+}
+
+/**
+ * Same as apiDownload, but for any binary (PDF, images, etc.). JSON error
+ * envelopes are detected by content-type instead of ZIP magic bytes.
+ */
+export async function apiDownloadFile(
+  client: AxiosInstance,
+  path: string,
+  fallbackFileName = "download",
+): Promise<{ blob: Blob, fileName: string }> {
+  try {
+    const response = await client.get(path, {
+      responseType: "blob",
+      headers: {
+        Accept: "*/*",
+      },
+    });
+    const contentType = String(response.headers?.["content-type"] || "");
+    const blob = response.data as Blob;
+    if (contentType.includes("application/json")) {
+      const parsed = JSON.parse(await blob.text()) as APIResponse<unknown>;
+      throw ServiceResult.builder()
+        .setSuccess(false)
+        .setMessage(parsed.message ?? "Download failed")
+        .setCode(parsed.code ?? null)
+        .setTimestamp(parsed.timestamp ?? new Date().toISOString())
+        .build();
+    }
+    return {
+      blob,
+      fileName: extractFileName(response.headers?.["content-disposition"], fallbackFileName),
+    };
+  } catch(error) {
+    if (error instanceof ServiceResult) {
+      throw error;
+    }
+    if (isAxiosError(error) && error.response?.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        const parsed = JSON.parse(text) as APIResponse<unknown>;
+        throw ServiceResult.builder()
+          .setSuccess(false)
+          .setMessage(parsed.message ?? "Download failed")
+          .setCode(parsed.code ?? null)
+          .setTimestamp(parsed.timestamp ?? new Date().toISOString())
+          .build();
+      } catch(parsedError) {
+        if (parsedError instanceof ServiceResult) {
+          throw parsedError;
+        }
         throw ServiceResult.builder()
           .setSuccess(false)
           .setMessage("Download failed")

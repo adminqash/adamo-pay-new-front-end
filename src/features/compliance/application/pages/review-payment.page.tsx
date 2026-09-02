@@ -21,6 +21,7 @@ import { PageLoader } from "@/features/common/components/layout/page-loader";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { documentTypeLabel } from "@/lib/document-type";
 import { formatCurrencyDisplay } from "@/lib/money/money";
+import { ComplianceService } from "@/features/compliance/api/services/compliance-case.service";
 import { CommentsThread } from "../components/comments-thread";
 import { RejectPaymentDialog } from "../components/reject-payment-dialog";
 import { RestrictiveListCard } from "../components/restrictive-list-card";
@@ -112,7 +113,11 @@ export function ReviewPaymentPage() {
             </div>
             {complianceCase.reference && (
               <p className="text-sm text-neutrals-700">
-                {t("compliance:review.reference")}: <span className="font-semibold">{complianceCase.reference}</span>
+                {t("compliance:review.reference")}: <span className={`
+                  font-semibold
+                `}
+                                                    >{complianceCase.reference}
+                                                    </span>
               </p>
             )}
           </div>
@@ -131,14 +136,22 @@ export function ReviewPaymentPage() {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className={`
+            grid grid-cols-1 gap-4
+            lg:grid-cols-2
+          `}
+          >
             <div className="flex flex-col gap-4 rounded-3xl bg-neutrals-50 p-6">
               <p className="text-sm text-neutrals-500">{t("compliance:review.beneficiary")}</p>
               <Card className="flex flex-col gap-4 rounded-3xl border-0 p-4">
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-neutrals-500">{t("compliance:review.full_name")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="account_circle" weight={200} className="size-6" />
+                    <Icon
+                      symbol="account_circle"
+                      weight={200}
+                      className="size-6"
+                    />
                     <p className="text-sm font-semibold">{complianceCase.beneficiary.fullName}</p>
                   </div>
                 </div>
@@ -167,7 +180,11 @@ export function ReviewPaymentPage() {
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-neutrals-500">{t("compliance:review.account")}</p>
                   <div className="flex items-center gap-2 pl-2">
-                    <Icon symbol="account_balance" weight={200} className="size-6" />
+                    <Icon
+                      symbol="account_balance"
+                      weight={200}
+                      className="size-6"
+                    />
                     <p className="text-sm font-semibold">{accountLabel || "—"}</p>
                   </div>
                 </div>
@@ -195,7 +212,7 @@ export function ReviewPaymentPage() {
                 />
               ))}
               {complianceCase.canResolveFindings && !complianceCase.findingsResolved && (
-                <p className="text-xs italic text-destructive">
+                <p className="text-xs text-destructive italic">
                   {t("compliance:review.resolve_to_confirm")}
                 </p>
               )}
@@ -208,6 +225,9 @@ export function ReviewPaymentPage() {
               canComment={complianceCase.canComment}
               isPending={comment.isPending}
               onSubmit={(input) => comment.mutate(input)}
+              onDownloadAttachment={(attachmentId, fileName) => {
+                void ComplianceService.downloadAttachment(attachmentId, fileName);
+              }}
             />
           )}
 

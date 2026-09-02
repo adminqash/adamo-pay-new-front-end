@@ -1,4 +1,4 @@
-export type RiskBand = "low" | "medium" | "high"
+export type RiskBand = "low" | "medium" | "high";
 
 export type ComplianceFinding = {
   codigoLista: string
@@ -11,7 +11,7 @@ export type ComplianceFinding = {
   resolutionNote?: string
   resolvedByName?: string
   resolvedAt?: string
-}
+};
 
 export type InfolaftMatch = {
   id: string
@@ -29,7 +29,7 @@ export type InfolaftMatch = {
   comments?: string
   listNames?: string
   type?: string
-}
+};
 
 export type ComplianceComment = {
   id: string
@@ -37,9 +37,9 @@ export type ComplianceComment = {
   text: string
   authorName: string
   authorRole: "client" | "compliance"
-  attachments: Array<{ name: string, size?: number, contentType?: string }>
+  attachments: Array<{ id?: string, name: string, size?: number, contentType?: string }>
   createdAt: string
-}
+};
 
 export type ComplianceCase = {
   id: string
@@ -73,20 +73,20 @@ export type ComplianceCase = {
   canComment: boolean
   findingsResolved: boolean
   awaitingAdamo: boolean
-}
+};
 
 export type ComplianceScreeningDetail = {
   subjectId: string
   byDocumentNumber: InfolaftMatch[]
   byName: InfolaftMatch[]
-}
+};
 
 export function riskBandFromLevel(level: number): RiskBand {
   if (level >= 4) {
-    return "high"
+    return "high";
   }
   if (level >= 3) {
-    return "medium"
+    return "medium";
   }
-  return "low"
+  return "low";
 }

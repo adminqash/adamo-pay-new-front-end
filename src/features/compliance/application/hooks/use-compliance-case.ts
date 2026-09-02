@@ -96,7 +96,12 @@ export function useAddComplianceComment(subjectId: string) {
     mutationKey: [ComplianceService.ADD_COMMENT_KEY, subjectId],
     mutationFn: (input: {
       text: string
-      attachments?: Array<{ name: string, size?: number, contentType?: string }>
+      attachments?: Array<{
+        name: string
+        size?: number
+        contentType?: string
+        contentBase64: string
+      }>
     }) => ComplianceService.addComment(subjectId, input),
     meta: {
       successMessage: t("compliance:messages.comment_created", {
