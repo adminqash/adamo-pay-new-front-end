@@ -4,6 +4,7 @@ import type {
   PaymentDetailDTO,
   PaymentTimelineDTO,
 } from "@/features/transactions/api/dtos/payment-detail.dto";
+import type { PaymentStatusSummaryDTO } from "@/features/transactions/api/dtos/payment-summary.dto";
 import type {
   CorrectPaymentCommand,
   CreatePaymentCommand,
@@ -44,6 +45,10 @@ export class PaymentsService {
     );
   }
 
+  public static async getStatusSummary(): Promise<ServiceResult<PaymentStatusSummaryDTO>> {
+    return apiGetRaw<PaymentStatusSummaryDTO>(coreApi, "/payments/summary");
+  }
+
   public static async getDetailDto(
     paymentId: string,
   ): Promise<ServiceResult<PaymentDetailDTO>> {
@@ -52,22 +57,30 @@ export class PaymentsService {
 
   public static async getById(
     paymentId: string,
+    options?: { includeTimeline?: boolean },
   ): Promise<ServiceResult<TransactionDetail>> {
-    const [detailResult, timelineResult] = await Promise.all([
-      apiGetRaw<PaymentDetailDTO>(coreApi, `/payments/${paymentId}`),
-      apiGetRaw<PaymentTimelineDTO>(coreApi, `/payments/${paymentId}/timeline`),
-    ]);
+    const includeTimeline = options?.includeTimeline === true;
+    const detailResult = await apiGetRaw<PaymentDetailDTO>(
+      coreApi,
+      `/payments/${paymentId}`,
+    );
 
     if (!detailResult?.data) {
       throw new Error("Payment detail not found");
     }
 
+    let timelineData: PaymentTimelineDTO | undefined;
+    if (includeTimeline) {
+      const timelineResult = await apiGetRaw<PaymentTimelineDTO>(
+        coreApi,
+        `/payments/${paymentId}/timeline`,
+      );
+      timelineData = timelineResult?.data ?? undefined;
+    }
+
     return {
       ...detailResult,
-      data: PaymentDetailMapper.toDomain(
-        detailResult.data,
-        timelineResult?.data ?? undefined,
-      ),
+      data: PaymentDetailMapper.toDomain(detailResult.data, timelineData),
     };
   }
 

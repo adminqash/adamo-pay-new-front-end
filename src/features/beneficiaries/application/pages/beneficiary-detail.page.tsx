@@ -66,7 +66,6 @@ import {
   documentTypeFromLabel,
 } from "@/lib/document-type";
 import { useSourceCatalog } from "@/features/source/application/hooks/use-source-catalog";
-import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { CreditCard, type CreditCardData } from "../components/credit-card";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useBeneficiaryDetail, useBeneficiaryTransactions, useUpdateBeneficiary } from "../hooks/use-beneficiaries";
@@ -1197,7 +1196,7 @@ export function BeneficiaryDetailPage() {
                 </p>
               </div>
               <div className="flex items-center gap-4">
-                <PermissionGate permission={[...EXPORT_DATA]} mode="any">
+                <PermissionGate permission={PERMISSIONS.REPORTS_OWN}>
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="secondary" size="default">

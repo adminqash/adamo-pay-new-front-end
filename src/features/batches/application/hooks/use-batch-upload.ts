@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/features/batches/api/services/batch-upload.service";
 import { BatchesService } from "@/features/batches/api/services/batches.service";
 import {
+  mergeUploadProgressState,
   subscribeToBatchUploadEvents,
   type BatchUploadProgressState,
 } from "@/lib/realtime/batch-upload.realtime";
@@ -17,18 +18,6 @@ const INITIAL_PROGRESS: BatchUploadProgressState = {
   status: "idle",
   progress: 0,
 };
-
-function mergeUploadProgressState(
-  previous: BatchUploadProgressState,
-  next: Partial<BatchUploadProgressState>,
-): BatchUploadProgressState {
-  return {
-    ...previous,
-    ...next,
-    summary: next.summary ?? previous.summary,
-    errorMessage: next.errorMessage ?? previous.errorMessage,
-  };
-}
 
 function mapStatusDtoToProgress(dto: BatchUploadStatusDTO): BatchUploadProgressState {
   return {
@@ -47,6 +36,13 @@ export function useBatchUploadProgress(
 ) {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<BatchUploadProgressState>(INITIAL_PROGRESS);
+  const batchIdRef = useRef(batchId);
+  const uploadIdRef = useRef(uploadId);
+
+  useEffect(() => {
+    batchIdRef.current = batchId;
+    uploadIdRef.current = uploadId;
+  }, [batchId, uploadId]);
 
   useEffect(() => {
     if (!batchId) {
@@ -68,21 +64,28 @@ export function useBatchUploadProgress(
   }, [uploadId]);
 
   useEffect(() => {
-    if (!batchId) {
-      return;
-    }
+    return subscribeToBatchUploadEvents((nextState) => {
+      const currentBatchId = batchIdRef.current;
+      const currentUploadId = uploadIdRef.current;
+      const matchesBatch = Boolean(currentBatchId && nextState.batchId === currentBatchId);
+      const matchesUpload = Boolean(currentUploadId && nextState.uploadId === currentUploadId);
+      if (!matchesBatch && !matchesUpload) {
+        return;
+      }
 
-    return subscribeToBatchUploadEvents(batchId, (nextState) => {
       setProgress((previous) => mergeUploadProgressState(previous, nextState));
 
-      if (nextState.status === "completed") {
-        void queryClient.invalidateQueries({
-          queryKey: queryKeys.batches.detail(batchId),
-        });
+      if (nextState.status === "completed" || nextState.status === "failed") {
+        const detailId = currentBatchId ?? nextState.batchId;
+        if (detailId) {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.batches.detail(detailId),
+          });
+        }
         void queryClient.invalidateQueries({ queryKey: ["batches"] });
       }
     });
-  }, [batchId, queryClient]);
+  }, [queryClient]);
 
   useEffect(() => {
     if (!uploadId) {

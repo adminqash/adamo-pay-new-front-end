@@ -45,6 +45,8 @@ export type BatchUploadStatusDTO = {
         cell?: string
         column?: string
         excelRow?: number
+        value?: string
+        header?: string
       }>
     }>
   } | null
@@ -59,10 +61,16 @@ export class BatchUploadService {
   public static UPLOAD_BATCH_FILE_KEY = "upload_batch_file_key";
   public static GET_UPLOAD_STATUS_KEY = "get_upload_status_key";
 
+  private static requestLocale(): string {
+    return i18next.language?.toLowerCase().startsWith("en") ? "en" : "es";
+  }
+
   private static authHeaders(requestId?: string): Record<string, string> {
+    const locale = this.requestLocale();
     const headers: Record<string, string> = {
       Accept: "application/json",
-      "Accept-Language": i18next.language,
+      "Accept-Language": locale,
+      "X-Locale": locale,
       "X-Request-ID": requestId ?? crypto.randomUUID(),
     };
     const accessToken = getEnvAccessToken();

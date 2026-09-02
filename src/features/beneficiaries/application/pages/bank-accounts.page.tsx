@@ -53,7 +53,6 @@ import {
 import { PageContainer } from "@/features/common/components/layout/page-container";
 import { PermissionGate } from "@/features/auth/application/components/permission-gate";
 import { PERMISSIONS } from "@/features/auth/domain/permissions";
-import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { canonicalizeDocumentType } from "@/lib/document-type";
 
 export function BankAccountsPage() {
@@ -323,7 +322,7 @@ export function BankAccountsPage() {
                 {t("beneficiaries.bank_accounts.add_button")}
               </Button>
               </PermissionGate>
-              <PermissionGate permission={[...EXPORT_DATA]} mode="any">
+              <PermissionGate permission={PERMISSIONS.REPORTS_OWN}>
               <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="secondary" size="default">

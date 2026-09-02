@@ -217,7 +217,8 @@
       },
       "validation_errors": {
         "title": "{{count}} registro(s) con error de archivo. Súbelo de nuevo para continuar.",
-        "item": "{{cell}} · {{field}}: {{message}}"
+        "item": "{{cell}} ({{header}}): \"{{value}}\" — {{message}}",
+        "row": "fila"
       },
       "upload_failed": "No se pudo procesar el archivo. Intenta subirlo de nuevo."
     },

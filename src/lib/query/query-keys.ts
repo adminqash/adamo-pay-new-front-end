@@ -27,6 +27,7 @@ export const queryKeys = {
   },
   payments: {
     all: (params?: unknown) => ["payments", params] as const,
+    summary: ["payments", "summary"] as const,
     detail: (id: string) => ["payments", id] as const,
     timeline: (id: string) => ["payments", id, "timeline"] as const,
   },

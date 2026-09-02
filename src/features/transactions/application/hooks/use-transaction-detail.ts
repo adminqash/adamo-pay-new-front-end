@@ -6,13 +6,22 @@ import { withCountryScope } from "@/lib/country/country-code";
 import { queryDefaults } from "@/lib/query/defaults";
 import { queryKeys } from "@/lib/query/query-keys";
 
-export function useTransactionDetail(paymentId: string | null, enabled = true) {
+export function useTransactionDetail(
+  paymentId: string | null,
+  options: { enabled?: boolean, includeTimeline?: boolean } = {},
+) {
   const { t } = useTranslation(["transactions"]);
   const { countryCode } = useCountry();
+  const enabled = options.enabled ?? true;
+  const includeTimeline = options.includeTimeline === true;
 
   const query = useQuery({
-    queryKey: withCountryScope(queryKeys.payments.detail(paymentId ?? ""), countryCode),
-    queryFn: () => PaymentsService.getById(paymentId!),
+    queryKey: withCountryScope(
+      [...queryKeys.payments.detail(paymentId ?? ""), includeTimeline],
+      countryCode,
+    ),
+    queryFn: () =>
+      PaymentsService.getById(paymentId!, { includeTimeline }),
     enabled: Boolean(paymentId) && enabled,
     ...queryDefaults,
     meta: {

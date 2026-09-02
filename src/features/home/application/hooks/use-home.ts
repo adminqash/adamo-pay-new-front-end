@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { DashboardService } from "@/features/home/api/services/dashboard.service";
 import { withCountryScope } from "@/lib/country/country-code";
@@ -9,10 +10,12 @@ import { queryKeys } from "@/lib/query/query-keys";
 export function useHome() {
   const { t } = useTranslation(["home"]);
   const { countryCode } = useCountry();
+  const { capabilities } = usePermissions();
 
   const query = useQuery({
     queryKey: withCountryScope(queryKeys.dashboard.summary, countryCode),
     queryFn: DashboardService.getSummary,
+    enabled: capabilities.canViewDashboard,
     ...queryDefaults,
     meta: {
       showMessageOnSuccess: false,

@@ -90,7 +90,13 @@ export const router = createBrowserRouter([
       {
         path: "transactions/:paymentId/review",
         element: guarded(
-          [PERMISSIONS.COMPLIANCE_PENDING_LIST, PERMISSIONS.TRANSACTIONS_LIST, PERMISSIONS.PAYMENTS_INDIVIDUAL_LIST],
+          [
+            PERMISSIONS.COMPLIANCE_PENDING_LIST,
+            PERMISSIONS.COMPLIANCE_RESOLVE,
+            PERMISSIONS.COMPLIANCE_APPROVE,
+            PERMISSIONS.COMPLIANCE_REJECT,
+            PERMISSIONS.TRANSACTIONS_DETAIL,
+          ],
           <ReviewPaymentPage />,
           "any",
         ),
@@ -98,7 +104,13 @@ export const router = createBrowserRouter([
       {
         path: "transactions/:paymentId/novedad",
         element: guarded(
-          [PERMISSIONS.COMPLIANCE_PENDING_LIST, PERMISSIONS.TRANSACTIONS_LIST, PERMISSIONS.PAYMENTS_INDIVIDUAL_LIST],
+          [
+            PERMISSIONS.COMPLIANCE_PENDING_LIST,
+            PERMISSIONS.COMPLIANCE_RESOLVE,
+            PERMISSIONS.COMPLIANCE_APPROVE,
+            PERMISSIONS.COMPLIANCE_REJECT,
+            PERMISSIONS.TRANSACTIONS_DETAIL,
+          ],
           <FindingReviewPage />,
           "any",
         ),

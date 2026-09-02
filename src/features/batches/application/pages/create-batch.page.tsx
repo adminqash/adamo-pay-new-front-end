@@ -78,7 +78,7 @@ export const CreateBatchPage = () => {
   const { totalBalance, accounts, isLoading: isAccountsLoading } = useAccounts();
   const { capabilities } = usePermissions();
   const { batch } = useBatchDetail(batchId ?? "");
-  useBatchesRealtime(batchId ?? undefined);
+  useBatchesRealtime();
   const screeningLive = useBatchScreeningLive(batchId ?? undefined);
   const [sourceAccountId, setSourceAccountId] = useState<string>();
   useAutoSelectDebitAccount(accounts, sourceAccountId, setSourceAccountId);
@@ -212,7 +212,9 @@ export const CreateBatchPage = () => {
     = uploadProgress.summary?.validItems
       ?? batch?.validItems
       ?? 0;
-  const hasFileValidationErrors = isUploadReady && fileInvalidCount > 0;
+  const hasFileValidationErrors
+    = fileInvalidCount > 0
+      || (uploadProgress.summary?.invalidRows?.length ?? 0) > 0;
   const canConfirmProcess
     = isUploadReady
       && uploadProgress.status !== "failed"
@@ -225,6 +227,9 @@ export const CreateBatchPage = () => {
       (row.validationErrors ?? []).map((error) => ({
         rowNumber: row.rowNumber,
         cell: error.cell,
+        column: error.column,
+        header: error.header,
+        value: error.value,
         field: error.field,
         code: error.code,
         message: error.message,
@@ -233,16 +238,22 @@ export const CreateBatchPage = () => {
     .slice(0, 50);
 
   const uploadSummary = uploadProgress.summary;
-  const resolvedTotalAmountMinor
+  const fromUploadMinor
     = uploadSummary?.totalAmount && uploadSummary.totalAmount > 0
       ? toMinorInt(uploadSummary.totalAmount)
-      : batch?.amount && batch.amount > 0
-        ? majorToMinor(String(batch.amount))
-        : 0;
+      : 0;
+  const fromBatchMinor
+    = batch?.amount && batch.amount > 0
+      ? majorToMinor(String(batch.amount))
+      : 0;
+  const resolvedTotalAmountMinor = fromUploadMinor || fromBatchMinor;
   const hasUploadSummary = Boolean(
     uploadSummary
-    && uploadSummary.totalItems > 0
-    && resolvedTotalAmountMinor > 0,
+    && (
+      uploadSummary.totalItems > 0
+      || resolvedTotalAmountMinor > 0
+      || (uploadSummary.invalidRows?.length ?? 0) > 0
+    ),
   );
   const batchSummary = file
     ? {
@@ -600,7 +611,7 @@ export const CreateBatchPage = () => {
                 )}
 
                 {uploadProgress.status === "failed" && (
-                  <p className="whitespace-pre-wrap text-sm text-[#bf3636]">
+                  <p className="text-sm whitespace-pre-wrap text-[#bf3636]">
                     {uploadProgress.errorMessage
                       ?? t("batches.create_batch.upload_failed", {
                         defaultValue: "No se pudo procesar el archivo. Intenta subirlo de nuevo.",
@@ -616,17 +627,23 @@ export const CreateBatchPage = () => {
                         defaultValue: "{{count}} registro(s) con error de archivo. Súbelo de nuevo para continuar.",
                       })}
                     </p>
-                    <div className="max-h-48 overflow-y-auto rounded-xl bg-white p-3">
+                    <div className={`
+                      max-h-48 overflow-y-auto rounded-xl bg-white p-3
+                    `}
+                    >
                       {fileValidationErrors.map((error, index) => (
                         <p
                           key={`${error.cell ?? error.rowNumber}-${error.field}-${index}`}
                           className="py-0.5 text-sm text-[#bf3636]"
                         >
                           {t("batches.create_batch.validation_errors.item", {
-                            cell: error.cell ?? `fila ${error.rowNumber}`,
+                            cell: error.cell
+                              ?? `${t("batches.create_batch.validation_errors.row", { defaultValue: "fila" })} ${error.rowNumber}`,
+                            header: error.header || error.field,
+                            value: error.value || "—",
                             field: error.field,
                             message: error.message,
-                            defaultValue: "{{cell}} · {{field}}: {{message}}",
+                            defaultValue: "{{cell}} ({{header}}): \"{{value}}\" — {{message}}",
                           })}
                         </p>
                       ))}
@@ -742,11 +759,17 @@ export const CreateBatchPage = () => {
                   )}
 
                   {screeningLive.rows.length > 0 && (
-                    <div className="max-h-48 overflow-y-auto rounded-xl bg-white p-4">
+                    <div className={`
+                      max-h-48 overflow-y-auto rounded-xl bg-white p-4
+                    `}
+                    >
                       {screeningLive.rows.map((row) => (
                         <div
                           key={row.rowNumber}
-                          className="flex items-center justify-between gap-3 py-1 text-sm text-[#384250]"
+                          className={`
+                            flex items-center justify-between gap-3 py-1 text-sm
+                            text-[#384250]
+                          `}
                         >
                           <span>
                             {t("batches.screening.row_label", {

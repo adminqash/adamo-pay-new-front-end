@@ -27,6 +27,8 @@ import { StickyFilterHeader } from "@/features/common/components/layout/sticky-f
 import { ReportsService } from "@/features/reports/api/services/reports.service";
 import { useTransactions } from "../hooks/use-transactions";
 import { useTransactionDetail } from "../hooks/use-transaction-detail";
+import { usePaymentsSummary } from "../hooks/use-payments-summary";
+import { TransactionStatusOverview } from "../components/transaction-status-overview";
 import { usePaymentsRealtime } from "../hooks/use-payments-realtime";
 import { useDownloadPaymentReceipt } from "../hooks/use-payment-mutations";
 import { useAccounts } from "@/features/accounts/application/hooks/use-accounts";
@@ -34,6 +36,7 @@ import { buildTransactionListParams } from "../utils/transaction-filters.utils";
 import { formatCurrencyDisplay } from "@/lib/money/money";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { PermissionGate } from "@/features/auth/application/components/permission-gate";
+import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import { PERMISSIONS } from "@/features/auth/domain/permissions";
 import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { Input } from "@adamosuiteservices/ui/input";
@@ -226,6 +229,7 @@ const DateRangePicker = ({
 export const TransactionsPage = () => {
   const { t, i18n } = useTranslation(["transactions", "compliance"]);
   const { currencyUpper } = useCountry();
+  const { capabilities } = usePermissions();
   const { accounts } = useAccounts({ page: 1, limit: 20 });
   const [searchParams] = useSearchParams();
 
@@ -303,10 +307,15 @@ export const TransactionsPage = () => {
   );
 
   const { transactions, totalCount, refetch } = useTransactions(listParams);
+  const { counts: overviewCounts, isEnabled: showStatusOverview }
+    = usePaymentsSummary();
   usePaymentsRealtime();
   const { detail: transactionDetail } = useTransactionDetail(
     selectedTransactionId,
-    isSheetOpen,
+    {
+      enabled: isSheetOpen && capabilities.canViewTransactionDetail,
+      includeTimeline: capabilities.canViewTransactionTimeline,
+    },
   );
   const downloadReceipt = useDownloadPaymentReceipt();
 
@@ -400,6 +409,9 @@ export const TransactionsPage = () => {
    * handle row click
    */
   const handleRowClick = (transaction: Transaction) => {
+    if (!capabilities.canViewTransactionDetail) {
+      return;
+    }
     setSelectedTransaction(transaction);
     setSelectedTransactionId(transaction.id);
     setShowTimeline(false);
@@ -443,6 +455,13 @@ export const TransactionsPage = () => {
         sidebarTopBarPortal,
       )}
       <PageContainer className="bg-neutrals-25">
+        <div className="flex w-full flex-col gap-4">
+        {showStatusOverview && (
+          <TransactionStatusOverview
+            counts={overviewCounts}
+            onSelectStatus={setStatusFilter}
+          />
+        )}
         <Card className="overflow-visible border p-6">
           <StickyFilterHeader className="flex flex-col gap-0">
             {/* header + search */}
@@ -584,7 +603,7 @@ export const TransactionsPage = () => {
                       </Button>
                     </DialogFooter>
                   </DialogContent>
-                </Dialog>
+                  </Dialog>
                 </PermissionGate>
               </div>
               {/* search input */}
@@ -736,7 +755,7 @@ export const TransactionsPage = () => {
                   key={transaction.id}
                   onClick={() => handleRowClick(transaction)}
                   className={`
-                    cursor-pointer
+                    ${capabilities.canViewTransactionDetail ? "cursor-pointer" : ""}
                     hover:bg-neutrals-25
                   `}
                 >
@@ -768,6 +787,7 @@ export const TransactionsPage = () => {
             </TableBody>
           </Table>
         </Card>
+        </div>
       </PageContainer>
       {/* transaction detail sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -906,7 +926,10 @@ export const TransactionsPage = () => {
                     <Alert className="border-0 bg-neutrals-50">
                       <Icon symbol="info" />
                       <AlertTitle>{t("compliance:detail.resolved_title")}</AlertTitle>
-                      <AlertDescription className="flex items-center justify-between gap-2">
+                      <AlertDescription className={`
+                        flex items-center justify-between gap-2
+                      `}
+                      >
                         <span>{t("compliance:detail.resolved_description")}</span>
                         <Link
                           to={`/transactions/${displayedTransaction.id}/review`}
@@ -919,72 +942,74 @@ export const TransactionsPage = () => {
                   )}
                 </div>
                 {/* Timeline section */}
-                <div className="flex flex-col gap-6">
-                  <Button
-                    variant="link"
-                    className={`
-                      flex h-6 items-center gap-2 self-start px-0 text-primary
-                    `}
-                    onClick={() => setShowTimeline(!showTimeline)}
-                  >
-                    <span className="text-sm">{showTimeline ? "Ocultar timeline de pago" : "Ver timeline de pago"}</span>
-                    <Icon
-                      symbol={showTimeline ? "expand_less" : "expand_more"}
-                      className="size-6"
-                    />
-                  </Button>
-                  {showTimeline && (
-                    <Timeline>
-                      {displayedTransaction.timeline.length > 0
-                        ? displayedTransaction.timeline.map((event) => (
-                          <TimelineItem key={event.id} status={event.status}>
-                            <TimelineIndicator />
-                            <TimelineContent>
-                              <TimelineTitle>{event.title}</TimelineTitle>
-                              {event.description && (
-                                <TimelineDescription>{event.description}</TimelineDescription>
-                              )}
-                              <TimelineTime>{event.time}</TimelineTime>
-                            </TimelineContent>
-                          </TimelineItem>
-                        ))
-                        : (
-                          <>
-                            <TimelineItem status="complete">
+                <PermissionGate permission={PERMISSIONS.TRANSACTIONS_TIMELINE}>
+                  <div className="flex flex-col gap-6">
+                    <Button
+                      variant="link"
+                      className={`
+                        flex h-6 items-center gap-2 self-start px-0 text-primary
+                      `}
+                      onClick={() => setShowTimeline(!showTimeline)}
+                    >
+                      <span className="text-sm">{showTimeline ? "Ocultar timeline de pago" : "Ver timeline de pago"}</span>
+                      <Icon
+                        symbol={showTimeline ? "expand_less" : "expand_more"}
+                        className="size-6"
+                      />
+                    </Button>
+                    {showTimeline && (
+                      <Timeline>
+                        {displayedTransaction.timeline.length > 0
+                          ? displayedTransaction.timeline.map((event) => (
+                            <TimelineItem key={event.id} status={event.status}>
                               <TimelineIndicator />
                               <TimelineContent>
-                                <TimelineTitle>Pago completado con éxito.</TimelineTitle>
-                                <TimelineDescription>
-                                  El pago ha sido procesado exitosamente. Confirmación bancaria recibida.
-                                </TimelineDescription>
-                                <TimelineTime>02 Septiembre. 02:35 PM</TimelineTime>
+                                <TimelineTitle>{event.title}</TimelineTitle>
+                                {event.description && (
+                                  <TimelineDescription>{event.description}</TimelineDescription>
+                                )}
+                                <TimelineTime>{event.time}</TimelineTime>
                               </TimelineContent>
                             </TimelineItem>
-                            <TimelineItem status="active">
-                              <TimelineIndicator />
-                              <TimelineContent>
-                                <TimelineTitle>En proceso</TimelineTitle>
-                                <TimelineDescription>
-                                  El pago está siendo procesado por el banco.
-                                </TimelineDescription>
-                                <TimelineTime>01 Septiembre. 10:15 AM</TimelineTime>
-                              </TimelineContent>
-                            </TimelineItem>
-                            <TimelineItem status="pending">
-                              <TimelineIndicator />
-                              <TimelineContent>
-                                <TimelineTitle>Pago iniciado</TimelineTitle>
-                                <TimelineDescription>
-                                  Solicitud de pago recibida.
-                                </TimelineDescription>
-                                <TimelineTime>01 Septiembre. 09:00 AM</TimelineTime>
-                              </TimelineContent>
-                            </TimelineItem>
-                          </>
-                        )}
-                    </Timeline>
-                  )}
-                </div>
+                          ))
+                          : (
+                            <>
+                              <TimelineItem status="complete">
+                                <TimelineIndicator />
+                                <TimelineContent>
+                                  <TimelineTitle>Pago completado con éxito.</TimelineTitle>
+                                  <TimelineDescription>
+                                    El pago ha sido procesado exitosamente. Confirmación bancaria recibida.
+                                  </TimelineDescription>
+                                  <TimelineTime>02 Septiembre. 02:35 PM</TimelineTime>
+                                </TimelineContent>
+                              </TimelineItem>
+                              <TimelineItem status="active">
+                                <TimelineIndicator />
+                                <TimelineContent>
+                                  <TimelineTitle>En proceso</TimelineTitle>
+                                  <TimelineDescription>
+                                    El pago está siendo procesado por el banco.
+                                  </TimelineDescription>
+                                  <TimelineTime>01 Septiembre. 10:15 AM</TimelineTime>
+                                </TimelineContent>
+                              </TimelineItem>
+                              <TimelineItem status="pending">
+                                <TimelineIndicator />
+                                <TimelineContent>
+                                  <TimelineTitle>Pago iniciado</TimelineTitle>
+                                  <TimelineDescription>
+                                    Solicitud de pago recibida.
+                                  </TimelineDescription>
+                                  <TimelineTime>01 Septiembre. 09:00 AM</TimelineTime>
+                                </TimelineContent>
+                              </TimelineItem>
+                            </>
+                          )}
+                      </Timeline>
+                    )}
+                  </div>
+                </PermissionGate>
               </>
             )}
           </SheetBody>

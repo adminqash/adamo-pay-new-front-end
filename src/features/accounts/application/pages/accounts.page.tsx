@@ -241,6 +241,7 @@ export function AccountsPage() {
                     {currencyUpper}
                   </span>
                 </div>
+                <PermissionGate permission={PERMISSIONS.ACCOUNTS_REQUEST_CREATE}>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="link" className="h-6 p-0 text-primary">
@@ -281,6 +282,7 @@ export function AccountsPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </PermissionGate>
               </div>
             </div>
           </Card>
@@ -329,12 +331,14 @@ export function AccountsPage() {
                         {t("accounts.dropdown_menu.view_movements")}
                       </Link>
                     </DropdownMenuItem>
+                    <PermissionGate permission={PERMISSIONS.ACCOUNTS_UPDATE}>
                     <DropdownMenuItem onSelect={() => handleOpenEditNameDialog(account.id, account.name)}>
                       {t("accounts.dropdown_menu.edit_name")}
                     </DropdownMenuItem>
                     <DropdownMenuItem variant="destructive" onSelect={() => handleOpenDeleteDialog(account.id)}>
                       {t("accounts.dropdown_menu.delete")}
                     </DropdownMenuItem>
+                    </PermissionGate>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <div className="flex flex-col gap-8">

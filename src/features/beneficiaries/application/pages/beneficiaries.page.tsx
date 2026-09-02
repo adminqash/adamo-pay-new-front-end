@@ -34,7 +34,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { PermissionGate } from "@/features/auth/application/components/permission-gate";
 import { PERMISSIONS } from "@/features/auth/domain/permissions";
-import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { useBeneficiaries, useCreateBeneficiary } from "../hooks/use-beneficiaries";
 import { usePaymentsRealtime } from "@/features/transactions/application/hooks/use-payments-realtime";
 import { buildBeneficiaryListParams } from "../utils/beneficiary-filters.utils";
@@ -376,7 +375,7 @@ export function BeneficiariesPage() {
                   </DialogContent>
                 </Dialog>
                 </PermissionGate>
-                <PermissionGate permission={[...EXPORT_DATA]} mode="any">
+                <PermissionGate permission={PERMISSIONS.REPORTS_OWN}>
                 <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="secondary">

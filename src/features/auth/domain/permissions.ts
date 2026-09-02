@@ -22,7 +22,10 @@ export const PERMISSIONS = {
   PAYMENTS_BATCH_SEND: "adamo_pay:payments_batch:send",
   PAYMENTS_BATCH_APPROVE_SEND: "adamo_pay:payments_batch:pending:approve_send",
   TRANSACTIONS_LIST: "adamo_pay:transactions:list:read",
+  TRANSACTIONS_DETAIL: "adamo_pay:transactions:detail:read",
+  TRANSACTIONS_TIMELINE: "adamo_pay:transactions:timeline:read",
   TRANSACTIONS_RECEIPT_DOWNLOAD: "adamo_pay:transactions:receipt:download",
+  PAYMENTS_COMMENT: "adamo_pay:payments:comment",
   BENEFICIARIES_LIST: "adamo_pay:beneficiaries:list:read",
   BENEFICIARIES_CREATE: "adamo_pay:beneficiaries:create",
   METRICS_COUNTRY: "adamo_pay:metrics:country:read",
@@ -31,10 +34,15 @@ export const PERMISSIONS = {
   COLLECTIONS_CREATE: "adamo_pay:collections:create",
   ACCOUNTS_LIST: "adamo_pay:accounts:list:read",
   ACCOUNTS_TRANSFER: "adamo_pay:accounts:transfer_between",
+  ACCOUNTS_UPDATE: "adamo_pay:accounts:update",
+  ACCOUNTS_REQUEST_CREATE: "adamo_pay:accounts:request_create",
   REPORTS_OWN: "adamo_pay:reports:own:read",
   USERS_GLOBAL_MANAGE: "adamo_pay:users:global:manage",
   USERS_ASSIGNED_MANAGE: "adamo_pay:users:assigned_accounts:manage",
   COMPLIANCE_PENDING_LIST: "adamo_pay:payments_compliance:pending:list:read",
+  COMPLIANCE_RESOLVE: "adamo_pay:payments_compliance:pending:resolve",
+  COMPLIANCE_APPROVE: "adamo_pay:payments_compliance:pending:approve",
+  COMPLIANCE_REJECT: "adamo_pay:payments_compliance:pending:reject",
   COMPLIANCE_APPROVE_REJECT:
     "adamo_pay:payments_compliance:pending:approve_reject",
 } as const;
@@ -59,8 +67,11 @@ export const PERMISSION_BY_UUID: Record<string, PermissionName> = {
   "2c688313-fffe-496c-8316-ea7d5021d73c": PERMISSIONS.PAYMENTS_BATCH_SEND,
   "52e00ee8-a93c-4c05-9633-350ad3c6d0ff": PERMISSIONS.PAYMENTS_BATCH_APPROVE_SEND,
   "e79c557b-74b5-4d80-b11a-27374d6dd2e7": PERMISSIONS.TRANSACTIONS_LIST,
+  "e062f8eb-ce37-4cd6-87d1-49876aaa003e": PERMISSIONS.TRANSACTIONS_DETAIL,
+  "603021b2-da3e-4a88-8891-185db7e4117a": PERMISSIONS.TRANSACTIONS_TIMELINE,
   "4a49651b-1bbb-4d53-accb-a30fdaa020ad":
     PERMISSIONS.TRANSACTIONS_RECEIPT_DOWNLOAD,
+  "65e138d7-07a7-4f06-aa9d-64eb24201654": PERMISSIONS.PAYMENTS_COMMENT,
   "a38a5c79-837c-4e1a-a4fa-46fa5970bf03": PERMISSIONS.BENEFICIARIES_LIST,
   "3f9469b6-efba-409f-bba5-5661715a588c": PERMISSIONS.BENEFICIARIES_CREATE,
   "9d7584cf-eb13-4109-b631-04a8cda68635": PERMISSIONS.METRICS_COUNTRY,
@@ -68,10 +79,15 @@ export const PERMISSION_BY_UUID: Record<string, PermissionName> = {
   "a48ffb5e-eb00-48b0-9bb7-7dac941473bc": PERMISSIONS.COLLECTIONS_LIST,
   "05843f20-db65-4e85-9fec-67436aeecbe0": PERMISSIONS.ACCOUNTS_LIST,
   "d2736b36-5d5a-4b29-816d-00be86732ccc": PERMISSIONS.ACCOUNTS_TRANSFER,
+  "ce21bf74-354f-4bf6-bbc8-dc05753423ce": PERMISSIONS.ACCOUNTS_UPDATE,
+  "fca34b84-d160-43aa-9d07-9674973848e7": PERMISSIONS.ACCOUNTS_REQUEST_CREATE,
   "7a016055-d984-4585-97e1-baec66337fc8": PERMISSIONS.REPORTS_OWN,
   "74087933-5244-4f94-8d6c-d0defc97ed27": PERMISSIONS.USERS_GLOBAL_MANAGE,
   "3c088a1d-e65c-4f2a-9687-8e6456c00e3f": PERMISSIONS.USERS_ASSIGNED_MANAGE,
   "0ec66f6a-1f75-4ac8-b5aa-43ef3d6f027f": PERMISSIONS.COMPLIANCE_PENDING_LIST,
+  "7f3a2d91-8c45-4b6e-a127-5d9e3f681c42": PERMISSIONS.COMPLIANCE_RESOLVE,
+  "c4e8b715-2f63-49da-9b81-7a305e6d24f9": PERMISSIONS.COMPLIANCE_APPROVE,
+  "1a96d4e8-73b2-4f05-8c61-e29d7a354fb0": PERMISSIONS.COMPLIANCE_REJECT,
   "8531df65-afb8-4e24-a618-1192076a7bb1": PERMISSIONS.COMPLIANCE_APPROVE_REJECT,
 };
 
@@ -90,37 +106,45 @@ export type AccountScope = "all" | "assigned" | "none";
 export type BalanceScope = "country_total" | "assigned" | "none";
 
 export type AccessCapabilities = {
-  countryScope: CountryScope;
-  accountScope: AccountScope;
-  balanceScope: BalanceScope;
-  canChooseDebitAccount: boolean;
-  canViewBalance: boolean;
-  canViewDashboard: boolean;
-  canListIndividualPayments: boolean;
-  canCreateIndividualPayment: boolean;
-  canSendIndividualPayment: boolean;
-  canApproveSendIndividualPayment: boolean;
-  canDispatchIndividualPayment: boolean;
-  canListBatchPayments: boolean;
-  canCreateBatch: boolean;
-  canSendBatch: boolean;
-  canApproveSendBatch: boolean;
-  canDispatchBatch: boolean;
-  canListTransactions: boolean;
-  canDownloadReceipt: boolean;
-  canListBeneficiaries: boolean;
-  canCreateBeneficiary: boolean;
-  canViewMetrics: boolean;
-  canViewFundings: boolean;
-  canViewCollections: boolean;
-  canListAccounts: boolean;
-  canTransferBetweenAccounts: boolean;
-  canViewOwnReports: boolean;
-  canManageUsersGlobal: boolean;
-  canManageUsersAssigned: boolean;
-  canManageUsers: boolean;
-  canListCompliancePending: boolean;
-  canApproveRejectCompliance: boolean;
+  countryScope: CountryScope
+  accountScope: AccountScope
+  balanceScope: BalanceScope
+  canChooseDebitAccount: boolean
+  canViewBalance: boolean
+  canViewDashboard: boolean
+  canListIndividualPayments: boolean
+  canCreateIndividualPayment: boolean
+  canSendIndividualPayment: boolean
+  canApproveSendIndividualPayment: boolean
+  canDispatchIndividualPayment: boolean
+  canListBatchPayments: boolean
+  canCreateBatch: boolean
+  canSendBatch: boolean
+  canApproveSendBatch: boolean
+  canDispatchBatch: boolean
+  canListTransactions: boolean
+  canViewTransactionDetail: boolean
+  canViewTransactionTimeline: boolean
+  canDownloadReceipt: boolean
+  canCommentPayment: boolean
+  canListBeneficiaries: boolean
+  canCreateBeneficiary: boolean
+  canViewMetrics: boolean
+  canViewFundings: boolean
+  canViewCollections: boolean
+  canListAccounts: boolean
+  canTransferBetweenAccounts: boolean
+  canUpdateAccount: boolean
+  canRequestCreateAccount: boolean
+  canViewOwnReports: boolean
+  canManageUsersGlobal: boolean
+  canManageUsersAssigned: boolean
+  canManageUsers: boolean
+  canListCompliancePending: boolean
+  canResolveCompliance: boolean
+  canApproveCompliance: boolean
+  canRejectCompliance: boolean
+  canApproveRejectCompliance: boolean
 };
 
 export function normalizePermission(value: string): string {
@@ -204,7 +228,10 @@ export function resolveAccessCapabilities(
     canApproveSendBatch,
     canDispatchBatch: canSendBatch || canApproveSendBatch,
     canListTransactions: can(PERMISSIONS.TRANSACTIONS_LIST),
+    canViewTransactionDetail: can(PERMISSIONS.TRANSACTIONS_DETAIL),
+    canViewTransactionTimeline: can(PERMISSIONS.TRANSACTIONS_TIMELINE),
     canDownloadReceipt: can(PERMISSIONS.TRANSACTIONS_RECEIPT_DOWNLOAD),
+    canCommentPayment: can(PERMISSIONS.PAYMENTS_COMMENT),
     canListBeneficiaries: can(PERMISSIONS.BENEFICIARIES_LIST),
     canCreateBeneficiary: can(PERMISSIONS.BENEFICIARIES_CREATE),
     canViewMetrics: can(PERMISSIONS.METRICS_COUNTRY),
@@ -212,11 +239,19 @@ export function resolveAccessCapabilities(
     canViewCollections: can(PERMISSIONS.COLLECTIONS_LIST),
     canListAccounts: can(PERMISSIONS.ACCOUNTS_LIST),
     canTransferBetweenAccounts: can(PERMISSIONS.ACCOUNTS_TRANSFER),
+    canUpdateAccount: can(PERMISSIONS.ACCOUNTS_UPDATE),
+    canRequestCreateAccount: can(PERMISSIONS.ACCOUNTS_REQUEST_CREATE),
     canViewOwnReports: can(PERMISSIONS.REPORTS_OWN),
     canManageUsersGlobal,
     canManageUsersAssigned,
     canManageUsers: canManageUsersGlobal || canManageUsersAssigned,
     canListCompliancePending: can(PERMISSIONS.COMPLIANCE_PENDING_LIST),
-    canApproveRejectCompliance: can(PERMISSIONS.COMPLIANCE_APPROVE_REJECT),
+    canResolveCompliance: can(PERMISSIONS.COMPLIANCE_RESOLVE),
+    canApproveCompliance: can(PERMISSIONS.COMPLIANCE_APPROVE),
+    canRejectCompliance: can(PERMISSIONS.COMPLIANCE_REJECT),
+    canApproveRejectCompliance:
+      can(PERMISSIONS.COMPLIANCE_APPROVE)
+      || can(PERMISSIONS.COMPLIANCE_REJECT)
+      || can(PERMISSIONS.COMPLIANCE_APPROVE_REJECT),
   };
 }

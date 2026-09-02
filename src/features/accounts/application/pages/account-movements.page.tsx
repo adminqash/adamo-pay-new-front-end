@@ -44,7 +44,7 @@ import { Popover, PopoverContent, PopoverAnchor } from "@adamosuiteservices/ui/p
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@adamosuiteservices/ui/table";
 import { usePortalContainer } from "@adamosuiteservices/ui/use-portal-container";
 import { format, subDays } from "date-fns";
-import { businessTodayAsLocalDate } from "@/lib/utils/date.utils";
+import { businessTodayAsLocalDate, formatApiDate } from "@/lib/utils/date.utils";
 import { es, enUS } from "date-fns/locale";
 import { useState, useRef, useState as useStateReact, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -63,7 +63,6 @@ import { PERMISSIONS } from "@/features/auth/domain/permissions";
 import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
 import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import { ToastManager } from "@adamosuiteservices/ui/toaster";
-import { formatApiDate } from "@/lib/utils/date.utils";
 import { ReportsService } from "@/features/reports/api/services/reports.service";
 
 /**
@@ -530,12 +529,14 @@ export function AccountMovementsPage() {
                           {t("accounts.dropdown_menu.transfer")}
                         </DropdownMenuItem>
                       </PermissionGate>
+                      <PermissionGate permission={PERMISSIONS.ACCOUNTS_UPDATE}>
                       <DropdownMenuItem onSelect={handleOpenEditNameDialog}>
                         {t("accounts.dropdown_menu.edit_name")}
                       </DropdownMenuItem>
                       <DropdownMenuItem variant="destructive" onSelect={handleOpenDeleteDialog}>
                         {t("accounts.dropdown_menu.delete")}
                       </DropdownMenuItem>
+                      </PermissionGate>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

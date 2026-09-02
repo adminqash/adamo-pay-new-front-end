@@ -47,10 +47,16 @@ export function useBatchScreeningLive(batchId?: string) {
     }
 
     const unsubscribe = subscribeToBatchStatusEvents((event) => {
-      if (event.batchId !== batchId || event.rowNumber == null) {
-        if (event.eventType === "batch.screening.completed") {
-          setCurrent(null);
-        }
+      if (event.batchId !== batchId) {
+        return;
+      }
+
+      if (event.eventType === "batch.screening.completed") {
+        setCurrent(null);
+        return;
+      }
+
+      if (event.rowNumber == null) {
         return;
       }
 
@@ -76,11 +82,7 @@ export function useBatchScreeningLive(batchId?: string) {
         const withoutCurrent = previous.filter((row) => row.rowNumber !== nextRow.rowNumber);
         return [...withoutCurrent, nextRow].sort((left, right) => left.rowNumber - right.rowNumber);
       });
-
-      if (event.eventType === "batch.screening.completed") {
-        setCurrent(null);
-      }
-    }, batchId);
+    });
 
     return unsubscribe;
   }, [batchId]);
