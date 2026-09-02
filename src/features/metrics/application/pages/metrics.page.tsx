@@ -53,7 +53,7 @@ import { PageTitle } from "@/features/common/components/layout/page-title";
 import { useCountry } from "@/features/common/contexts/use-country";
 import { usePermissions } from "@/features/auth/application/hooks/use-permissions";
 import { PermissionGate } from "@/features/auth/application/components/permission-gate";
-import { EXPORT_DATA } from "@/features/auth/domain/permission-ui";
+import { PERMISSIONS } from "@/features/auth/domain/permissions";
 
 /**
  * custom date range picker component
@@ -381,7 +381,7 @@ export function MetricsPage() {
                   )}
               </div>
             </div>
-            <PermissionGate permission={[...EXPORT_DATA]} mode="any">
+            <PermissionGate permission={PERMISSIONS.REPORTS_OWN}>
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="secondary">
@@ -510,14 +510,12 @@ export function MetricsPage() {
               icon="confirmation_number"
               variation={metricsData.averageTicket.variation}
             />
-            <PermissionGate when={capabilities.canViewFundings}>
             <MetricCard
               title={t("metrics.cards.average_funding")}
               value={metricsData.averageFunding.value}
               icon="paid"
               variation={metricsData.averageFunding.variation}
             />
-            </PermissionGate>
           </div>
           {/* Chart Section */}
           <div className="flex flex-col gap-4">
@@ -533,11 +531,11 @@ export function MetricsPage() {
                 <TabsUnderlineTrigger value="beneficiaries">
                   {t("metrics.tabs.beneficiaries")}
                 </TabsUnderlineTrigger>
-                {capabilities.canViewFundings && (
+                <PermissionGate permission={PERMISSIONS.METRICS_FUNDINGS}>
                   <TabsUnderlineTrigger value="accounts">
                     {t("metrics.tabs.accounts")}
                   </TabsUnderlineTrigger>
-                )}
+                </PermissionGate>
               </TabsUnderlineList>
             </TabsUnderline>
             {/* Chart Container */}
